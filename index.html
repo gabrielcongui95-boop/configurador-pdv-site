@@ -1378,6 +1378,13 @@
     </div>
 
     <script>
+        // Keep the expandable features block right below the intro section button.
+        const introSection = document.getElementById('sobre');
+        const featuresSection = document.getElementById('featuresSection');
+        if (introSection && featuresSection) {
+            introSection.insertAdjacentElement('afterend', featuresSection);
+        }
+
         // Toggle features section
         document.getElementById('toggleFeatures').addEventListener('click', function() {
             const section = document.getElementById('featuresSection');
