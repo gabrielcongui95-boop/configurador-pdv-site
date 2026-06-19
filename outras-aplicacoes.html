@@ -417,6 +417,68 @@
             box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
         }
 
+        .visual-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .visual-card {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .visual-card h3 {
+            font-size: 1rem;
+            color: #f5f8ff;
+            margin-bottom: 10px;
+        }
+
+        .visual-card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+            margin-bottom: 16px;
+        }
+
+        .visual-image-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 190px;
+            padding: 14px;
+            background: rgba(7, 11, 21, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .visual-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: contain;
+        }
+
+        .visual-image.online {
+            max-width: 228px;
+        }
+
+        .visual-image.offline {
+            max-width: 288px;
+        }
+
+        .visual-image.msg {
+            max-width: 413px;
+        }
+
+        .visual-image.rein {
+            max-width: 243px;
+        }
+
         .download-section {
             background:
                 linear-gradient(135deg, rgba(109, 124, 255, 0.26) 0%, rgba(21, 196, 255, 0.14) 100%),
@@ -524,7 +586,8 @@
             .hero-side,
             .info-grid,
             .feature-grid,
-            .flow-grid {
+            .flow-grid,
+            .visual-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -570,41 +633,6 @@
 
         <div class="content">
             <div class="section">
-                <h2>Resumo da Aplicacao</h2>
-                <div class="intro-layout">
-                    <div class="intro-panel">
-                        <h3>Monitoramento autonomo do Pedidos WEB</h3>
-                        <p>O Monitor de Pedidos WEB foi pensado para acompanhar a execucao do processo em segundo plano e validar continuamente se o sistema esta ativo e operando de forma saudavel. A verificacao leva em conta tanto a existencia do processo responsavel quanto a atualizacao do arquivo de log utilizado como referencia de atividade.</p>
-                        <p>Quando algum problema e detectado dentro da janela de validacao, a aplicacao executa um fluxo automatico de recuperacao: encerra a instancia travada no Gerenciador de Tarefas, remove dados tecnicos do cache interno em `__AssemblyCache`, reinicia o servico do Pedidos WEB e informa visualmente ao usuario que o reinicio esta em andamento.</p>
-                        <div class="pill-row">
-                            <div class="pill">Processo em execucao</div>
-                            <div class="pill">Logs atualizados</div>
-                            <div class="pill">Reinicio automatico</div>
-                            <div class="pill">Limpeza de cache</div>
-                        </div>
-                    </div>
-                    <div class="info-grid">
-                        <div class="card status-card success">
-                            <h3>Validacao de execucao</h3>
-                            <p>Confere se o Pedidos WEB continua rodando normalmente e evita depender apenas de verificacao manual no cliente.</p>
-                        </div>
-                        <div class="card status-card">
-                            <h3>Leitura de logs</h3>
-                            <p>Analisa se o log esta sendo atualizado, permitindo identificar travas silenciosas mesmo quando o processo ainda aparece ativo.</p>
-                        </div>
-                        <div class="card status-card danger">
-                            <h3>Recuperacao automatica</h3>
-                            <p>Ao detectar falha, mata o processo anterior travado, limpa os dados temporarios necessarios e executa novo inicio do servico.</p>
-                        </div>
-                        <div class="card status-card warning">
-                            <h3>Retorno visual</h3>
-                            <p>Mostra um alerta no canto inferior direito da tela informando que o Pedidos WEB esta sendo reiniciado.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
                 <h2>Fluxo de Funcionamento</h2>
                 <div class="flow-grid">
                     <div class="card">
@@ -630,11 +658,45 @@
                 </div>
             </div>
 
+            <div class="section">
+                <h2>🖼️ Exibicao Visual</h2>
+                <div class="visual-grid">
+                    <div class="visual-card">
+                        <h3>Status online</h3>
+                        <p>Ao iniciar corretamente, o monitor permanece na bandeja do sistema e exibe o Pedidos WEB em estado online.</p>
+                        <div class="visual-image-wrap">
+                            <img src="online.png" alt="Monitor de Pedidos WEB exibindo status online na bandeja" class="visual-image online" width="228" height="159" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="visual-card">
+                        <h3>Status offline</h3>
+                        <p>Quando o Pedidos WEB para de responder ou deixa de atualizar os logs, o monitor identifica o estado offline.</p>
+                        <div class="visual-image-wrap">
+                            <img src="offline.png" alt="Monitor de Pedidos WEB exibindo status offline na bandeja" class="visual-image offline" width="288" height="161" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="visual-card">
+                        <h3>Mensagem de reinicio</h3>
+                        <p>No momento da recuperacao automatica, o sistema exibe a mensagem visual informando que o reinicio esta em andamento.</p>
+                        <div class="visual-image-wrap">
+                            <img src="msg.png" alt="Mensagem de reinicio do Monitor de Pedidos WEB" class="visual-image msg" width="413" height="153" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="visual-card">
+                        <h3>Retorno apos reinicio</h3>
+                        <p>Depois da recuperacao, o monitor volta a indicar o estado operacional esperado na barra de tarefas.</p>
+                        <div class="visual-image-wrap">
+                            <img src="rein.png" alt="Monitor de Pedidos WEB apos reinicio automatico" class="visual-image rein" width="243" height="159" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="download-section">
                 <h2>⬇️ Download</h2>
                 <p>Baixe o Monitor de Pedidos WEB</p>
                 <div class="download-buttons">
-                    <a href="MonitorPedidosWeb.exe" class="download-btn" download>⬇ Baixar Monitor de Pedidos WEB</a>
+                    <a href="Monitor do Pedidos Web" class="download-btn" download>⬇ Baixar Monitor de Pedidos WEB</a>
                 </div>
                 <div class="download-info">
                     <p><strong>Como utilizar?</strong></p>
