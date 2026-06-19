@@ -428,6 +428,60 @@
             line-height: 1.55;
         }
 
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .showcase-card {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .showcase-card h3 {
+            font-size: 1.05rem;
+            color: #f4f8ff;
+            margin-bottom: 10px;
+        }
+
+        .showcase-card p {
+            color: var(--text-soft);
+            font-size: 0.94rem;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .showcase-image-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 14px;
+            background: rgba(7, 11, 21, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .showcase-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: contain;
+        }
+
+        .showcase-image.senha {
+            max-width: 310px;
+        }
+
+        .showcase-image.config {
+            max-width: 650px;
+        }
+
         /* Action buttons */
         .action-buttons {
             display: flex;
@@ -757,7 +811,8 @@
         @media (max-width: 1200px) {
             .header,
             .intro-layout,
-            .quick-highlights {
+            .quick-highlights,
+            .showcase-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -892,6 +947,26 @@
                     <button class="toggle-btn" id="toggleFeatures">
                         🔧 Exibir Funcionalidades
                     </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🖼️ Apresentacao Visual</h2>
+                <div class="showcase-grid">
+                    <div class="showcase-card">
+                        <h3>Tela inicial de acesso</h3>
+                        <p>Ao iniciar o configurador, sera solicitada a senha do dia exibida no gadget de senhas. Essa etapa funciona como controle de acesso inicial antes da abertura da interface principal do sistema.</p>
+                        <div class="showcase-image-wrap">
+                            <img src="senha.png" alt="Tela inicial de senha do Configurador Oficial PDV" class="showcase-image senha" width="310" height="150" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="showcase-card">
+                        <h3>Tela principal do configurador</h3>
+                        <p>Depois da validacao da senha, o sistema abre a tela principal com os recursos de configuracao, automacao, manutencao, downloads, checklists e operacoes tecnicas que compoem o fluxo de suporte do Configurador Oficial PDV.</p>
+                        <div class="showcase-image-wrap">
+                            <img src="config.png" alt="Tela principal do Configurador Oficial PDV" class="showcase-image config" width="650" height="711" loading="lazy">
+                        </div>
+                    </div>
                 </div>
             </div>
 
