@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurador Oficial PDV - Eclética Food</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #060816;
+            --bg-soft: #0b1020;
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-strong: rgba(17, 24, 39, 0.96);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --text-muted: #7f90b2;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --success: #31d0aa;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-main);
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: auto;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            border-radius: 50%;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            border-radius: 50%;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            width: 100%;
+            min-height: 220px;
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.18), rgba(21, 196, 255, 0.08)),
+                var(--panel);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 42px 46px;
+            text-align: left;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 980px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .header h1 {
+            font-size: clamp(2.3rem, 3vw, 3.6rem);
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            font-weight: 400;
+            max-width: 880px;
+            line-height: 1.7;
+        }
+
+        .hero-side {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-metric {
+            background: rgba(8, 13, 27, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 18px 20px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+
+        .hero-metric strong {
+            display: block;
+            font-size: 1.6rem;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hero-metric span {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .section {
+            width: 100%;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 24px;
+            padding: 30px 34px;
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f4f7ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-2));
+            border-radius: 4px;
+        }
+
+        .intro-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(380px, 1fr);
+            gap: 22px;
+            align-items: stretch;
+            margin-bottom: 22px;
+        }
+
+        .intro-panel,
+        .project-grid,
+        .quick-highlights {
+            min-width: 0;
+        }
+
+        .intro-panel {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 24px 24px 22px;
+        }
+
+        .intro-panel h3 {
+            font-size: 1.15rem;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .intro-panel p {
+            font-size: 0.98rem;
+            color: var(--text-soft);
+            line-height: 1.78;
+        }
+
+        .intro-panel p + p {
+            margin-top: 12px;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .info-card {
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            transition: all 0.3s ease;
+            min-height: 148px;
+        }
+
+        .info-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(109, 124, 255, 0.28);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+        }
+
+        .info-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f3f7ff;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card p {
+            font-size: 0.92rem;
+            color: var(--text-soft);
+            line-height: 1.65;
+        }
+
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 0.75rem;
+        }
+
+        .info-card li {
+            font-size: 0.88rem;
+            color: #c8d5ef;
+            padding: 0.34rem 0;
+            padding-left: 1.3rem;
+            position: relative;
+        }
+
+        .info-card li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .quick-highlights {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .highlight-card {
+            background: rgba(9, 14, 26, 0.84);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 18px;
+            padding: 18px;
+        }
+
+        .highlight-card span {
+            display: block;
+            color: var(--accent-2);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .highlight-card strong {
+            display: block;
+            color: #f8fbff;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .highlight-card p {
+            color: var(--text-soft);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 440px;
+            margin: 0;
+            padding: 1.25rem 2.5rem;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 14px 35px rgba(20, 35, 95, 0.45);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .toggle-btn:hover::before {
+            left: 100%;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
+        }
+
+        .toggle-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 240px;
+            padding: 1.25rem 2rem;
+            background: rgba(9, 14, 26, 0.92);
+            color: #eef4ff;
+            border: 1px solid rgba(109, 124, 255, 0.24);
+            border-radius: 16px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            background: rgba(13, 20, 36, 0.98);
+            border-color: rgba(21, 196, 255, 0.34);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+        }
+
+        /* Accordion section */
+        .accordion-section {
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .accordion-section.visible {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .accordion-item {
+            background: rgba(10, 14, 25, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-item:hover {
+            border-color: rgba(109, 124, 255, 0.24);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+        }
+
+        .accordion-btn {
+            width: 100%;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(13, 19, 35, 1) 0%, rgba(8, 13, 24, 1) 100%);
+            border: none;
+            text-align: left;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #eef4ff;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-btn:hover {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(11, 17, 31, 1) 100%);
+        }
+
+        .accordion-btn .icon-wrap {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-btn.active .icon-wrap {
+            transform: rotate(180deg);
+        }
+
+        .accordion-btn .icon-wrap svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(8, 11, 21, 0.96);
+        }
+
+        .accordion-content-inner {
+            padding: 2rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.10);
+        }
+
+        .task-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+
+        .task-card {
+            background: linear-gradient(135deg, rgba(12, 18, 33, 0.96) 0%, rgba(9, 14, 26, 0.98) 100%);
+            padding: 1.25rem;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-left: 3px solid var(--accent);
+            transition: all 0.3s ease;
+        }
+
+        .task-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+            border-color: rgba(109, 124, 255, 0.18);
+        }
+
+        .task-card h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #f2f6ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-card p {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            line-height: 1.5;
+        }
+
+        .task-card code {
+            background: rgba(109, 124, 255, 0.16);
+            color: #cfd7ff;
+            padding: 0.15rem 0.4rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: 'Inter', monospace;
+        }
+
+        .category-title {
+            color: #dce7ff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 1.25rem 0 0.75rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-title:first-child {
+            margin-top: 0;
+        }
+
+        /* Download section */
+        .download-section {
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.26) 0%, rgba(21, 196, 255, 0.14) 100%),
+                var(--panel-strong);
+            border: 1px solid rgba(109, 124, 255, 0.22);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .download-section h2 {
+            color: #fff;
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+            justify-content: center;
+        }
+
+        .download-section h2::before {
+            display: none;
+        }
+
+        .download-section > p {
+            color: #d2ddff;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: linear-gradient(135deg, #e8eeff 0%, #ffffff 100%);
+            color: #0f172a;
+            padding: 1.25rem 2.5rem;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-btn svg {
+            width: 24px;
+            height: 24px;
+            color: var(--accent);
+        }
+
+        .download-info {
+            background: rgba(8, 12, 23, 0.46);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .download-info p {
+            color: #d8e3ff;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .download-info strong {
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(9, 13, 24, 0.78);
+            backdrop-filter: blur(16px);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .header,
+            .intro-layout,
+            .quick-highlights {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-side {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .section {
+                padding: 1.75rem;
+            }
+
+            .hero-side,
+            .project-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-highlights,
+            .task-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="hero-copy">
+                <div class="hero-badge">Automacao tecnica para implantacao, suporte e padronizacao de PDVs</div>
+                <h1>Configurador Oficial PDV</h1>
+                <p>Uma plataforma desktop criada para acelerar implantacoes, reduzir etapas manuais e centralizar configuracoes criticas do ambiente Windows utilizado pelo sistema Eclética Food, com foco em rede, firewall, usuarios, seguranca, MySQL, instaladores, impressoras e manutencao operacional.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-metric">
+                    <strong>30+</strong>
+                    <span>rotinas automatizadas no mesmo aplicativo</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Atalhos rápidos</strong>
+                    <span>pensado em otimizar processos e encurtar caminhos no Windows, reduzindo cliques para finalizar a instalação e manutenção</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Links diretos</strong>
+                    <span>possui links diretos para downloads de instaladores e componentes do sistema</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>📋 Principais Caracteristicas</h2>
+                <div class="intro-layout">
+                    <div class="intro-panel">
+                        <h3>Uma central de configuracao tecnica para o ambiente PDV</h3>
+                        <p>O Configurador Oficial PDV foi estruturado para executar ajustes operacionais que normalmente exigem diversos acessos manuais ao Windows, ao PowerShell, ao firewall, ao registro e aos instaladores do ecossistema Eclética Food. A interface concentra procedimentos que vao desde criacao de usuarios administrativos e compartilhamentos de pasta ate liberacao de portas, ajuste fino de rede, exclusoes de seguranca, configuracoes de impressoras e reparos do sistema.</p>
+                        <p>Pelo proprio codigo, o programa tambem atua como ferramenta de padronizacao: aplica regras pre-definidas para ambientes de implantacao, valida configuracoes sensiveis, disponibiliza checklists de pre e pos-instalacao, oferece rotinas de dump/importacao MySQL, automatiza instalacao de impressoras por IP, prepara impressoras virtuais e organiza atalhos operacionais para recursos usados diariamente pelo suporte tecnico.</p>
+                    </div>
+                    <div class="project-grid">
+                        <div class="info-card">
+                            <h3>🧠 Automacao de Ambiente</h3>
+                            <p>Executa tarefas de rede, firewall, usuarios, energia, cache, compartilhamento e registro em poucos cliques.</p>
+                        </div>
+                        <div class="info-card">
+                            <h3>🌐 Rede e Conectividade</h3>
+                            <p>Inclui IP fixo com rollback para DHCP, perfil de rede, compartilhamento, SMB e liberacao de sessoes nulas quando necessario.</p>
+                        </div>
+                        <div class="info-card">
+                            <h3>🛡️ Seguranca e Compatibilidade</h3>
+                            <p>Controla UAC, exclusoes do Defender, SSL/TLS, regras de firewall e ajustes para compatibilidade com sistemas legados.</p>
+                        </div>
+                        <div class="info-card">
+                            <h3>Configuracao de Impressoras</h3>
+                            <p>Permite instalar impressoras por IP, preparar impressora virtual, executar checklist completo e padronizar nomes com o prefixo EPSON quando necessario.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-highlights">
+                    <div class="highlight-card">
+                        <span>Foco operacional</span>
+                        <strong>Implantacao e suporte</strong>
+                        <p>Projetado para o fluxo real de atendimento remoto em clientes PDV.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span>Base tecnica</span>
+                        <strong>Windows e PowerShell</strong>
+                        <p>Aplica ajustes de sistema, rede, servicos, firewall e registro com logica centralizada.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span>Produtividade</span>
+                        <strong>Checklists internos</strong>
+                        <p>Padroniza cenarios de pre e pos-instalacao com menor risco operacional.</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span>Perifericos</span>
+                        <strong>Impressoras e validacoes</strong>
+                        <p>Centraliza instalacao, ajuste e checklist tecnico de impressoras usadas no ambiente PDV.</p>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="toggle-btn" id="toggleFeatures">
+                        🔧 Exibir Funcionalidades
+                    </button>
+                    <a href="outras-aplicacoes.html" class="nav-btn">
+                        📁 Outras Aplicações
+                    </a>
+                </div>
+            </div>
+
+            <div class="accordion-section" id="featuresSection">
+                <div class="section" style="padding: 2rem;">
+                    <h2>🔍 Funcionalidades</h2>
+                    <div class="accordion">
+                        <!-- Acessos e Usuários -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>👤 Acessos e Usuários</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Criar User Eclética</h5>
+                                            <p>Usuário: <code>ECLETICA</code><br>Senha: <code>ecletica3367</code></p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>User Eclética Win Server</h5>
+                                            <p>Versão com senha: <code>Srv@9281!Tech</code></p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Ativar Compartilhamento com Senha</h5>
+                                            <p>Configura proteção por senha</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>UAC: Nível Mínimo</h5>
+                                            <p>Reduz notificações do sistema</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rede e IP -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🌐 Rede e IP</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="category-title">📌 Configuração de IP</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Fixar IP</h5>
+                                            <p>Configura IP estático com reversão automática</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">📁 Compartilhamento</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Compartilhamento ArquivosSistema</h5>
+                                            <p>Pasta com permissões completas</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Rede: Perfil Particular</h5>
+                                            <p>Facilita descoberta de dispositivos</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Descoberta de Rede</h5>
+                                            <p>Habilita visibilidade na rede</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">🔧 Compatibilidade</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Criptografia 40/56 bits</h5>
+                                            <p>Sistemas legados</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Habilitar SMB 1.0</h5>
+                                            <p>Impressoras e roteadores antigos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Firewall e Portas -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🔥 Firewall e Portas</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="category-title">🛡️ Controle do Firewall</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Desativar Windows Firewall</h5>
+                                            <p>Todas as redes: Domínio, Privada, Pública</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Ativar Compartilhamento</h5>
+                                            <p>Arquivo e impressora</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">🚪 Liberação de Portas</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Porta MySQL: <code>3306</code></h5>
+                                            <p>Acesso ao banco de dados</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Portas PDV: <code>8080</code></h5>
+                                            <p>Comunicação entre PDVs</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Portas Web: <code>443/123</code></h5>
+                                            <p>HTTPS e NTP seguro</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">✅ Check-Lists</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>CheckList_PRE</h5>
+                                            <p>Pré-configuração rede/firewall</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>CheckList_POS</h5>
+                                            <p>Configuração completa para PDV</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MySQL -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🗄️ MySQL</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Liberar Porta 3306</h5>
+                                            <p>Acesso externo ao banco</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Monitoramento de Status</h5>
+                                            <p>Verifica serviço em tempo real</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Dump e Importação</h5>
+                                            <p>Backup e restauração</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Impressoras -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🖨️ Impressoras</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Instalacao de multiplas impressoras por IP</h5>
+                                            <p>Permite configurar varias impressoras de rede no mesmo processo, agilizando implantacoes em lojas com mais de um equipamento.</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Impressora virtual</h5>
+                                            <p>Realiza a preparacao e instalacao de impressora virtual quando o ambiente exige emissao ou testes sem dependencia imediata do hardware fisico.</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Checklist completo de impressoras</h5>
+                                            <p>Executa verificacoes para validar instalacao, comunicacao, padronizacao e funcionamento das impressoras no ambiente PDV.</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Padronizacao de nomenclatura</h5>
+                                            <p>Adiciona o nome EPSON no inicio da impressora quando necessario, mantendo o padrao visual e tecnico adotado no suporte.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Segurança -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🛡️ Segurança</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Desativar Controle Inteligente</h5>
+                                            <p>Windows 11 - bloqueio de apps</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Exclusão Defender: Wineclt</h5>
+                                            <p>Evita bloqueios do sistema</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Configurador SSL/TLS</h5>
+                                            <p>SSL 3.0, TLS 1.1/1.2 para SEFAZ</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sistema -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>⚙️ Sistema</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="category-title">⚡ Energia e Desempenho</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Alta Performance</h5>
+                                            <p>Desativa desligamento de monitor</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>USB: Impedir Suspensão</h5>
+                                            <p>Evita problemas com periféricos</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Desativar Inicialização Rápida</h5>
+                                            <p>Evita erros no MySQL</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">🔧 Manutenção</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Sincronizar Data/Hora</h5>
+                                            <p>Servidor a.ntp.br</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Limpeza de Cache</h5>
+                                            <p>Temp, Prefetch e mais</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>WMI_RESET</h5>
+                                            <p>Repara repositório corrompido</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="category-title">🛠️ Correção de Problemas</div>
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>ERRO 709 (Windows 11)</h5>
+                                            <p>Corrige erro de impressão</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Utilitários -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>🔧 Utilitários Rápidos</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Gerenciar Credenciais</h5>
+                                            <p>Abre gerenciador do Windows</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Políticas de Senha (GPO)</h5>
+                                            <p>Orienta e abre editor</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>.NET Framework</h5>
+                                            <p>Abre configuração de recursos</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Pasta PRINTERS</h5>
+                                            <p>Acesso direto à pasta</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Clear Spool</h5>
+                                            <p>Limpa fila de impressão</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instaladores -->
+                        <div class="accordion-item">
+                            <button class="accordion-btn">
+                                <span>📦 Instaladores</span>
+                                <div class="icon-wrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </button>
+                            <div class="accordion-content">
+                                <div class="accordion-content-inner">
+                                    <div class="task-list">
+                                        <div class="task-card">
+                                            <h5>Setup Ecletica</h5>
+                                            <p>Instalação principal</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Pacote Full</h5>
+                                            <p>Todos os módulos</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Setup Fiscal / NFCe / NFe</h5>
+                                            <p>Módulos fiscais</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Setup MySQL / Apache</h5>
+                                            <p>Instalador MySQL / Instalador Apache64</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Ecletica BI</h5>
+                                            <p>Relatórios e analytics</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>RustDesk</h5>
+                                            <p>Acesso remoto para suporte</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>.NET Framework 4.5</h5>
+                                            <p>Framework necessário</p>
+                                        </div>
+                                        <div class="task-card">
+                                            <h5>Autenticador Balança</h5>
+                                            <p>Software que realiza teste em equipamentos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <h2>⬇️ Download</h2>
+                <p>Baixe o Configurador Oficial PDV</p>
+                <div class="download-buttons">
+                    <a href="Configurador Oficial PDV.exe" class="download-btn" download>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>
+                        </svg>
+                        🖥️ Configurador Oficial PDV (EXE)
+                    </a>
+                </div>
+                <div class="download-info">
+                    <p><strong>Como atualizar?</strong></p>
+                    <p>1. Baixe a nova versao | 2. O atualizador abre o Explorador de Arquivos | 3. Selecione o novo arquivo .exe | 4. O executavel atual sera substituido | 5. Abra o configurador novamente</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+
+    <script>
+        // Toggle features section
+        document.getElementById('toggleFeatures').addEventListener('click', function() {
+            const section = document.getElementById('featuresSection');
+            const btn = this;
+
+            if (section.classList.contains('visible')) {
+                section.classList.remove('visible');
+                btn.innerHTML = '🔧 Exibir Funcionalidades';
+            } else {
+                section.classList.add('visible');
+                btn.innerHTML = '🔽 Ocultar Funcionalidades';
+            }
+        });
+
+        // Accordion functionality
+        document.querySelectorAll('.accordion-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const content = btn.nextElementSibling;
+                const isActive = btn.classList.contains('active');
+
+                // Close all accordion items first
+                document.querySelectorAll('.accordion-btn').forEach(b => {
+                    b.classList.remove('active');
+                    const c = b.nextElementSibling;
+                    c.style.maxHeight = null;
+                });
+
+                // If it wasn't active before, open it
+                if (!isActive) {
+                    btn.classList.add('active');
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
