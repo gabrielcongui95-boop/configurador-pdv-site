@@ -76,6 +76,87 @@
             gap: 20px;
         }
 
+        .topbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(9, 13, 24, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .menu-link,
+        .menu-dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #dce7ff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-link:hover,
+        .menu-link.active,
+        .menu-dropdown:hover .menu-dropdown-toggle {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .menu-dropdown {
+            position: relative;
+        }
+
+        .menu-dropdown-content {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 260px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(9, 13, 24, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.30);
+        }
+
+        .menu-dropdown:hover .menu-dropdown-content {
+            display: flex;
+        }
+
+        .menu-dropdown-content a {
+            text-decoration: none;
+            color: #dce7ff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .menu-dropdown-content a:hover,
+        .menu-dropdown-content a.active {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
         .header {
             width: 100%;
             min-height: 220px;
@@ -385,6 +466,13 @@
                 padding: 1rem;
             }
 
+            .menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                border-radius: 24px;
+            }
+
             .header {
                 padding: 2rem 1.5rem;
             }
@@ -408,6 +496,20 @@
 </head>
 <body>
     <div class="container">
+        <div class="topbar">
+            <nav class="menu">
+                <a href="index.html" class="menu-link">Home</a>
+                <a href="index.html#sobre" class="menu-link">Sobre</a>
+                <a href="index.html#downloads" class="menu-link">Downloads</a>
+                <div class="menu-dropdown">
+                    <button class="menu-dropdown-toggle">Soluções</button>
+                    <div class="menu-dropdown-content">
+                        <a href="outras-aplicacoes.html" class="active">MONITOR DO PEDIDOS WEB</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
         <div class="header">
             <div class="hero-copy">
                 <div class="hero-badge">Aplicacoes auxiliares para suporte e operacao do ambiente PDV</div>
