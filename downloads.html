@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads - Configurador Oficial PDV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+            border-radius: 50%;
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(9, 13, 24, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            position: relative;
+            z-index: 1001;
+        }
+
+        .menu-link,
+        .menu-dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #dce7ff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-link:hover,
+        .menu-link.active,
+        .menu-dropdown:hover .menu-dropdown-toggle {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .menu-dropdown {
+            position: relative;
+        }
+
+        .menu-dropdown-content {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 260px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(9, 13, 24, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.30);
+            z-index: 2000;
+        }
+
+        .menu-dropdown:hover .menu-dropdown-content {
+            display: flex;
+        }
+
+        .menu-dropdown-content a {
+            text-decoration: none;
+            color: #dce7ff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .menu-dropdown-content a:hover {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .header,
+        .section,
+        .footer {
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+        }
+
+        .header {
+            border-radius: 28px;
+            padding: 42px 46px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 920px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+        }
+
+        .header h1 {
+            font-size: clamp(2.2rem, 3vw, 3.4rem);
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--text-soft);
+            line-height: 1.75;
+            max-width: 760px;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section {
+            border-radius: 24px;
+            padding: 30px 34px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            border-radius: 4px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .download-card {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .download-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+        }
+
+        .download-card p {
+            color: var(--text-soft);
+            line-height: 1.65;
+            margin-bottom: 18px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem 1.4rem;
+            border-radius: 16px;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 14px 35px rgba(20, 35, 95, 0.45);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
+        }
+
+        .footer {
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .download-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                border-radius: 24px;
+            }
+            .header,
+            .section {
+                padding: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <nav class="menu">
+                <a href="index.html" class="menu-link">Home</a>
+                <a href="sobre.html" class="menu-link">Sobre</a>
+                <a href="downloads.html" class="menu-link active">Downloads</a>
+                <div class="menu-dropdown">
+                    <button class="menu-dropdown-toggle">Soluções</button>
+                    <div class="menu-dropdown-content">
+                        <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="header">
+            <div class="hero-copy">
+                <div class="hero-badge">Central de arquivos e executaveis</div>
+                <h1>Downloads</h1>
+                <p>Area dedicada aos arquivos do projeto, com acesso direto aos executaveis principais e as solucoes auxiliares disponibilizadas dentro do ecossistema do Configurador Oficial PDV.</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>Arquivos Disponiveis</h2>
+                <div class="download-grid">
+                    <div class="download-card">
+                        <h3>Configurador Oficial PDV</h3>
+                        <p>Executavel principal com recursos de configuracao, manutencao, automacao tecnica e padronizacao do ambiente PDV.</p>
+                        <a href="Configurador Oficial PDV.exe" class="download-btn" download>Baixar Configurador Oficial PDV</a>
+                    </div>
+                    <div class="download-card">
+                        <h3>Monitor de Pedidos WEB</h3>
+                        <p>Aplicacao auxiliar para monitoramento, reinicio automatico e recuperacao operacional do Pedidos WEB.</p>
+                        <a href="MonitorPedidosWeb.exe" class="download-btn" download>Baixar Monitor de Pedidos WEB</a>
+                    </div>
+                    <div class="download-card">
+                        <h3>Pagina de Solucoes</h3>
+                        <p>Acesse a area dedicada as aplicacoes auxiliares para consultar detalhes tecnicos sobre as solucoes disponiveis.</p>
+                        <a href="outras-aplicacoes.html" class="download-btn">Abrir Solucoes</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+</body>
+</html>
