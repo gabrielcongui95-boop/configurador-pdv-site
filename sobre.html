@@ -112,7 +112,8 @@
 
         .menu-link:hover,
         .menu-link.active,
-        .menu-dropdown:hover .menu-dropdown-toggle {
+        .menu-dropdown-toggle:hover,
+        .menu-dropdown.open .menu-dropdown-toggle {
             background: rgba(109, 124, 255, 0.14);
             color: #ffffff;
         }
@@ -137,7 +138,7 @@
             z-index: 2000;
         }
 
-        .menu-dropdown:hover .menu-dropdown-content {
+        .menu-dropdown.open .menu-dropdown-content {
             display: flex;
         }
 
@@ -353,7 +354,7 @@
                 <a href="sobre.html" class="menu-link active">Sobre</a>
                 <a href="downloads.html" class="menu-link">Downloads</a>
                 <div class="menu-dropdown">
-                    <button class="menu-dropdown-toggle">Soluções</button>
+                    <button class="menu-dropdown-toggle" type="button" aria-expanded="false">Soluções</button>
                     <div class="menu-dropdown-content">
                         <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
                     </div>
@@ -439,5 +440,39 @@
             <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
         </div>
     </div>
+    <script>
+        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const willOpen = !dropdown.classList.contains('open');
+
+                document.querySelectorAll('.menu-dropdown').forEach(item => {
+                    item.classList.remove('open');
+                    const itemToggle = item.querySelector('.menu-dropdown-toggle');
+                    if (itemToggle) {
+                        itemToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                if (willOpen) {
+                    dropdown.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
