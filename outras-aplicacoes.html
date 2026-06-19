@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outras Aplicacoes - Configurador Oficial PDV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #060816;
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-strong: rgba(17, 24, 39, 0.96);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --warning: #ffb84d;
+            --success: #31d0aa;
+            --danger: #ff6b81;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+            border-radius: 50%;
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            width: 100%;
+            min-height: 220px;
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.18), rgba(21, 196, 255, 0.08)),
+                var(--panel);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 42px 46px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 2.1fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy,
+        .hero-side {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .header h1 {
+            font-size: clamp(2.2rem, 3vw, 3.4rem);
+            font-weight: 700;
+            line-height: 1.06;
+            letter-spacing: -0.04em;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+            max-width: 860px;
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-metric {
+            background: rgba(8, 13, 27, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 18px 20px;
+        }
+
+        .hero-metric strong {
+            display: block;
+            font-size: 1.45rem;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hero-metric span {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .section {
+            width: 100%;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 24px;
+            padding: 30px 34px;
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f4f7ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-2));
+            border-radius: 4px;
+        }
+
+        .intro-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
+            gap: 22px;
+        }
+
+        .intro-panel {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 24px;
+        }
+
+        .intro-panel h3 {
+            font-size: 1.15rem;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .intro-panel p {
+            font-size: 0.98rem;
+            color: var(--text-soft);
+            line-height: 1.8;
+        }
+
+        .intro-panel p + p {
+            margin-top: 12px;
+        }
+
+        .info-grid,
+        .feature-grid,
+        .flow-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .feature-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .flow-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            min-height: 148px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(109, 124, 255, 0.28);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+        }
+
+        .card h3,
+        .card h4 {
+            color: #f3f7ff;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        .status-card {
+            border-left: 3px solid var(--accent);
+        }
+
+        .status-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .status-card.danger {
+            border-left-color: var(--danger);
+        }
+
+        .status-card.success {
+            border-left-color: var(--success);
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.12);
+            border: 1px solid rgba(109, 124, 255, 0.22);
+            color: #dbe4ff;
+            font-size: 0.88rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .nav-btn,
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 220px;
+            padding: 1.15rem 1.8rem;
+            border-radius: 16px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn {
+            background: rgba(9, 14, 26, 0.92);
+            color: #eef4ff;
+            border: 1px solid rgba(109, 124, 255, 0.24);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            background: rgba(13, 20, 36, 0.98);
+            border-color: rgba(21, 196, 255, 0.34);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
+            box-shadow: 0 14px 35px rgba(20, 35, 95, 0.45);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
+        }
+
+        .footer {
+            background: rgba(9, 13, 24, 0.78);
+            backdrop-filter: blur(16px);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .header,
+            .intro-layout,
+            .flow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-side {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .section {
+                padding: 1.75rem;
+            }
+
+            .hero-side,
+            .info-grid,
+            .feature-grid,
+            .flow-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="hero-copy">
+                <div class="hero-badge">Aplicacoes auxiliares para suporte e operacao do ambiente PDV</div>
+                <h1>Monitor de Pedidos WEB</h1>
+                <p>Aplicacao dedicada ao monitoramento automatico do Pedidos WEB, criada para identificar travamentos, ausencia de execucao, falta de atualizacao dos logs e reiniciar o servico sem intervencao manual, mantendo o ambiente mais estavel no dia a dia do suporte.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-metric">
+                    <strong>15s</strong>
+                    <span>janela de varredura para detectar falhas e acionar a recuperacao automatica</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Auto restart</strong>
+                    <span>mata a tarefa travada, limpa cache tecnico e reinicia o Pedidos WEB</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Alerta visual</strong>
+                    <span>mostra aviso no canto inferior direito quando o reinicio e executado</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>Resumo da Aplicacao</h2>
+                <div class="intro-layout">
+                    <div class="intro-panel">
+                        <h3>Monitoramento autonomo do Pedidos WEB</h3>
+                        <p>O Monitor de Pedidos WEB foi pensado para acompanhar a execucao do processo em segundo plano e validar continuamente se o sistema esta ativo e operando de forma saudavel. A verificacao leva em conta tanto a existencia do processo responsavel quanto a atualizacao do arquivo de log utilizado como referencia de atividade.</p>
+                        <p>Quando algum problema e detectado dentro da janela de validacao, a aplicacao executa um fluxo automatico de recuperacao: encerra a instancia travada no Gerenciador de Tarefas, remove dados tecnicos do cache interno em `__AssemblyCache`, reinicia o servico do Pedidos WEB e informa visualmente ao usuario que o reinicio esta em andamento.</p>
+                        <div class="pill-row">
+                            <div class="pill">Processo em execucao</div>
+                            <div class="pill">Logs atualizados</div>
+                            <div class="pill">Reinicio automatico</div>
+                            <div class="pill">Limpeza de cache</div>
+                        </div>
+                    </div>
+                    <div class="info-grid">
+                        <div class="card status-card success">
+                            <h3>Validacao de execucao</h3>
+                            <p>Confere se o Pedidos WEB continua rodando normalmente e evita depender apenas de verificacao manual no cliente.</p>
+                        </div>
+                        <div class="card status-card">
+                            <h3>Leitura de logs</h3>
+                            <p>Analisa se o log esta sendo atualizado, permitindo identificar travas silenciosas mesmo quando o processo ainda aparece ativo.</p>
+                        </div>
+                        <div class="card status-card danger">
+                            <h3>Recuperacao automatica</h3>
+                            <p>Ao detectar falha, mata o processo anterior travado, limpa os dados temporarios necessarios e executa novo inicio do servico.</p>
+                        </div>
+                        <div class="card status-card warning">
+                            <h3>Retorno visual</h3>
+                            <p>Mostra um alerta no canto inferior direito da tela informando que o Pedidos WEB esta sendo reiniciado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Fluxo de Funcionamento</h2>
+                <div class="flow-grid">
+                    <div class="card">
+                        <h4>1. Verificacao</h4>
+                        <p>Monitora se o Pedidos WEB esta em execucao e se o log continua recebendo atualizacoes recentes.</p>
+                    </div>
+                    <div class="card">
+                        <h4>2. Deteccao</h4>
+                        <p>Dentro da varredura de 15 segundos, identifica ausencia de processo, travamento ou log sem atualizacao.</p>
+                    </div>
+                    <div class="card">
+                        <h4>3. Encerramento</h4>
+                        <p>Finaliza a tarefa anterior travada no Gerenciador de Tarefas para impedir conflito na nova inicializacao.</p>
+                    </div>
+                    <div class="card">
+                        <h4>4. Limpeza tecnica</h4>
+                        <p>Apaga os dados da pasta `__AssemblyCache`, removendo residuos que podem impedir o retorno correto do servico.</p>
+                    </div>
+                    <div class="card">
+                        <h4>5. Reinicio e aviso</h4>
+                        <p>Reinicia automaticamente o Pedidos WEB e exibe alerta visual no canto inferior direito informando o reinicio.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Acoes</h2>
+                <div class="action-buttons">
+                    <a href="index.html" class="nav-btn">⬅ Voltar para a pagina principal</a>
+                    <a href="MonitorPedidosWeb.exe" class="download-btn" download>⬇ Baixar Monitor de Pedidos WEB</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+</body>
+</html>
