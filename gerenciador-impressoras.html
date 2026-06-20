@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Impressoras - Configurador Oficial PDV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #060816;
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-strong: rgba(17, 24, 39, 0.96);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --warning: #ffb84d;
+            --success: #31d0aa;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+            border-radius: 50%;
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(9, 13, 24, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            position: relative;
+            z-index: 1001;
+        }
+
+        .menu-link,
+        .menu-dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #dce7ff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-link:hover,
+        .menu-link.active,
+        .menu-dropdown-toggle:hover,
+        .menu-dropdown.open .menu-dropdown-toggle {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .menu-dropdown {
+            position: relative;
+        }
+
+        .menu-dropdown-content {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 320px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(9, 13, 24, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.30);
+            z-index: 2000;
+        }
+
+        .menu-dropdown.open .menu-dropdown-content {
+            display: flex;
+        }
+
+        .menu-dropdown-content a {
+            text-decoration: none;
+            color: #dce7ff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .menu-dropdown-content a:hover,
+        .menu-dropdown-content a.active {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .header {
+            width: 100%;
+            min-height: 220px;
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.18), rgba(21, 196, 255, 0.08)),
+                var(--panel);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 42px 46px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 2.1fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy,
+        .hero-side {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .header h1 {
+            font-size: clamp(2.2rem, 3vw, 3.4rem);
+            font-weight: 700;
+            line-height: 1.06;
+            letter-spacing: -0.04em;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+            max-width: 860px;
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-metric {
+            background: rgba(8, 13, 27, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 18px 20px;
+        }
+
+        .hero-metric strong {
+            display: block;
+            font-size: 1.45rem;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hero-metric span {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .section {
+            width: 100%;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 24px;
+            padding: 30px 34px;
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f4f7ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-2));
+            border-radius: 4px;
+        }
+
+        .intro-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
+            gap: 22px;
+        }
+
+        .intro-panel {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 24px;
+        }
+
+        .intro-panel h3 {
+            font-size: 1.15rem;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .intro-panel p {
+            font-size: 0.98rem;
+            color: var(--text-soft);
+            line-height: 1.8;
+        }
+
+        .intro-panel p + p {
+            margin-top: 12px;
+        }
+
+        .info-grid,
+        .feature-grid,
+        .flow-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-grid,
+        .feature-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .flow-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            min-height: 148px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(109, 124, 255, 0.28);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+        }
+
+        .card h3,
+        .card h4 {
+            color: #f3f7ff;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        .status-card {
+            border-left: 3px solid var(--accent);
+        }
+
+        .status-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .status-card.success {
+            border-left-color: var(--success);
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        .visual-card {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .visual-card h3 {
+            font-size: 1rem;
+            color: #f5f8ff;
+            margin-bottom: 10px;
+        }
+
+        .visual-card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+            margin-bottom: 16px;
+        }
+
+        .visual-image-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 320px;
+            padding: 18px;
+            background: rgba(7, 11, 21, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .visual-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: contain;
+            max-width: 489px;
+        }
+
+        .download-section {
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.26) 0%, rgba(21, 196, 255, 0.14) 100%),
+                var(--panel-strong);
+            border: 1px solid rgba(109, 124, 255, 0.22);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .download-section h2 {
+            color: #fff;
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+            justify-content: center;
+        }
+
+        .download-section h2::before {
+            display: none;
+        }
+
+        .download-section > p {
+            color: #d2ddff;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            min-width: 220px;
+            padding: 1.25rem 2.5rem;
+            border-radius: 14px;
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
+            box-shadow: 0 14px 35px rgba(20, 35, 95, 0.45);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
+        }
+
+        .download-info {
+            background: rgba(8, 12, 23, 0.46);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .download-info p {
+            color: #d8e3ff;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .download-info strong {
+            font-weight: 600;
+        }
+
+        .footer {
+            background: rgba(9, 13, 24, 0.78);
+            backdrop-filter: blur(16px);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .header,
+            .intro-layout,
+            .flow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-side {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                border-radius: 24px;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .section {
+                padding: 1.75rem;
+            }
+
+            .hero-side,
+            .info-grid,
+            .feature-grid,
+            .flow-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <nav class="menu">
+                <a href="index.html" class="menu-link">Home</a>
+                <a href="sobre.html" class="menu-link">Sobre</a>
+                <a href="downloads.html" class="menu-link">Downloads</a>
+                <div class="menu-dropdown">
+                    <button class="menu-dropdown-toggle" type="button" aria-expanded="false">Soluções</button>
+                    <div class="menu-dropdown-content">
+                        <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
+                        <a href="gerador-certificado-digital.html">GERADOR DE CERTIFICADO DIGITAL</a>
+                        <a href="gerenciador-impressoras.html" class="active">GERENCIADOR DE IMPRESSORAS</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="header">
+            <div class="hero-copy">
+                <div class="hero-badge">Aplicação auxiliar para implantação rápida de impressoras no ambiente PDV</div>
+                <h1>Gerenciador de Impressoras</h1>
+                <p>Ferramenta desenvolvida para facilitar a instalação de várias impressoras de rede de forma sequencial, com driver genérico, criação de impressora virtual padrão, checklist final de segurança e compartilhamento, além de recursos de exportação e importação para agilizar implantações em massa.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-metric">
+                    <strong>Até 50 impressoras</strong>
+                    <span>preenchimento em lote para instalação sequencial em cenários com muitos equipamentos</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Portas V1 / V2</strong>
+                    <span>também permite criar impressora virtual dentro do padrão usado nos ambientes PDV</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>TXT reutilizável</strong>
+                    <span>exporta e importa listas para reaproveitar nome, IP e driver em outra máquina</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>Visão Geral</h2>
+                <div class="intro-layout">
+                    <div class="intro-panel">
+                        <h3>Automação para implantação e padronização de impressoras</h3>
+                        <p>O Gerenciador de Impressoras foi desenvolvido para reduzir o tempo gasto na instalação de impressoras de rede em lojas com múltiplos equipamentos. O aplicativo permite informar até 50 impressoras, executando a instalação de forma sequencial com driver genérico e acelerando a preparação do ambiente operacional.</p>
+                        <p>Além da instalação em lote, ele também pode criar impressoras virtuais em padrão com portas V1 e V2, adicionar o prefixo EPSON em caixa alta na frente do nome da impressora quando necessário e realizar um checklist técnico ao final do processo para validar compartilhamento e configurações de segurança.</p>
+                    </div>
+                    <div class="info-grid">
+                        <div class="card">
+                            <h3>Instalação em lote</h3>
+                            <p>Permite cadastrar e instalar até 50 impressoras de forma sequencial no mesmo fluxo de trabalho.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Driver genérico</h3>
+                            <p>Utiliza driver genérico para acelerar a criação de impressoras em ambientes padronizados.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Impressora virtual</h3>
+                            <p>Cria impressora virtual com portas V1 e V2 em cenários que exigem preparação complementar do ambiente.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Prefixo EPSON</h3>
+                            <p>Adiciona o nome EPSON em caixa alta antes do nome da impressora para respeitar configurações específicas do PDV.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recursos Principais</h2>
+                <div class="feature-grid">
+                    <div class="card status-card">
+                        <h4>Cadastro em Massa</h4>
+                        <p>Recebe até 50 impressoras com dados organizados para instalação sequencial sem repetição de tarefas manuais.</p>
+                    </div>
+                    <div class="card status-card success">
+                        <h4>Instalação Sequencial</h4>
+                        <p>Executa a instalação de cada impressora em sequência, reduzindo erros em ambientes com vários equipamentos.</p>
+                    </div>
+                    <div class="card status-card">
+                        <h4>Portas Virtuais V1 / V2</h4>
+                        <p>Permite criar impressora virtual no padrão esperado quando a operação exige esse tipo de preparação.</p>
+                    </div>
+                    <div class="card status-card warning">
+                        <h4>Checklist Final</h4>
+                        <p>Ao finalizar a instalação, realiza checklist completo das impressoras, compartilhamento e segurança do ambiente.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Fluxo Operacional</h2>
+                <div class="flow-grid">
+                    <div class="card">
+                        <h4>1. Preenchimento</h4>
+                        <p>Insira nome, IP e demais dados das impressoras que serão preparadas no ambiente.</p>
+                    </div>
+                    <div class="card">
+                        <h4>2. Padronização</h4>
+                        <p>Defina se o nome EPSON deve ser adicionado em caixa alta e se haverá criação de impressora virtual.</p>
+                    </div>
+                    <div class="card">
+                        <h4>3. Instalação</h4>
+                        <p>O aplicativo instala as impressoras em sequência com driver genérico e organiza a implantação.</p>
+                    </div>
+                    <div class="card">
+                        <h4>4. Checklist</h4>
+                        <p>Valida compartilhamento com o mesmo nome e realiza conferência completa de segurança e configuração.</p>
+                    </div>
+                    <div class="card">
+                        <h4>5. Exportação TXT</h4>
+                        <p>Gera um arquivo TXT na área de trabalho com nome da impressora, IP e driver para reaproveitamento futuro.</p>
+                    </div>
+                    <div class="card">
+                        <h4>6. Importação em Outra Máquina</h4>
+                        <p>Esse mesmo TXT pode ser importado em outro computador para preencher tudo automaticamente.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🖼️ Exibição Visual</h2>
+                <div class="visual-grid">
+                    <div class="visual-card">
+                        <h3>Tela da aplicação</h3>
+                        <p>Imagem de referência do Gerenciador de Impressoras utilizado para implantações em lote, criação de impressoras virtuais e conferência final do ambiente.</p>
+                        <div class="visual-image-wrap">
+                            <img src="imp.png" alt="Tela do Gerenciador de Impressoras" class="visual-image" width="489" height="639" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <h2>⬇️ Download</h2>
+                <p>Baixe o Gerenciador de Impressoras</p>
+                <div class="download-buttons">
+                    <a href="Gerenciador de impressoras.exe" class="download-btn" download>⬇ Baixar Gerenciador de Impressoras</a>
+                </div>
+                <div class="download-info">
+                    <p><strong>Recursos de apoio:</strong></p>
+                    <p>O aplicativo também permite exportar e importar listas em TXT, facilitando implantações repetidas em múltiplas máquinas sem necessidade de redigitar nome, IP e driver de cada impressora.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const willOpen = !dropdown.classList.contains('open');
+
+                document.querySelectorAll('.menu-dropdown').forEach(item => {
+                    item.classList.remove('open');
+                    const itemToggle = item.querySelector('.menu-dropdown-toggle');
+                    if (itemToggle) {
+                        itemToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                if (willOpen) {
+                    dropdown.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
