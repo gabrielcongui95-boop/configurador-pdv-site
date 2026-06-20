@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Certificado Digital - Configurador Oficial PDV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #060816;
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-strong: rgba(17, 24, 39, 0.96);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --warning: #ffb84d;
+            --success: #31d0aa;
+            --danger: #ff6b81;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+            border-radius: 50%;
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(9, 13, 24, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            position: relative;
+            z-index: 1001;
+        }
+
+        .menu-link,
+        .menu-dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #dce7ff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-link:hover,
+        .menu-link.active,
+        .menu-dropdown-toggle:hover,
+        .menu-dropdown.open .menu-dropdown-toggle {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .menu-dropdown {
+            position: relative;
+        }
+
+        .menu-dropdown-content {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 320px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(9, 13, 24, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.30);
+            z-index: 2000;
+        }
+
+        .menu-dropdown.open .menu-dropdown-content {
+            display: flex;
+        }
+
+        .menu-dropdown-content a {
+            text-decoration: none;
+            color: #dce7ff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .menu-dropdown-content a:hover,
+        .menu-dropdown-content a.active {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .header {
+            width: 100%;
+            min-height: 220px;
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.18), rgba(21, 196, 255, 0.08)),
+                var(--panel);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 42px 46px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 2.1fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy,
+        .hero-side {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .header h1 {
+            font-size: clamp(2.2rem, 3vw, 3.4rem);
+            font-weight: 700;
+            line-height: 1.06;
+            letter-spacing: -0.04em;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+            max-width: 860px;
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-metric {
+            background: rgba(8, 13, 27, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 18px 20px;
+        }
+
+        .hero-metric strong {
+            display: block;
+            font-size: 1.45rem;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hero-metric span {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .section {
+            width: 100%;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 24px;
+            padding: 30px 34px;
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f4f7ff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section h2::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-2));
+            border-radius: 4px;
+        }
+
+        .intro-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
+            gap: 22px;
+        }
+
+        .intro-panel {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 24px;
+        }
+
+        .intro-panel h3 {
+            font-size: 1.15rem;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .intro-panel p {
+            font-size: 0.98rem;
+            color: var(--text-soft);
+            line-height: 1.8;
+        }
+
+        .intro-panel p + p {
+            margin-top: 12px;
+        }
+
+        .info-grid,
+        .feature-grid,
+        .alert-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-grid,
+        .feature-grid,
+        .alert-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            min-height: 148px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(109, 124, 255, 0.28);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+        }
+
+        .card h3,
+        .card h4 {
+            color: #f3f7ff;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        .status-card {
+            border-left: 3px solid var(--accent);
+        }
+
+        .status-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .status-card.danger {
+            border-left-color: var(--danger);
+        }
+
+        .status-card.success {
+            border-left-color: var(--success);
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.12);
+            border: 1px solid rgba(109, 124, 255, 0.22);
+            color: #dbe4ff;
+            font-size: 0.88rem;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        .visual-card {
+            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 22px;
+            padding: 22px;
+        }
+
+        .visual-card h3 {
+            font-size: 1rem;
+            color: #f5f8ff;
+            margin-bottom: 10px;
+        }
+
+        .visual-card p {
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            line-height: 1.65;
+            margin-bottom: 16px;
+        }
+
+        .visual-image-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 260px;
+            padding: 18px;
+            background: rgba(7, 11, 21, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .visual-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            object-fit: contain;
+            max-width: 442px;
+        }
+
+        .download-section {
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.26) 0%, rgba(21, 196, 255, 0.14) 100%),
+                var(--panel-strong);
+            border: 1px solid rgba(109, 124, 255, 0.22);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .download-section h2 {
+            color: #fff;
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+            justify-content: center;
+        }
+
+        .download-section h2::before {
+            display: none;
+        }
+
+        .download-section > p {
+            color: #d2ddff;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            min-width: 220px;
+            padding: 1.25rem 2.5rem;
+            border-radius: 14px;
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #fff;
+            box-shadow: 0 14px 35px rgba(20, 35, 95, 0.45);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 42px rgba(12, 20, 58, 0.56);
+        }
+
+        .download-info {
+            background: rgba(8, 12, 23, 0.46);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .download-info p {
+            color: #d8e3ff;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .download-info strong {
+            font-weight: 600;
+        }
+
+        .footer {
+            background: rgba(9, 13, 24, 0.78);
+            backdrop-filter: blur(16px);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .header,
+            .intro-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-side {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                border-radius: 24px;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .section {
+                padding: 1.75rem;
+            }
+
+            .hero-side,
+            .info-grid,
+            .feature-grid,
+            .alert-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <nav class="menu">
+                <a href="index.html" class="menu-link">Home</a>
+                <a href="sobre.html" class="menu-link">Sobre</a>
+                <a href="downloads.html" class="menu-link">Downloads</a>
+                <div class="menu-dropdown">
+                    <button class="menu-dropdown-toggle" type="button" aria-expanded="false">Soluções</button>
+                    <div class="menu-dropdown-content">
+                        <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
+                        <a href="gerador-certificado-digital.html" class="active">GERADOR DE CERTIFICADO DIGITAL</a>
+                        <a href="gerenciador-impressoras.html">GERENCIADOR DE IMPRESSORAS</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="header">
+            <div class="hero-copy">
+                <div class="hero-badge">Aplicação auxiliar para homologação, testes e desenvolvimento fiscal</div>
+                <h1>Gerador de Certificado Digital</h1>
+                <p>Aplicativo criado para gerar um certificado digital de uso técnico, permitindo abrir o caixa em NFCe e realizar emissões em homologação e contingência para fins de teste, análise visual do cupom fiscal e validação de comportamento do sistema em ambientes controlados.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-metric">
+                    <strong>NFCe / NFe</strong>
+                    <span>apoia cenários de homologação, contingência e validações operacionais em ambiente de teste</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>QR Code 3.0</strong>
+                    <span>como não gera CSC Token, é preciso informar a versão do QR Code como 3.0</span>
+                </div>
+                <div class="hero-metric">
+                    <strong>Uso técnico</strong>
+                    <span>focado em simulação, visualização de cupons e apoio ao atendimento sem validade jurídica</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>Visão de Uso</h2>
+                <div class="intro-layout">
+                    <div class="intro-panel">
+                        <h3>Ferramenta para cenários controlados de emissão fiscal</h3>
+                        <p>O Gerador de Certificado Digital foi pensado para apoiar atendimentos técnicos em situações nas quais é necessário abrir o caixa em NFCe, emitir notas em homologação, testar contingência e validar o comportamento visual do cupom fiscal sem depender de um certificado oficial.</p>
+                        <p>Ele também pode ser utilizado em ambientes de desenvolvimento para verificar regras de impressão, conferir layout de informações fiscais e simular cenários operacionais onde o cupom virtual esteja ativo na máquina, ajudando no suporte e na análise funcional do PDV.</p>
+                    </div>
+                    <div class="info-grid">
+                        <div class="card">
+                            <h3>Abertura de Caixa em NFCe</h3>
+                            <p>Permite que o caixa seja aberto em fluxo de NFCe para testes práticos em ambientes de homologação.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Emissão em Homologação</h3>
+                            <p>Possibilita emitir NFCe e NFe em cenários de teste e contingência para apoio ao atendimento técnico.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Visualização de Cupom</h3>
+                            <p>Quando o cupom virtual estiver ativo, é possível visualizar como as informações serão apresentadas no cupom fiscal.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Validação de Layout</h3>
+                            <p>Ajuda a verificar como campos e informações fiscais serão impressos antes de um cenário real de produção.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Regras Técnicas</h2>
+                <div class="feature-grid">
+                    <div class="card status-card">
+                        <h4>Certificado sem CSC Token</h4>
+                        <p>Este aplicativo não gera o CSC Token, portanto é necessário configurar a versão do QR Code como 3.0 no ambiente utilizado.</p>
+                    </div>
+                    <div class="card status-card warning">
+                        <h4>Sem XML de Vendas</h4>
+                        <p>Não é possível gerar os XMLs de vendas com este certificado, pois o foco não é substituir um ambiente fiscal oficial.</p>
+                    </div>
+                    <div class="card status-card success">
+                        <h4>Emissão para Teste</h4>
+                        <p>É possível emitir NFCe e NFe dessa forma, facilitando análises, homologações e conferências de comportamento do sistema.</p>
+                    </div>
+                    <div class="card status-card">
+                        <h4>Cupom Virtual</h4>
+                        <p>Quando o cupom virtual estiver ativo na máquina, o técnico pode visualizar o cupom fiscal emitido para análise visual.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Atenção</h2>
+                <div class="alert-grid">
+                    <div class="card status-card danger">
+                        <h3>Sem Validade Jurídica</h3>
+                        <p>Este aplicativo gera um certificado digital sem validade jurídica e sem assinatura de qualquer órgão certificador.</p>
+                    </div>
+                    <div class="card status-card warning">
+                        <h3>Uso Exclusivo</h3>
+                        <p>O certificado criado é destinado exclusivamente para homologação, testes de sistemas e desenvolvimento.</p>
+                    </div>
+                    <div class="card status-card danger">
+                        <h3>Nunca use em Produção</h3>
+                        <p>Não utilize este certificado em ambiente de produção, pois ele não possui validade perante a ICP-Brasil e não substitui um certificado oficial.</p>
+                    </div>
+                    <div class="card status-card">
+                        <h3>Ciência do Usuário</h3>
+                        <p>Ao prosseguir com o uso da ferramenta, entende-se que o responsável está ciente e de acordo com essas condições.</p>
+                    </div>
+                </div>
+                <div class="pill-row">
+                    <div class="pill">Ambientes de homologação</div>
+                    <div class="pill">Testes de sistemas</div>
+                    <div class="pill">Desenvolvimento</div>
+                    <div class="pill">Sem validade perante a ICP-Brasil</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🖼️ Exibição Visual</h2>
+                <div class="visual-grid">
+                    <div class="visual-card">
+                        <h3>Tela da aplicação</h3>
+                        <p>Imagem de referência do Gerador de Certificado Digital utilizado em cenários de homologação, testes e validação visual de emissões fiscais em ambiente controlado.</p>
+                        <div class="visual-image-wrap">
+                            <img src="cert.png" alt="Tela do Gerador de Certificado Digital" class="visual-image" width="442" height="423" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <h2>⬇️ Download</h2>
+                <p>Baixe o Gerador de Certificado Digital</p>
+                <div class="download-buttons">
+                    <a href="Gerador de certificado.exe" class="download-btn" download>⬇ Baixar Gerador de Certificado</a>
+                </div>
+                <div class="download-info">
+                    <p><strong>Importante:</strong></p>
+                    <p>Utilize esta ferramenta apenas para homologação, testes e desenvolvimento. Não use em produção e sempre configure a versão do QR Code como 3.0 quando esse certificado estiver em uso.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const willOpen = !dropdown.classList.contains('open');
+
+                document.querySelectorAll('.menu-dropdown').forEach(item => {
+                    item.classList.remove('open');
+                    const itemToggle = item.querySelector('.menu-dropdown-toggle');
+                    if (itemToggle) {
+                        itemToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                if (willOpen) {
+                    dropdown.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
