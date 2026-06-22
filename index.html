@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurador Oficial PDV</title>
+    <title>Configurador Oficial PDV - Eclética Food</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -333,7 +333,7 @@
             font-size: 1.15rem;
             color: #f5f8ff;
             margin-bottom: 12px;
-            }
+        }
 
         .intro-panel p {
             font-size: 0.98rem;
@@ -893,7 +893,7 @@
             <div class="hero-copy">
                 <div class="hero-badge">Automação técnica para implantação e suporte de uso interno</div>
                 <h1>Configurador Oficial PDV</h1>
-                <p>Solução desenvolvida para padronizar e agilizar a implantação, configuration e manutenção do sistema PDV Eclética Food, automatizando tarefas técnicas e concentrando recursos essenciais de rede, segurança, banco de dados, compartilhamentos, impressoras e infraestrutura Windows.</p>
+                <p>Solução desenvolvida para padronizar e agilizar a implantação, configuração e manutenção do sistema PDV Eclética Food, automatizando tarefas técnicas e concentrando recursos essenciais de rede, segurança, banco de dados, compartilhamentos, impressoras e infraestrutura Windows.</p>
                 <div class="action-buttons" style="margin-top: 24px;">
                     <a href="saiba-mais.html" class="nav-btn">Saiba mais</a>
                 </div>
@@ -921,14 +921,14 @@
                         <h3>Tela inicial de acesso</h3>
                         <p>Ao iniciar o configurador, será solicitada a senha do dia exibida no gadget de senhas. Essa etapa funciona como controle de acesso inicial antes da abertura da interface principal do sistema.</p>
                         <div class="showcase-image-wrap">
-                            <img src="Senha.png.png" alt="Tela inicial de senha do Configurador Oficial PDV" class="showcase-image senha" width="310" height="150" loading="lazy">
+                            <img src="Senha.png" alt="Tela inicial de senha do Configurador Oficial PDV" class="showcase-image senha" width="310" height="150" loading="lazy">
                         </div>
                     </div>
                     <div class="showcase-card">
                         <h3>Tela principal do configurador</h3>
                         <p>Depois da validação da senha, o sistema abre a tela principal com os recursos de configuração, automação, manutenção, downloads, checklists e operações técnicas que compõem o fluxo de suporte do Configurador Oficial PDV.</p>
                         <div class="showcase-image-wrap">
-                            <img src="Config.png.png" alt="Tela principal do Configurador Oficial PDV" class="showcase-image config" width="650" height="711" loading="lazy">
+                            <img src="Config.png" alt="Tela principal do Configurador Oficial PDV" class="showcase-image config" width="650" height="711" loading="lazy">
                         </div>
                     </div>
                 </div>
@@ -1033,15 +1033,6 @@
             });
         }
 
-        function transitionHeroSlide(index) {
-            heroMetrics.forEach(metric => metric.card.classList.add('is-changing'));
-
-            window.setTimeout(() => {
-                renderHeroSlide(index);
-                heroMetrics.forEach(metric => metric.card.classList.remove('is-changing'));
-            }, 220);
-        }
-
         window.addEventListener('load', updateHeroMetricHeights);
         window.addEventListener('resize', updateHeroMetricHeights);
 
@@ -1083,7 +1074,6 @@
                 }
             });
         });
-
     </script>
 </body>
 </html>
