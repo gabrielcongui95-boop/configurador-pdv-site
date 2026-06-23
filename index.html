@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurador Oficial PDV - Eclética Food</title>
+    <title>Configurador Oficial PDV - Eclética Food</title> 
     <link class="favicon" rel="icon" type="image/x-icon" href="logo.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        
         * {
             margin: 0;
             padding: 0;
@@ -161,6 +162,11 @@
             font-weight: 600;
             transition: all 0.25s ease;
         }
+        .menu-icon {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
 
         .menu-dropdown-content a:hover,
         .menu-dropdown-content a.active {
@@ -202,6 +208,12 @@
             max-width: 980px;
         }
 
+        .hero-main-icon {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -239,6 +251,19 @@
             display: grid;
             gap: 14px;
             grid-auto-rows: 1fr;
+        }
+        .hero-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+       
+        .section-title-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            margin-left: auto;
         }
 
         .hero-metric {
@@ -893,10 +918,13 @@
         <div class="header" id="home">
             <div class="hero-copy">
                 <div class="hero-badge">Automação técnica para implantação e suporte de uso interno</div>
+                <div class="hero-title-wrapper">
                 <h1>Configurador Oficial PDV</h1>
+                <img src="logo.ico", class="hero-main-icon" alt="Ícone Globinho">
+                </div> 
                 <p>Solução desenvolvida para padronizar e agilizar a implantação, configuration e manutenção do sistema PDV Eclética Food, automatizando tarefas técnicas e concentrando recursos essenciais de rede, segurança, banco de dados, compartilhamentos, impressoras e infraestrutura Windows.</p>
                 <div class="action-buttons" style="margin-top: 24px;">
-                    <a href="saiba-mais.html" class="nav-btn">Saiba mais</a>
+                     <a href="saiba-mais.html" class="nav-btn">Saiba mais</a>
                 </div>
             </div>
             <div class="hero-side">
