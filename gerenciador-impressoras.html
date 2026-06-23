@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador de Impressoras - Configurador Oficial PDV</title>
+    <link class="favicon" rel="icon" type="image/x-icon" href="imp.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -207,6 +208,24 @@
             font-size: 0.88rem;
             margin-bottom: 18px;
             letter-spacing: 0.02em;
+        }
+        .hero-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .hero-side {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 14px;
+            grid-auto-rows: 1fr;
+        }
+        .hero-main-icon {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
         }
 
         .header h1 {
@@ -573,7 +592,10 @@
         <div class="header">
             <div class="hero-copy">
                 <div class="hero-badge">Aplicação auxiliar para implantação rápida de impressoras no ambiente PDV</div>
+                <div class="hero-title-wrapper">
                 <h1>Gerenciador de Impressoras</h1>
+                <img src="imp.ico", class="hero-main-icon" alt="Ícone Globinho">
+                </div>
                 <p>Ferramenta desenvolvida para facilitar a instalação de várias impressoras de rede de forma sequencial, com driver genérico, criação de impressora virtual padrão, checklist final de segurança e compartilhamento, além de recursos de exportação e importação para agilizar implantações em massa.</p>
             </div>
             <div class="hero-side">
