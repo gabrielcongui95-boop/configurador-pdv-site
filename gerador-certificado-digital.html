@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de Certificado Digital - Configurador Oficial PDV</title>
+    <link class="favicon" rel="icon" type="image/x-icon" href="logo.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -225,11 +226,23 @@
             line-height: 1.7;
             max-width: 860px;
         }
+        .hero-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        .hero-main-icon {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
 
         .hero-side {
             display: grid;
             gap: 14px;
         }
+        
 
         .hero-metric {
             background: rgba(8, 13, 27, 0.72);
@@ -579,9 +592,15 @@
                 <div class="menu-dropdown">
                     <button class="menu-dropdown-toggle" type="button" aria-expanded="false">Soluções</button>
                     <div class="menu-dropdown-content">
-                        <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
-                        <a href="gerador-certificado-digital.html" class="active">GERADOR DE CERTIFICADO DIGITAL</a>
-                        <a href="gerenciador-impressoras.html">GERENCIADOR DE IMPRESSORAS</a>
+                        <a href="outras-aplicacoes.html" class="active">
+                            MONITOR DO PEDIDOS WEB
+                        </a>
+                        <a href="gerador-certificado-digital.html">
+                            GERADOR DE CERTIFICADO DIGITAL
+                        </a>
+                        <a href="gerenciador-impressoras.html">
+                            GERENCIADOR DE IMPRESSORAS
+                        </a>
                     </div>
                 </div>
             </nav>
@@ -590,7 +609,10 @@
         <div class="header">
             <div class="hero-copy">
                 <div class="hero-badge">Aplicação auxiliar para homologação, testes e desenvolvimento fiscal</div>
+                <div class="hero-title-wrapper">
                 <h1>Gerador de Certificado Digital</h1>
+                <img src="cert.ico", class="hero-main-icon" alt="Ícone Globinho">
+                </div>
                 <p>Aplicativo criado para gerar um certificado digital de uso técnico, permitindo abrir o caixa em NFCe e realizar emissões em homologação e contingência para fins de teste, análise visual do cupom fiscal e validação de comportamento do sistema em ambientes controlados.</p>
             </div>
             <div class="hero-side">
