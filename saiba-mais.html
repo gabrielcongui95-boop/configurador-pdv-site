@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saiba Mais - Configurador Oficial PDV</title>
+    <title>Saiba Mais - Dicionário de Funções</title>
     <link class="favicon" rel="icon" type="image/x-icon" href="logo.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -74,6 +74,7 @@
             gap: 20px;
         }
 
+        /* Topbar com Menu Padrão e Dropdown */
         .topbar {
             width: 100%;
             display: flex;
@@ -160,6 +161,7 @@
             color: #ffffff;
         }
 
+        /* Layout do Cabeçalho Padrão */
         .header {
             width: 100%;
             min-height: 220px;
@@ -249,300 +251,208 @@
             font-size: 0.92rem;
         }
 
+        /* Seção de Conteúdo e Barra de Busca */
         .content {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
             width: 100%;
         }
 
-        .section {
+        .search-container {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 4px;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 360px;
+            width: 30%;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 20px;
+            background: rgba(9, 14, 26, 0.85);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            backdrop-filter: blur(8px);
+            transition: all 0.25s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(109, 124, 255, 0.2);
+            background: rgba(13, 22, 42, 0.95);
+        }
+
+        /* Estrutura do Accordion (Menus Expansíveis) */
+        .section-accordion {
             width: 100%;
             background: var(--panel);
             backdrop-filter: blur(18px);
-            border-radius: 24px;
-            padding: 30px 34px;
+            border-radius: 22px;
             border: 1px solid var(--panel-border);
             box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: border-color 0.3s ease;
         }
 
-        .section h2 {
-            font-size: 1.5rem;
+        .section-accordion:hover {
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .accordion-trigger {
+            width: 100%;
+            padding: 24px 32px;
+            background: transparent;
+            border: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            text-align: left;
+            outline: none;
+        }
+
+        .accordion-title {
+            font-size: 1.4rem;
             font-weight: 600;
             color: #f4f7ff;
-            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        .section h2::before {
+        .accordion-title::before {
             content: '';
-            width: 6px;
-            height: 28px;
+            width: 5px;
+            height: 24px;
             background: linear-gradient(180deg, var(--accent), var(--accent-2));
             border-radius: 4px;
         }
 
-        .intro-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.5fr) minmax(380px, 1fr);
-            gap: 22px;
-            align-items: stretch;
-            margin-bottom: 22px;
-        }
-
-        .intro-panel,
-        .project-grid,
-        .quick-highlights {
-            min-width: 0;
-        }
-
-        .intro-panel {
-            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
-            border: 1px solid rgba(148, 163, 184, 0.10);
-            border-radius: 22px;
-            padding: 24px 24px 22px;
-        }
-
-        .intro-panel h3 {
-            font-size: 1.15rem;
-            color: #f5f8ff;
-            margin-bottom: 12px;
-        }
-
-        .intro-panel p {
-            font-size: 0.98rem;
-            color: var(--text-soft);
-            line-height: 1.78;
-        }
-
-        .intro-panel p + p {
-            margin-top: 12px;
-        }
-
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .info-card {
-            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
-            padding: 18px;
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.10);
-            transition: all 0.3s ease;
-            min-height: 96px;
-            display: flex;
-            align-items: center;
-        }
-
-        .info-card:hover,
-        .highlight-card:hover,
-        .task-card:hover,
-        .accordion-item:hover {
-            transform: translateY(-4px);
-            border-color: rgba(109, 124, 255, 0.28);
-            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
-        }
-
-        .info-card h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #f3f7ff;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .quick-highlights {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 22px;
-        }
-
-        .highlight-card {
-            background: rgba(9, 14, 26, 0.84);
-            border: 1px solid rgba(148, 163, 184, 0.10);
-            border-radius: 18px;
-            padding: 18px;
-            transition: all 0.3s ease;
-        }
-
-        .highlight-card span {
-            display: block;
-            color: var(--accent-2);
-            font-size: 0.82rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
-
-        .highlight-card strong {
-            display: block;
-            color: #f8fbff;
-            font-size: 1rem;
-            margin-bottom: 8px;
-        }
-
-        .highlight-card p {
-            color: var(--text-soft);
-            font-size: 0.88rem;
-            line-height: 1.55;
-        }
-
-        .accordion {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .accordion-item {
-            background: rgba(10, 14, 25, 0.95);
-            border: 1px solid rgba(148, 163, 184, 0.14);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .accordion-btn {
-            width: 100%;
-            padding: 1.5rem 2rem;
-            background: linear-gradient(135deg, rgba(13, 19, 35, 1) 0%, rgba(8, 13, 24, 1) 100%);
-            border: none;
-            text-align: left;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #eef4ff;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .accordion-btn:hover {
-            background: linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(11, 17, 31, 1) 100%);
-        }
-
-        .accordion-btn .icon-wrap {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            border-radius: 12px;
+        .accordion-icon-indicator {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-soft);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
         }
 
-        .accordion-btn.active .icon-wrap {
+        .section-accordion:hover .accordion-icon-indicator {
+            background: rgba(109, 124, 255, 0.1);
+            color: #ffffff;
+        }
+
+        /* Estado aberto do Accordion */
+        .section-accordion.is-open .accordion-icon-indicator {
             transform: rotate(180deg);
+            background: rgba(21, 196, 255, 0.15);
+            color: var(--accent-2);
+            border-color: rgba(21, 196, 255, 0.25);
         }
 
-        .accordion-btn .icon-wrap svg {
-            width: 20px;
-            height: 20px;
-            color: white;
-        }
-
-        .accordion-content {
+        .accordion-panel {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(8, 11, 21, 0.96);
         }
 
-        .accordion-content-inner {
-            padding: 2rem;
-            border-top: 1px solid rgba(148, 163, 184, 0.10);
+        .accordion-content-body {
+            padding: 0 32px 32px 32px;
         }
 
-        .task-list {
+        /* Grid Unificado e Estilo Otimizado dos Cards */
+        .functions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 16px;
+            width: 100%;
         }
 
-        .task-card {
-            background: linear-gradient(135deg, rgba(12, 18, 33, 0.96) 0%, rgba(9, 14, 26, 0.98) 100%);
-            padding: 1.25rem;
-            border-radius: 14px;
-            border: 1px solid rgba(148, 163, 184, 0.08);
-            border-left: 3px solid var(--accent);
-            transition: all 0.3s ease;
-        }
-
-        .task-card h5 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #f2f6ff;
-            margin-bottom: 0.5rem;
-        }
-
-        .task-card p {
-            font-size: 0.85rem;
-            color: var(--text-soft);
-            line-height: 1.5;
-        }
-
-        .task-card code {
-            background: rgba(109, 124, 255, 0.16);
-            color: #cfd7ff;
-            padding: 0.15rem 0.4rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-family: 'Inter', monospace;
-        }
-
-        .category-title {
-            color: #dce7ff;
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin: 1.25rem 0 0.75rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+        .function-card {
+            background: rgba(9, 14, 26, 0.75);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 20px;
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .category-title:first-child {
-            margin-top: 0;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
             gap: 14px;
-            align-items: center;
+            align-items: flex-start;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
         }
 
-        .nav-btn {
-            display: inline-flex;
+        .function-card:hover {
+            border-color: rgba(109, 124, 255, 0.3);
+            background: rgba(13, 20, 38, 0.92);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-icon {
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 240px;
-            padding: 1.25rem 2rem;
-            background: rgba(9, 14, 26, 0.92);
-            color: #eef4ff;
-            border: 1px solid rgba(109, 124, 255, 0.24);
-            border-radius: 16px;
-            text-decoration: none;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            flex-shrink: 0;
         }
 
-        .nav-btn:hover {
-            transform: translateY(-3px);
-            background: rgba(13, 20, 36, 0.98);
-            border-color: rgba(21, 196, 255, 0.34);
-            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+        .icon-rede { background: rgba(21, 196, 255, 0.1); color: var(--accent-2); }
+        .icon-acessos { background: rgba(255, 185, 56, 0.1); color: #ffb938; }
+        .icon-seguranca { background: rgba(49, 208, 170, 0.1); color: var(--success); }
+        .icon-firewall { background: rgba(255, 92, 92, 0.1); color: #ff5c5c; }
+        .icon-portas { background: rgba(109, 124, 255, 0.1); color: var(--accent); }
+        .icon-sistema { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+
+        .card-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.3;
+        }
+
+        .card-desc {
+            font-size: 0.88rem;
+            color: var(--text-soft);
+            line-height: 1.45;
+        }
+
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: rgba(9, 14, 26, 0.4);
+            border-radius: 14px;
+            color: var(--text-soft);
+            border: 1px solid var(--panel-border);
+            grid-column: 1 / -1;
+            font-size: 0.95rem;
         }
 
         .footer {
@@ -553,6 +463,7 @@
             text-align: center;
             border: 1px solid rgba(148, 163, 184, 0.10);
             box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+            margin-top: 10px;
         }
 
         .footer p {
@@ -561,47 +472,20 @@
         }
 
         @media (max-width: 1200px) {
-            .header,
-            .intro-layout,
-            .quick-highlights {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-side {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
+            .header { grid-template-columns: 1fr; }
+            .hero-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-
-            .menu {
-                width: 100%;
-                justify-content: center;
-                flex-wrap: wrap;
-                border-radius: 24px;
-            }
-
-            .header {
-                padding: 2rem 1.5rem;
-            }
-
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .section {
-                padding: 1.75rem;
-            }
-
-            .hero-side,
-            .project-grid,
-            .quick-highlights,
-            .task-list {
-                grid-template-columns: 1fr;
-            }
+            body { padding: 1rem; }
+            .menu { width: 100%; justify-content: center; flex-wrap: wrap; border-radius: 24px; }
+            .header { padding: 2rem 1.5rem; }
+            .header h1 { font-size: 1.8rem; }
+            .accordion-trigger { padding: 20px; }
+            .accordion-content-body { padding: 0 20px 20px 20px; }
+            .hero-side, .functions-grid { grid-template-columns: 1fr; }
+            .search-container { justify-content: center; }
+            .search-box { width: 100%; min-width: 0; }
         }
     </style>
 </head>
@@ -625,12 +509,9 @@
 
         <div class="header">
             <div class="hero-copy">
-                <div class="hero-badge">Visão detalhada da plataforma e dos recursos do configurador</div>
+                <div class="hero-badge">Visão detalhada de todas as tarefas e recursos</div>
                 <h1>Saiba Mais</h1>
                 <p>Esta página concentra a visão completa do Configurador Oficial PDV, reunindo as principais características do projeto e as funcionalidades que compõem o fluxo de implantação, suporte e manutenção do ambiente operacional.</p>
-                <div class="action-buttons" style="margin-top: 24px;">
-                    <a href="index.html" class="nav-btn">Voltar para a Home</a>
-                </div>
             </div>
             <div class="hero-side">
                 <div class="hero-metric">
@@ -639,488 +520,385 @@
                 </div>
                 <div class="hero-metric">
                     <strong>Funcionalidades</strong>
-                    <span>veja em detalhes os grupos de recursos disponíveis no aplicativo</span>
+                    <span>veja em detalhes de todas as abas e recursos disponíveis no aplicativo</span>
                 </div>
                 <div class="hero-metric">
-                    <strong>Objetividade</strong>
-                    <span>a home permanece enxuta, enquanto esta página centraliza o conteúdo detalhado</span>
+                    <strong>Segurança</strong>
+                    <span>programa desenvolvido somente para uso dos analistas, protegido por senha</span>
                 </div>
             </div>
         </div>
 
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Pesquisar rotina ou função...">
+            </div>
+        </div>
+
         <div class="content">
-            <div class="section">
-                <h2>📋 Principais Características</h2>
-                <div class="intro-layout">
-                    <div class="intro-panel">
-                        <h3>Uma central de configuração técnica para o ambiente PDV</h3>
-                        <p>O Configurador Oficial PDV foi estruturado para executar ajustes operacionais que normalmente exigem diversos acessos manuais ao Windows, ao PowerShell, ao firewall, ao registro e aos instaladores do ecossistema Eclética Food. A interface concentra procedimentos que vão desde criação de usuários administrativos e compartilhamentos de pasta até liberação de portas, ajuste fino de rede, exclusões de segurança, configurações de impressoras e reparos do sistema.</p>
-                        <p>Pelo próprio código, o programa também atua como ferramenta de padronização: aplica regras pré-definidas para ambientes de implantação, valida configurações sensíveis, disponibiliza checklists de pré e pós-instalação, oferece rotinas de dump/importação MySQL, automatiza instalação de impressoras por IP, prepara impressoras virtuais e organiza atalhos operacionais para recursos usados diariamente pelo suporte técnico.</p>
-                    </div>
-                    <div class="project-grid">
-                        <div class="info-card">
-                            <h3>🧠 Automação de Ambiente</h3>
-                        </div>
-                        <div class="info-card">
-                            <h3>🌐 Rede e Conectividade</h3>
-                        </div>
-                        <div class="info-card">
-                            <h3>🛡️ Segurança e Compatibilidade</h3>
-                        </div>
-                        <div class="info-card">
-                            <h3>Configuração de Impressoras</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="quick-highlights">
-                    <div class="highlight-card">
-                        <span>Foco operacional</span>
-                        <strong>Implantação e suporte</strong>
-                        <p>Projetado para o fluxo real de atendimento remoto em clientes PDV.</p>
-                    </div>
-                    <div class="highlight-card">
-                        <span>Base técnica</span>
-                        <strong>Windows e PowerShell</strong>
-                        <p>Aplica ajustes de sistema, rede, serviços, firewall e registro com lógica centralizada.</p>
-                    </div>
-                    <div class="highlight-card">
-                        <span>Produtividade</span>
-                        <strong>Checklists internos</strong>
-                        <p>Padroniza cenários de pré e pós-instalação com menor risco operacional.</p>
-                    </div>
-                    <div class="highlight-card">
-                        <span>Atualizações Contínuas</span>
-                        <strong>Fácil atualização</strong>
-                        <p>O sistema é constantemente aprimorado com novas funcionalidades, otimizações e correções, mantendo o ambiente sempre mais alinhado com a operação.</p>
+            
+            <div class="section-accordion" id="acc-checklist">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">🔍 Tarefas do Checklist</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridChecklist">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
                     </div>
                 </div>
             </div>
 
-            <div class="section">
-                <h2>🔍 Funcionalidades</h2>
-                <div class="accordion">
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>👤 Acessos e Usuários</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Criar User Eclética</h5>
-                                        <p>Usuário: <code>ECLETICA</code><br>Senha: <code>ecletica3367</code></p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>User Eclética Win Server</h5>
-                                        <p>Versão com senha: <code>Srv@9281!Tech</code></p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Ativar Compartilhamento com Senha</h5>
-                                        <p>Configura proteção por senha</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>UAC: Nível Mínimo</h5>
-                                        <p>Diminui o controle de contas de usuário</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🌐 Rede e IP</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="category-title">📌 Configuração de IP</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Fixar IP</h5>
-                                        <p>Configura IP estático com reversão automática</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">📁 Compartilhamento</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Compartilhamento ArquivosSistema</h5>
-                                        <p>Pasta com permissões completas</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Rede: Perfil Particular</h5>
-                                        <p>Facilita descoberta de dispositivos</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Descoberta de Rede</h5>
-                                        <p>Habilita visibilidade na rede</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">🔧 Compatibilidade</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Criptografia 40/56 bits</h5>
-                                        <p>Sistemas legados</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Habilitar SMB 1.0</h5>
-                                        <p>Impressoras e roteadores antigos</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🔥 Firewall e Portas</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="category-title">🛡️ Controle do Firewall</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Desativar Windows Firewall</h5>
-                                        <p>Todas as redes: Domínio, Privada, Pública</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Ativar Compartilhamento</h5>
-                                        <p>Arquivo e impressora</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">🚪 Liberação de Portas</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Porta MySQL: <code>3306</code></h5>
-                                        <p>Cria regras IN/OUT no firewall</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Portas PDV: <code>8080</code></h5>
-                                        <p>Comunicação entre PDVs</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Portas Web: <code>443/123</code></h5>
-                                        <p>HTTPS e NTP seguro</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">✅ Check-Lists</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>CheckList_PRE</h5>
-                                        <p>Pré-configuração rede/firewall</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>CheckList_POS</h5>
-                                        <p>Configuração completa para PDV</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🗄️ MySQL</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Liberar Porta 3306</h5>
-                                        <p>Cria regras IN/OUT no firewall</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Monitoramento de Status</h5>
-                                        <p>Verifica serviço em tempo real</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Dump e Importação</h5>
-                                        <p>Backup e restauração</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🖨️ Impressoras</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Instalação de múltiplas impressoras por IP</h5>
-                                        <p>Permite configurar várias impressoras de rede no mesmo processo, agilizando implantações em lojas com mais de um equipamento.</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Impressora virtual</h5>
-                                        <p>Realiza a preparação e instalação de impressora virtual quando o ambiente exige emissão ou testes sem dependência imediata do hardware físico.</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Checklist completo de impressoras</h5>
-                                        <p>Executa verificações para validar instalação, comunicação, padronização e funcionamento das impressoras no ambiente PDV.</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Padronização de nomenclatura</h5>
-                                        <p>Adiciona o nome EPSON no início da impressora quando necessário, mantendo o padrão visual e técnico adotado no suporte.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🛡️ Segurança</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Desativar Controle Inteligente</h5>
-                                        <p>Windows 11 - bloqueio de apps</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Exclusão Defender: Wineclt</h5>
-                                        <p>Evita bloqueios do sistema</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Configurador SSL/TLS</h5>
-                                        <p>SSL 3.0, TLS 1.1/1.2 para SEFAZ</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>⚙️ Sistema</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="category-title">⚡ Energia e Desempenho</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Alta Performance</h5>
-                                        <p>Força o computador a usar 100% da performance</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>USB: Impedir Suspensão</h5>
-                                        <p>Evita problemas com periféricos</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Desativar Inicialização Rápida</h5>
-                                        <p>Evita erros no MySQL</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">🔧 Manutenção</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Sincronizar Data/Hora</h5>
-                                        <p>Força sincronismo Data/Hora</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Limpeza de Cache</h5>
-                                        <p>Temp, Prefetch e %temp%</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>WMI_RESET</h5>
-                                        <p>Repara repositório corrompido</p>
-                                    </div>
-                                </div>
-
-                                <div class="category-title">🛠️ Correção de Problemas</div>
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>ERRO 709 (Windows 11)</h5>
-                                        <p>Corrige erro de impressão</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>🔧 Utilitários Rápidos</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Gerenciar Credenciais</h5>
-                                        <p>Abre gerenciador do Windows</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Políticas de Senha (GPO)</h5>
-                                        <p>Orienta e abre editor</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>.NET Framework</h5>
-                                        <p>Abre configuração de recursos</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Pasta PRINTERS</h5>
-                                        <p>Acesso direto à pasta</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Clear Spool</h5>
-                                        <p>Limpa fila de impressão</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <button class="accordion-btn">
-                            <span>📦 Instaladores</span>
-                            <div class="icon-wrap">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </div>
-                        </button>
-                        <div class="accordion-content">
-                            <div class="accordion-content-inner">
-                                <div class="task-list">
-                                    <div class="task-card">
-                                        <h5>Setup Ecletica</h5>
-                                        <p>Instalação principal</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Pacote Full</h5>
-                                        <p>Todos os módulos</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Setup Fiscal / NFCe / NFe</h5>
-                                        <p>Módulos fiscais</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Setup MySQL / Apache</h5>
-                                        <p>Instalador MySQL / Instalador Apache64</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Ecletica BI</h5>
-                                        <p>Relatórios e analytics</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>RustDesk</h5>
-                                        <p>Acesso remoto para suporte</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>.NET Framework 4.5</h5>
-                                        <p>Framework necessário</p>
-                                    </div>
-                                    <div class="task-card">
-                                        <h5>Autenticador Balança</h5>
-                                        <p>Software que realiza teste em equipamentos</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <div class="section-accordion" id="acc-agendadores">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">⏱️ Agendadores de Tarefas</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridAgendadores">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
                     </div>
                 </div>
             </div>
+
+            <div class="section-accordion" id="acc-rede">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">🌐 Módulo de Rede Avançado</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridRede">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-accordion" id="acc-instaladores">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">📥 Central de Instaladores</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridInstaladores">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-accordion" id="acc-mysql">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">🗄️ Engine MySQL & Gestão de Dump</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridMysql">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-accordion" id="acc-utilitarios">
+                <button class="accordion-trigger" aria-expanded="false">
+                    <span class="accordion-title">🛠️ Utilitários & Diagnóstico Avançado</span>
+                    <span class="accordion-icon-indicator">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div class="accordion-panel">
+                    <div class="accordion-content-body">
+                        <main class="functions-grid" id="gridUtilitarios">
+                            <div class="no-results">Nenhuma rotina corresponde à sua pesquisa neste menu.</div>
+                        </main>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <div class="footer">
             <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
         </div>
     </div>
+
     <script>
-        document.querySelectorAll('.accordion-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const content = button.nextElementSibling;
-                const isOpen = button.classList.contains('active');
+        // Banco de Dados Unificado divido por Módulos/Menus
+        const bancoDadosFuncoes = {
+            checklist: [
+                { "label": "Criar User Eclética (Opcional)", "desc": "Cria o usuário padrão ECLETICA com a senha ecletica3367", "category": "Acessos" },
+                { "label": "User Eclética Win Server Pass: Srv@9281!Tech", "desc": "Cria o usuário ECLETICA com senha Srv@9281!Tech ", "category": "Acessos" },
+                { "label": "UAC: Nível Mínimo", "desc": "Diminui o Controle de Conta de Usuário (UAC).", "category": "Segurança" },
+                { "label": "Desativar Windows Firewall", "desc": "Desativa o Firewall Windows 10 e 11 (Pro/Home).", "category": "Firewall" },
+                { "label": "Compartilhamento ArquivosSistema (Pós instalação)", "desc": "Ativa o compartilhamento da pasta C:\\Wineclt\\ArquivosSistema na rede.", "category": "Rede" },
+                { "label": "Compartilhamento C:\\Wineclt (Pós instalação)", "desc": "Ativa o compartilhamento da pasta C:\\Wineclt na rede.", "category": "Rede" },
+                { "label": "Rede: Perfil Particular", "desc": "Altera o perfil da rede atual para Particular para facilitar descoberta.", "category": "Rede" },
+                { "label": "Rede: Ativar Compartilhamento", "desc": "Habilita as regras nativas de compartilhamento de arquivos.", "category": "Rede" },
+                { "label": "Criptografia 40/56 bits", "desc": "Reduz exigência de criptografia para compatibilidade com sistemas legados.", "category": "Segurança" },
+                { "label": "Ativar Compartilhamento com Senha", "desc": "Ativa a proteção por senha ajustando o nome da conta para o padrão em português.", "category": "Acessos" },
+                { "label": "Desativar Controle Inteligente de Aplicativos", "desc": "Desativa Controle Inteligente de Aplicativos (Função exclusiva para Windows 11).", "category": "Segurança" },
+                { "label": "Exclusão Defender: C:\\Wineclt", "desc": "Impede que o Windows Defender monitore a pasta principal do sistema.", "category": "Segurança" },
+                { "label": "Exclusão Defender: C:\\Wineclt\\ArquivosSistema", "desc": "Adiciona a ArquivosSistema à lista de exclusões do Windows Defender.", "category": "Segurança" },
+                { "label": "Configurador SSL/TLS", "desc": "Ativa SSL 3.0, TLS 1.1/1.2 e desativa validações de software para garantir comunicação com SEFAZ/TEF.", "category": "Segurança" },
+                { "label": "Portas PDV 8080 (TCP/UDP In/Out)", "desc": "Libera a porta 8080 (TCP/UDP) para Entrada e Saída.", "category": "Portas" },
+                { "label": "Portas Web 443/123 TCP/UDP In/Out (Opcional)", "desc": "Libera portas 443 e 123 (TCP/UDP) para Entrada e Saída.", "category": "Portas" },
+                { "label": "Liberar Sessões Nulas Rede (Opcional)", "desc": "Permite conexões de rede sem autenticação explícita em casos específicos.", "category": "Rede" },
+                { "label": "Descoberta de Rede (Firewall)", "desc": "Habilita a visibilidade do computador para outros dispositivos na rede.", "category": "Firewall" },
+                { "label": "Sincronizar Data/Hora (Opcional)", "desc": "Sincroniza DATA/HORA do sistema operacional.", "category": "Sistema" },
+                { "label": "Limpeza de Cache (Opcional)", "desc": "Limpa as pastas voláteis %temp%, TEMP e Prefetch.", "category": "Sistema" },
+                { "label": "Energia: Alta Performance (Opcional)", "desc": "Configura plano de Alto Desempenho energético do Windows.", "category": "Sistema" },
+                { "label": "USB: Impedir Suspensão Seletiva", "desc": "Impede que o Windows desligue as portas USB para economizar energia.", "category": "Sistema" },
+                { "label": "Desativar Inicialização Rápida", "desc": "Garante que o Windows desligue totalmente, evitando erros no serviço do MySQL.", "category": "Sistema" },
+                { "label": "Habilitar SMB 1.0 (Opcional)", "desc": "Habilita comunicação com dispositivos de rede antigos (impressoras e roteadores).", "category": "Rede" },
+                { "label": "Liberar Porta MySQL (3306)", "desc": "Abre a porta padrão do MySQL para que outras estações acessem o banco de dados.", "category": "Portas" },
+                { "label": "ERRO 709 (Windows 11)", "desc": "Corrige erro 709 do Windows 11 ajustando RPC de impressão via registro.", "category": "Sistema" },
+                { "label": "WMI_RESET", "desc": "Repara e recria o repositório WMI se estiver inconsistente.", "category": "Sistema" },
+                { "label": "CheckList_POS", "desc": "Ajustes de firewall, registro e compartilhamento para terminais POS.", "category": "Sistema" },
+                { "label": "Gerenciar Credenciais", "desc": "Abrir Gerenciador de Credenciais nativo do Windows.", "category": "Sistema" },
+                { "label": "Políticas de Senha (GPO)", "desc": "Orienta sobre quais opções alterar e abrir o Editor para Políticas de Senha local.", "category": "Sistema" },
+                { "label": ".NET Framework", "desc": "Abrir Recursos do Windows para configurar dependências .NET.", "category": "Sistema" },
+                { "label": "Pasta PRINTERS", "desc": "Abrir C:\\Windows\\System32\\spool\\PRINTERS.", "category": "Sistema" },
+                { "label": "Clear Spool", "desc": "Parar Spooler, limpar fila física e reiniciar serviço de impressão.", "category": "Sistema" }
+            ],
+            agendadores: [
+                { "label": "Sincronizador Loja", "desc": "Gerencia as tarefas recorrentes da operação local, mantendo a consistência dos dados do caixa.", "category": "Sistema" },
+                { "label": "Sincronizador Master", "desc": "Controla a comunicação e cargas de tabelas/produtos periódicas entre o servidor local e a central Master.", "category": "Rede" },
+                { "label": "Sincronizador BI / PedidosWeb", "desc": "Garante a persistência e a execução ininterrupta do monitor de delivery online e fluxo de BI.", "category": "Sistema" }
+            ],
+            rede: [
+                { "label": "Descoberta de Adaptadores", "desc": "Varseamento via psutil das placas de rede físicas para listagem direta na interface.", "category": "Rede" },
+                { "label": "Fixação de IP Estático", "desc": "Aplica IP, Máscara, Gateway e DNS, se em 15 segundos não houver internet no IPV4, o IP é revertido para dinâmico.", "category": "Rede" },
+                { "label": "Mecanismo Antiqueda (Rollback)", "desc": "Thread ativa que testa o ping externo; se falhar por erro, reverte a placa para DHCP.", "category": "Segurança" },
+                { "label": "Compartilhamento entre SERVIDOR X ESTAÇÃO", "desc": "É possível por meio do nome da máquina e IP criar as credenciais do windows facilmente, solucionando diversos problemas de compartilhamento de pastas e equipamentos instalados localmente.", "category": "Segurança" }
+            ],
+            instaladores: [
+                { "label": "Gerenciador de Impressoras", "desc": "Utilitário para instalação, mapeamento e gerenciamento em lote de impressoras térmicas e de produção.", "category": "Sistema" },
+                { "label": "Setup Eclética PDV", "desc": "Instalador principal do sistema de Ponto de Venda (PDV) para automação de faturamento e caixas.", "category": "Sistema" },
+                { "label": "Pacote Full Eclética", "desc": "Instalador completo contendo o sistema PDV, arquivos base de configuração e dependências essenciais do ambiente.", "category": "Sistema" },
+                { "label": "Setup do Módulo Fiscal", "desc": "Instala e configura os componentes fiscais necessários para a comunicação e emissão de cupons.", "category": "Segurança" },
+                { "label": "Setup Engine MySQL", "desc": "Instalador automatizado do banco de dados relacional MySQL para armazenamento local das tabelas do sistema.", "category": "Sistema" },
+                { "label": "Setup Servidor Apache x64", "desc": "Instala o servidor web Apache de 64 bits.", "category": "Rede" },
+                { "label": "Setup Módulo NFC-e", "desc": "Instalador do motor de emissão de Nota Fiscal de Consumidor Eletrônica para vendas diretas ao balcão.", "category": "Segurança" },
+                { "label": "Setup Módulo NF-e", "desc": "Instalador do módulo de Nota Fiscal Eletrônica utilizado para emissão de notas de faturamento, devolução e transferências.", "category": "Segurança" },
+                { "label": "Atualizador NFC-e", "desc": "Aplica pacotes de atualização de esquemas XML, DLLs fiscais e correções de rejeição para o módulo NFC-e.", "category": "Sistema" },
+                { "label": "Atualizador NF-e", "desc": "Aplica as últimas correções e atualizações de layout estrutural exigidas pela SEFAZ para o módulo NF-e.", "category": "Sistema" },
+                { "label": "Atualizador do Apache", "desc": "Atualiza os arquivos binários, configurações de porta e patches de segurança do servidor web local Apache.", "category": "Rede" },
+                { "label": "Eclética BI (Business Intelligence)", "desc": "Instala o motor de extração e sincronização de dados analíticos para relatórios gerenciais na nuvem.", "category": "Sistema" },
+                { "label": "Acesso Remoto RustDesk", "desc": "Instalação silenciosa do cliente de suporte remoto seguro para manutenção e diagnósticos rápidos de suporte.", "category": "Acessos" },
+                { "label": "Microsoft .NET Framework 4.5", "desc": "Instalador do componente estrutural do Windows, pré-requisito obrigatório para execução das ferramentas fiscais.", "category": "Sistema" },
+                { "label": "Módulo Eclética Cloud", "desc": "Instala o serviço responsável por trafegar dados de retaguarda, monitoramento de pedidos web e vendas para o servidor em nuvem.", "category": "Rede" },
+                { "label": "Autenticador de Balança", "desc": "Instala os drivers e bibliotecas de comunicação serial/TCP para leitura direta de peso integrada ao PDV.", "category": "Sistema" }
+            ],
+            mysql: [
+                { "label": "Importação de Backup (DUMP)", "desc": "Executa o comando que importa o DUMP dos bancos ecleticacaixa, ecleticavendas e ecleticaloja, desde que estejam na pasta raiz do sistema Wineclt.", "category": "Sistema" },
+                { "label": "Exportação de Backup (DUMP)", "desc": "Executa o comando que gera o arquivo DUMP dos bacos ecleticacaixa, ecleticavendas e ecleticaloja.", "category": "Sistema" },
+                { "label": "FLUSH HOSTS", "desc": "Comando que desbloqueia computadores/IPs que o MySQL bloqueou devido a muitas falhas de conexão, sem precisar reiniciar o banco de dados.", "category": "Sistema" }
+            ],
+            utilitarios: [
+                { "label": "Limpeza Crítica do Spooler", "desc": "Derruba o serviço, remove arquivos de impressão (.SPL e .SHD) corrompidos e restabelece a fila.", "category": "Sistema" },
+                { "label": "Recompilação de Repositório WMI", "desc": "Para o winmgmt, remove repositórios danificados e força a leitura correta de licenças e hardware.", "category": "Segurança" },
+                { "label": "Limpar cache do sistema", "desc": "Executa de forma encadeada a limpeza da pastas temp, %temp% e prefetch.", "category": "sistema" }
+            ]
+        };
 
-                document.querySelectorAll('.accordion-btn').forEach(item => item.classList.remove('active'));
-                document.querySelectorAll('.accordion-content').forEach(item => item.style.maxHeight = null);
+        // Mapeamento de Ícones SVG
+        const iconesCategoria = {
+            "Rede": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`,
+            "Acessos": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+            "Segurança": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+            "Firewall": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v6M15 9v6M9 15v6"/></svg>`,
+            "Portas": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="7" cy="7" r="1"/><circle cx="17" cy="7" r="1"/><circle cx="7" cy="17" r="1"/><circle cx="17" cy="17" r="1"/></svg>`,
+            "Sistema": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+        };
 
-                if (!isOpen) {
-                    button.classList.add('active');
-                    content.style.maxHeight = `${content.scrollHeight}px`;
-                }
+        // Função para renderizar os cards em suas respectivas tabelas/grids
+        function construirSistemasGrids() {
+            const mapeamentoGrids = {
+                checklist: document.getElementById('gridChecklist'),
+                agendadores: document.getElementById('gridAgendadores'),
+                rede: document.getElementById('gridRede'),
+                instaladores: document.getElementById('gridInstaladores'),
+                mysql: document.getElementById('gridMysql'),
+                utilitarios: document.getElementById('gridUtilitarios')
+            };
+
+            Object.keys(bancoDadosFuncoes).forEach(chaveMenu => {
+                const alvoGrid = mapeamentoGrids[chaveMenu];
+                if (!alvoGrid) return;
+
+                // Armazena a div no-results padrão
+                const noResultsDiv = alvoGrid.querySelector('.no-results');
+
+                bancoDadosFuncoes[chaveMenu].forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'function-card';
+                    card.setAttribute('data-label', item.label.toLowerCase());
+                    card.setAttribute('data-desc', item.desc.toLowerCase());
+
+                    const classeIcone = `icon-${item.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`;
+                    const svgIcone = iconesCategoria[item.category] || iconesCategoria['Sistema'];
+
+                    card.innerHTML = `
+                        <div class="card-icon ${classeIcone}">
+                            ${svgIcone}
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${item.label}</h3>
+                            <p class="card-desc">${item.desc}</p>
+                        </div>
+                    `;
+                    // Insere antes da div de "sem resultados"
+                    alvoGrid.insertBefore(card, noResultsDiv);
+                });
             });
-        });
+        }
 
-        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
-            const toggle = dropdown.querySelector('.menu-dropdown-toggle');
-            if (!toggle) return;
+        // Inicializa e controla a animação dos Menus Retráteis (Accordions) com exclusividade mútua
+        function gerenciarAccordions() {
+            document.querySelectorAll('.section-accordion').forEach(accordion => {
+                const trigger = accordion.querySelector('.accordion-trigger');
+                const panel = accordion.querySelector('.accordion-panel');
+                
+                // Força todos os painéis a iniciarem fechados na montagem inicial
+                panel.style.maxHeight = "0px";
 
-            toggle.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const willOpen = !dropdown.classList.contains('open');
+                trigger.addEventListener('click', () => {
+                    const isOpen = accordion.classList.contains('is-open');
+                    
+                    if (isOpen) {
+                        accordion.classList.remove('is-open');
+                        trigger.setAttribute('aria-expanded', 'false');
+                        panel.style.maxHeight = "0px";
+                    } else {
+                        // RECOLHE TODOS OS OUTROS MENUS ANTES DE ABRIR O ATUAL (Efeito Sanfona)
+                        document.querySelectorAll('.section-accordion').forEach(outroAccordion => {
+                            if (outroAccordion !== accordion) {
+                                outroAccordion.classList.remove('is-open');
+                                const outroTrigger = outroAccordion.querySelector('.accordion-trigger');
+                                const outroPanel = outroAccordion.querySelector('.accordion-panel');
+                                if (outroTrigger) outroTrigger.setAttribute('aria-expanded', 'false');
+                                if (outroPanel) outroPanel.style.maxHeight = "0px";
+                            }
+                        });
 
-                document.querySelectorAll('.menu-dropdown').forEach(item => {
-                    item.classList.remove('open');
-                    const itemToggle = item.querySelector('.menu-dropdown-toggle');
-                    if (itemToggle) {
-                        itemToggle.setAttribute('aria-expanded', 'false');
+                        accordion.classList.add('is-open');
+                        trigger.setAttribute('aria-expanded', 'true');
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                    }
+                });
+            });
+        }
+
+        // Recalcula as alturas dos painéis abertos (essencial ao mudar o filtro de busca)
+        function atualizarAlturasAbasAbertas() {
+            document.querySelectorAll('.section-accordion.is-open').forEach(accordion => {
+                const panel = accordion.querySelector('.accordion-panel');
+                if(panel) panel.style.maxHeight = panel.scrollHeight + "px";
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            construirSistemasGrids();
+            gerenciarAccordions();
+
+            // Lógica Avançada de Busca Global Interligada com os Menus
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.toLowerCase();
+
+                document.querySelectorAll('.section-accordion').forEach(accordion => {
+                    const cards = accordion.querySelectorAll('.function-card');
+                    const noResults = accordion.querySelector('.no-results');
+                    let encontrouNoMenu = false;
+
+                    cards.forEach(card => {
+                        const label = card.getAttribute('data-label');
+                        const desc = card.getAttribute('data-desc');
+
+                        if (label.includes(query) || desc.includes(query)) {
+                            card.style.display = 'flex';
+                            encontrouNoMenu = true;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    // Força a div de erro interno a sumir sempre
+                    if (noResults) noResults.style.display = 'none';
+
+                    const panel = accordion.querySelector('.accordion-panel');
+                    const trigger = accordion.querySelector('.accordion-trigger');
+                    
+                    if (query.length > 0) {
+                        if (encontrouNoMenu) {
+                            accordion.style.display = 'block'; // Exibe o menu inteiro
+                            accordion.classList.add('is-open');
+                            trigger.setAttribute('aria-expanded', 'true');
+                        } else {
+                            accordion.style.display = 'none'; // Oculta o menu inteiro se não houver conteúdo
+                            accordion.classList.remove('is-open');
+                            trigger.setAttribute('aria-expanded', 'false');
+                            panel.style.maxHeight = "0px";
+                        }
+                    } else {
+                        // Se limpar a busca, todos os menus voltam ao normal e fechados por padrão
+                        accordion.style.display = 'block';
+                        accordion.classList.remove('is-open');
+                        trigger.setAttribute('aria-expanded', 'false');
+                        panel.style.maxHeight = "0px";
                     }
                 });
 
-                if (willOpen) {
-                    dropdown.classList.add('open');
-                    toggle.setAttribute('aria-expanded', 'true');
-                }
+                atualizarAlturasAbasAbertas();
             });
-        });
 
-        document.addEventListener('click', () => {
+            // Lógica Padrão do Dropdown da Topbar
             document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
-                dropdown.classList.remove('open');
                 const toggle = dropdown.querySelector('.menu-dropdown-toggle');
-                if (toggle) {
-                    toggle.setAttribute('aria-expanded', 'false');
-                }
+                if (!toggle) return;
+
+                toggle.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const willOpen = !dropdown.classList.contains('open');
+
+                    document.querySelectorAll('.menu-dropdown').forEach(item => {
+                        item.classList.remove('open');
+                        const itemToggle = item.querySelector('.menu-dropdown-toggle');
+                        if (itemToggle) itemToggle.setAttribute('aria-expanded', 'false');
+                    });
+
+                    if (willOpen) {
+                        dropdown.classList.add('open');
+                        toggle.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            });
+
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                    const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                });
             });
         });
     </script>
