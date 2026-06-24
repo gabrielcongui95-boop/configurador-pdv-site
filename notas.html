@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notas de Atualização - Configurador Oficial PDV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-main: #060816;
+            --bg-soft: #0b1020;
+            --panel: rgba(15, 23, 42, 0.88);
+            --panel-strong: rgba(17, 24, 39, 0.96);
+            --panel-border: rgba(148, 163, 184, 0.18);
+            --text-main: #e5eefc;
+            --text-soft: #9fb0d1;
+            --text-muted: #7f90b2;
+            --accent: #6d7cff;
+            --accent-2: #15c4ff;
+            --success: #31d0aa;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(109, 124, 255, 0.20), transparent 28%),
+                radial-gradient(circle at 85% 18%, rgba(21, 196, 255, 0.16), transparent 26%),
+                radial-gradient(circle at 50% 100%, rgba(85, 247, 186, 0.10), transparent 32%),
+                linear-gradient(135deg, #04060f 0%, #09101d 45%, #050812 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-main);
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: auto;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+        }
+
+        body::before {
+            width: 320px;
+            height: 320px;
+            top: -70px;
+            right: -60px;
+            border-radius: 50%;
+            background: rgba(109, 124, 255, 0.16);
+        }
+
+        body::after {
+            width: 360px;
+            height: 360px;
+            bottom: -120px;
+            left: -100px;
+            border-radius: 50%;
+            background: rgba(21, 196, 255, 0.12);
+        }
+
+        .container {
+            width: 100%;
+            min-height: calc(100vh - 40px);
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(9, 13, 24, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 999px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            position: relative;
+            z-index: 1001;
+        }
+
+        .menu-link,
+        .menu-dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #dce7ff;
+            font-size: 0.92rem;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-link:hover,
+        .menu-link.active,
+        .menu-dropdown-toggle:hover,
+        .menu-dropdown.open .menu-dropdown-toggle {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .menu-dropdown {
+            position: relative;
+        }
+
+        .menu-dropdown-content {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 260px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(9, 13, 24, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            border-radius: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.30);
+            z-index: 2000;
+        }
+
+        .menu-dropdown.open .menu-dropdown-content {
+            display: flex;
+        }
+
+        .menu-dropdown-content a {
+            text-decoration: none;
+            color: #dce7ff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .menu-dropdown-content a:hover,
+        .menu-dropdown-content a.active {
+            background: rgba(109, 124, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .header {
+            width: 100%;
+            min-height: 220px;
+            background:
+                linear-gradient(135deg, rgba(109, 124, 255, 0.18), rgba(21, 196, 255, 0.08)),
+                var(--panel);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            padding: 42px 46px;
+            text-align: left;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(109,124,255,0.18), transparent 35%, transparent 65%, rgba(21,196,255,0.12));
+            pointer-events: none;
+        }
+
+        .hero-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 980px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(109, 124, 255, 0.28);
+            color: #c6d2ff;
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.02em;
+        }
+
+        .header h1 {
+            font-size: clamp(2.3rem, 3vw, 3.6rem);
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+            color: #f5f8ff;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            font-weight: 400;
+            max-width: 880px;
+            line-height: 1.7;
+        }
+
+        .hero-side {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .hero-metric {
+            background: rgba(8, 13, 27, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .hero-metric strong {
+            display: block;
+            font-size: 2.2rem;
+            color: var(--accent-2);
+            margin-bottom: 4px;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        .hero-metric span {
+            color: #ffffff;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            font-weight: 500;
+        }
+
+        /* Section Notas de Versão */
+        .section {
+            width: 100%;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 24px;
+            padding: 30px 34px;
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f4f7ff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Wrapper para controle do recolhimento suave */
+        .task-list-wrapper {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            background: rgba(9, 14, 26, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 16px;
+            padding: 6px 0;
+            margin-top: 5px;
+        }
+
+        .task-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+            transition: all 0.25s ease;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-item:hover {
+            background: rgba(109, 124, 255, 0.05);
+            padding-left: 24px;
+        }
+
+        .task-item h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f2f6ff;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-item p {
+            font-size: 0.92rem;
+            color: var(--text-soft);
+            line-height: 1.6;
+        }
+
+        .task-item code {
+            background: rgba(109, 124, 255, 0.16);
+            color: #cfd7ff;
+            padding: 0.15rem 0.4rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: 'Inter', monospace;
+        }
+
+        .version-badge {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 12px rgba(109, 124, 255, 0.3);
+            display: inline-block;
+        }
+
+        /* Botão Expandir / Recolher da Lista */
+        .btn-toggle-list {
+            background: rgba(109, 124, 255, 0.14);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            color: #dce7ff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+
+        .btn-toggle-list:hover {
+            background: rgba(109, 124, 255, 0.24);
+            color: #ffffff;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .btn-toggle-list svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .footer {
+            background: rgba(9, 13, 24, 0.78);
+            backdrop-filter: blur(16px);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.10);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        }
+
+        .footer p {
+            color: #93a4c8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1200px) {
+            .header {
+                grid-template-columns: 1fr;
+            }
+            .hero-side {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .menu {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                border-radius: 24px;
+            }
+            .header {
+                padding: 2rem 1.5rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .section {
+                padding: 1.75rem;
+            }
+            .task-item:hover {
+                padding-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <nav class="menu">
+                <a href="index.html" class="menu-link">Home</a>
+                <a href="sobre.html" class="menu-link">Sobre</a>
+                <a href="downloads.html" class="menu-link">Downloads</a>
+                <div class="menu-dropdown">
+                    <button class="menu-dropdown-toggle" type="button" aria-expanded="false">Soluções</button>
+                    <div class="menu-dropdown-content">
+                        <a href="outras-aplicacoes.html">MONITOR DO PEDIDOS WEB</a>
+                        <a href="gerador-certificado-digital.html">GERADOR DE CERTIFICADO DIGITAL</a>
+                        <a href="gerenciador-impressoras.html">GERENCIADOR DE IMPRESSORAS</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="header" id="home">
+            <div class="hero-copy">
+                <div class="hero-badge">Histórico de melhorias e correções da aplicação</div>
+                <h1>Notas de atualizações e novidades</h1>
+                <p>Acompanhe a evolução do Configurador Oficial do PDV e veja o que mudou no fluxo de suporte operacional.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-metric">
+                    <strong>v1.6.7</strong>
+                    <span>Versão Atual Estável</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <div class="section">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <h2>Notas de Versão 📋</h2>
+                    <span class="version-badge">v1.6.7</span>
+                    <button class="btn-toggle-list" type="button">
+                        <span class="btn-toggle-text">Recolher</span>
+                        <svg class="btn-toggle-icon" style="transform: rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </div>
+                
+                <div class="task-list-wrapper open">
+                    <div class="task-list">
+                        
+                        <div class="task-item">
+                            <h5>1° Checklist de Ambiente</h5>
+                            <p>Incluso no checklist automatizado a tarefa de configuração e validação dos protocolos de segurança <code>SSL/TLS</code>.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>2° Otimização na Função DUMP</h5>
+                            <p>Melhoria na rotina de importação: se o arquivo de DUMP fosse colado na pasta com o programa já aberto, ele não o identificava (sendo necessário fechar e reabrir o app). Agora, o sistema possui uma verificação em tempo real com refresh automático de 10 em 10 segundos, mantendo o botão inativo dinamicamente quando o arquivo não for localizado.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>3° Instruções de Rede</h5>
+                            <p>Adicionada uma breve descrição e guia rápido explicativo de uso diretamente dentro da interface da função de rede.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>4° Segurança de Usuários</h5>
+                            <p>Adicionada a opção automatizada para criar o usuário padrão <code>ECLETICACJ3</code> no Windows Server, aplicando uma senha forte que atende rigorosamente a todas as exigências e diretivas de complexidade e segurança do sistema operacional.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>5° Aba de Utilitários</h5>
+                            <p>Adicionado dentro da aba de utilitários o botão dedicado para a realização do download direto do <strong>Autenticador de Balança</strong>.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>6° Interrupção de Checklist</h5>
+                            <p>Agora é possível parar a execução das rotinas do checklist a qualquer momento. Além disso, caso o analista tente rodar o processo novamente, o sistema exibe um alerta informando visualmente que aquela validação já foi executada.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>7° Agendador de Tarefas</h5>
+                            <p>Realizada correção técnica nas rotinas dos agendadores de tarefas do Windows que apresentavam falhas ao mapear e localizar o arquivo executável (<code>.exe</code>) corretamente.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
+        </div>
+    </div>
+
+    <script>
+        // Lógica Dinâmica Única
+        document.querySelectorAll('.btn-toggle-list').forEach(button => {
+            const section = button.closest('.section');
+            const wrapper = section ? section.querySelector('.task-list-wrapper') : null;
+            const textSpan = button.querySelector('.btn-toggle-text');
+            const iconSvg = button.querySelector('.btn-toggle-icon');
+
+            // Inicializa e abre perfeitamente o bloco ativo no carregamento da página
+            if (wrapper && wrapper.classList.contains('open')) {
+                window.addEventListener('load', () => {
+                    wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                });
+            }
+
+            button.addEventListener('click', () => {
+                if (!wrapper) return;
+                
+                const isOpen = wrapper.classList.toggle('open');
+                
+                if (isOpen) {
+                    wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                    if (textSpan) textSpan.textContent = "Recolher";
+                    if (iconSvg) iconSvg.style.transform = "rotate(180deg)";
+                } else {
+                    wrapper.style.maxHeight = "0";
+                    if (textSpan) textSpan.textContent = "Expandir";
+                    if (iconSvg) iconSvg.style.transform = "rotate(0deg)";
+                }
+            });
+        });
+
+        // Dropdown do menu de Soluções
+        document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+            const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const willOpen = !dropdown.classList.contains('open');
+
+                document.querySelectorAll('.menu-dropdown').forEach(item => {
+                    item.classList.remove('open');
+                    const itemToggle = item.querySelector('.menu-dropdown-toggle');
+                    if (itemToggle) itemToggle.setAttribute('aria-expanded', 'false');
+                });
+
+                if (willOpen) {
+                    dropdown.classList.add('open');
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.menu-dropdown-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+    </script>
+</body>
+</html>
