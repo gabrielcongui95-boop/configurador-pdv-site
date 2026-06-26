@@ -188,7 +188,7 @@
             overflow: hidden;
             display: grid;
             grid-template-columns: 2.1fr 1fr;
-            gap: 24px;
+            gap: 22px;
             align-items: center;
         }
 
@@ -225,8 +225,8 @@
             gap: 10px;
             padding: 10px 16px;
             border-radius: 999px;
-            background: rgba(109, 124, 255, 0.14);
-            border: 1px solid rgba(109, 124, 255, 0.28);
+            background: rgba(109, 124, 255, 0.12);
+            border: 1px solid rgba(109, 124, 255, 0.22);
             color: #c6d2ff;
             font-size: 0.88rem;
             margin-bottom: 18px;
@@ -244,7 +244,7 @@
         .header p {
             font-size: 1.05rem;
             color: var(--text-soft);
-            line-height: 1.7;
+            line-height: 1.8;
             max-width: 860px;
         }
 
@@ -263,7 +263,7 @@
         .hero-metric strong {
             display: block;
             font-size: 1.45rem;
-            color: #ffffff;
+            color: #fff;
             margin-bottom: 6px;
         }
 
@@ -322,26 +322,22 @@
         }
 
         .intro-panel {
-            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
             border: 1px solid rgba(148, 163, 184, 0.10);
             border-radius: 22px;
             padding: 24px;
         }
 
         .intro-panel h3 {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: #f5f8ff;
             margin-bottom: 12px;
         }
 
         .intro-panel p {
-            font-size: 0.98rem;
+            font-size: 0.95rem;
             color: var(--text-soft);
-            line-height: 1.8;
-        }
-
-        .intro-panel p + p {
-            margin-top: 12px;
+            line-height: 1.7;
         }
 
         .info-grid,
@@ -498,7 +494,7 @@
         }
 
         .visual-card {
-            background: linear-gradient(180deg, rgba(10, 16, 32, 0.95), rgba(8, 13, 25, 0.92));
+            background: linear-gradient(180deg, rgba(13, 18, 34, 0.98), rgba(10, 14, 26, 0.92));
             border: 1px solid rgba(148, 163, 184, 0.10);
             border-radius: 22px;
             padding: 24px;
@@ -749,6 +745,18 @@
                         <h3 style="color: #6b6c6e;">⚫ DESLIGADO</h3>
                         <p>Identifica de forma inteligente quando o computador do cliente está totalmente desligado, diferenciando quedas de aplicação de encerramentos locais de expediente.</p>
                     </div>
+                    <div class="visual-card" style="border-top: 4px solid #4CC4FF;">
+                        <h3 style="color: #4CC4FF;">🔵 PAUSADO</h3>
+                        <p>Monitoramento temporariamente suspenso pelo painel. O agente continua em execução, mas não envia atualizações para o banco de dados. Utilizado para manutenções planejadas.</p>
+                    </div>
+                    <div class="visual-card" style="border-top: 4px solid var(--warning);">
+                        <h3 style="color: var(--warning);">🟡 401-ERR</h3>
+                        <p>Erro de autenticação: token expirado ou credenciais inválidas. O Pedidos Web não consegue se comunicar com a API de integração.</p>
+                    </div>
+                    <div class="visual-card" style="border-top: 4px solid #FF9955;">
+                        <h3 style="color: #FF9955;">🟠 403-ERR</h3>
+                        <p>Erro de permissão: acesso negado ao servidor. A loja não tem autorização para acessar os recursos da API.</p>
+                    </div>
                 </div>
 
                 <div class="image-preview-box">
@@ -756,6 +764,24 @@
                     <div class="image-caption">
                         <img src="Icone.ico" alt="Dashboard">
                         <h3>Prévia de Interface do analista: Dashboard Centralizado de Lojas sendo monitoradas</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Comandos Remotos do Dashboard</h2>
+                <div class="visual-grid">
+                    <div class="visual-card" style="border-top: 4px solid var(--success);">
+                        <h3 style="color: var(--success);">▶️ START</h3>
+                        <p>Inicia o Pedidos Web na loja remotamente. O agente local executa o EcleticaAppDomain com o argumento PedidosWebMonitor.exe para reativar o serviço.</p>
+                    </div>
+                    <div class="visual-card" style="border-top: 4px solid var(--danger);">
+                        <h3 style="color: var(--danger);">⏹️ STOP</h3>
+                        <p>Encerra o Pedidos Web na loja remotamente. O agente mata a tarefa PedidosWebMonitor.exe e encerra o EcleticaAppDomain responsável pela instância.</p>
+                    </div>
+                    <div class="visual-card" style="border-top: 4px solid #6b6c6e;">
+                        <h3 style="color: #6b6c6e;">🗑️ UNINSTALL</h3>
+                        <p>Remove completamente o Monitor da loja. Limpa os dados da loja no banco, remove o atalho de inicialização e apaga os arquivos locais. Irreversível.</p>
                     </div>
                 </div>
             </div>
