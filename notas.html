@@ -343,6 +343,7 @@
             font-size: 0.92rem;
             color: var(--text-soft);
             line-height: 1.6;
+            word-break: break-word; /* Correção para impedir corte de linha */
         }
 
         .task-item code {
@@ -470,7 +471,7 @@
             </div>
             <div class="hero-side">
                 <div class="hero-metric">
-                    <strong>v1.6.7</strong>
+                    <strong>v2.0</strong>
                     <span>Versão Atual Estável</span>
                 </div>
             </div>
@@ -478,10 +479,11 @@
 
         <div class="content">
 
+            <!-- VERSÃO 2.0 (Expandida por Padrão) -->
             <div class="section">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; flex-wrap: wrap;">
                     <h2>Notas de Versão 📋</h2>
-                    <span class="version-badge">v1.6.7</span>
+                    <span class="version-badge">v2.0</span>
                     <button class="btn-toggle-list" type="button">
                         <span class="btn-toggle-text">Recolher</span>
                         <svg class="btn-toggle-icon" style="transform: rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -489,6 +491,39 @@
                 </div>
                 
                 <div class="task-list-wrapper open">
+                    <div class="task-list">
+                        
+                        <div class="task-item">
+                            <h5>Arquitetura como Launcher</h5>
+                            <p>O programa foi reestruturado para atuar exclusivamente como um launcher. A partir de agora, o executável do sistema não é mais armazenado localmente, otimizando o uso de recursos e garantindo uma integração mais leve com o seu ambiente de PDV.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>Gestão de Atualizações em Nuvem</h5>
+                            <p>Implementamos um sistema de atualização via nuvem. Com essa mudança, as novas versões do sistema serão aplicadas automaticamente. Isso elimina a necessidade de substituição manual de arquivos pelo usuário, garantindo que todos estejam sempre utilizando a versão mais recente e estável.</p>
+                        </div>
+
+                        <div class="task-item">
+                            <h5>Melhoria nos Instaladores de Componentes</h5>
+                            <p>A função de instalação foi aprimorada, permitindo a execução direta dos instaladores de componentes essenciais do sistema. Adicionamos também a opção de obter o link de download diretamente para casos específicos, facilitando intervenções técnicas quando necessário.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- VERSÃO 1.6.7 (Recolhida por Padrão) -->
+            <div class="section">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <h2>Notas de Versão 📋</h2>
+                    <span class="version-badge">v1.6.7</span>
+                    <button class="btn-toggle-list" type="button">
+                        <span class="btn-toggle-text">Expandir</span>
+                        <svg class="btn-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </div>
+                
+                <div class="task-list-wrapper">
                     <div class="task-list">
                         
                         <div class="task-item">
@@ -533,7 +568,6 @@
         </div>
 
         <div class="footer">
-            
             <p>© 2026 Configurador Oficial PDV - Desenvolvido por Gabriel Congui</p>
         </div>
     </div>
