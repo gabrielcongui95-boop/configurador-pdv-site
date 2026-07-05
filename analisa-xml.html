@@ -323,11 +323,53 @@
             const dicionarioSugestoes = {
                 "CFOP incompatível com CST (NFC-e)": () => `Incompatibilidade fiscal detectada no item '${xProd}' (Código: ${cProd}). O CFOP de venda utilizado não é permitido para o CST configurado neste produto em operações de Cupom Eletrônico (NFC-e). Acesse o Cadastro do Produto, vá na aba Fiscal e ajuste o CFOP para 5.102 ou altere o CST para um condizente com a operação.`,
                 
-                "cBenef obrigatório": () => `O produto '${xProd}' (Código: ${cProd}) exige a informação do código de benefício fiscal por estar configurado com um CST de Isenção/Não Incidência. Acesse a ficha deste item no sistema, vá até a aba de regras fiscais e preencha o campo 'cBenef' com o código correto da tabela da SEFAZ do seu estado.`,
+                "cBenef obrigatório": () => `O produto '${xProd}' (Código: ${cProd}) exige cBenef ou está inconsistente. No cadastro de itens, certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO) e preencha o código do benefício fiscal exigido pela SEFAZ.`,
                 
-                "CST 40 (Isenção) EXIGE cBenef": () => `O produto '${xProd}' (Código: ${cProd}) exige a informação do código de benefício fiscal por estar configurado com um CST de Isenção/Não Incidência. Acesse a ficha deste item no sistema, vá até a aba de regras fiscais e preencha o campo 'cBenef' com o código correto da tabela da SEFAZ do seu estado.`,
+                "CST 40 (Isenção) EXIGE cBenef": () => `O produto '${xProd}' (Código: ${cProd}) exige cBenef ou está inconsistente. No cadastro de itens, certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO) e preencha o código do benefício fiscal exigido pela SEFAZ.`,
                 
-                "CEP inexistente": () => `O CEP informado no endereço do emitente ou destinatário não existe na base dos Correios. Acesse a tela de cadastro da sua empresa ou do cliente e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`
+                "CEP inexistente": () => `O CEP informado no endereço do emitente ou destinatário não existe na base dos Correios. Acesse a tela de cadastro da sua empresa ou do cliente e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "CST 00 (Tributado Integralmente)": () => `Erro no item '${xProd}' (Código: ${cProd}). Acesse as configurações do produto e, na 'Situação Tributária do cadastro de alíquotas', mude a opção para '01' (TRIBUTADO INTEGRALMENTE) e informe a alíquota correta do imposto.`,
+                
+                "CST 020 (Tributado com Redução)": () => `Divergência na redução de base do item '${xProd}' (Código: ${cProd}). No sistema, acesse a 'Situação Tributária do cadastro de alíquotas', configure como '01' e certifique-se de preencher o percentual correto no campo '% Base Red.'.`,
+                
+                "CST 041 (Não Tributado)": () => `Inconsistência no item '${xProd}' (Código: ${cProd}). Acesse o cadastro e verifique se a 'Situação Tributária do cadastro de alíquotas' está configurada corretamente com a sigla 'N' (NÃO TRIBUTADO).`,
+                
+                "CST 060 (Substituição Tributária)": () => `Falha de ST no item '${xProd}' (Código: ${cProd}). Acesse o cadastro e altere a 'Situação Tributária do cadastro de alíquotas' para a opção 'F' (SUBSTITUIÇÃO TRIBUTÁRIA) para corrigir o cálculo retido.`,
+                
+                "ISSQN (Serviço)": () => `A nota rejeitou porque o item '${xProd}' (Código: ${cProd}) é um serviço. No cadastro, mude a 'Situação Tributária do cadastro de alíquotas' para 'V' (ISSQN - SERVIÇO) para que o sistema processe como RPS/NFSe corretamente.`,
+                
+                "cBenef descontinuado": () => `O produto '${xProd}' (Código: ${cProd}) está usando código obsoleto. No cadastro de itens, remova o cBenef "SEM CBENEF" e configure corretamente a 'Situação Tributária do cadastro de alíquotas' conforme o caso.`,
+                
+                "cBenef informado indevidamente": () => `O item '${xProd}' (Código: ${cProd}) tem cBenef desnecessário. No cadastro, remova o código de benefício fiscal e certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está configurada corretamente.`,
+                
+                "cBenef incompatível com UF": () => `Código de benefício incompatível no item '${xProd}' (Código: ${cProd}). No cadastro de itens, verifique o cBenef informado e a sigla da UF no cadastro do produto, e altere o cBenef para começar com a sigla correta da UF.`,
+                
+                "cBenef não permitido para este CST": () => `Incompatibilidade no item '${xProd}' (Código: ${cProd}). No cadastro de itens, ajuste a 'Situação Tributária do cadastro de alíquotas' ou o cBenef para que ambos sejam compatíveis.`,
+                
+                "Processo judicial não informado": () => `Falta informação no item '${xProd}' (Código: ${cProd}). No cadastro ou no xml, inclua o número do processo judicial nas informações complementares.`,
+                
+                "Fundamentação legal não informada": () => `Falta fundamentação no item '${xProd}' (Código: ${cProd}). Inclua a fundamentação legal nas informações complementares do xml ou no cadastro do produto.`,
+                
+                "pRedBC obrigatório": () => `Falta percentual no item '${xProd}' (Código: ${cProd}). No cadastro de itens, acesse a 'Situação Tributária do cadastro de alíquotas' e preencha o campo '% Base Red.' com o valor correto.`,
+                
+                "CFOP incompatível com CST (NFC-e)": () => `Incompatibilidade fiscal detectada no item '${xProd}' (Código: ${cProd}). Acesse o Cadastro do Produto, vá na aba Fiscal e ajuste o CFOP para 5.102 ou altere o CST para um condizente com a operação.`,
+                
+                "Rejeição CEP Incorreto": () => `O CEP informado no endereço do emitente ou destinatário não existe na base dos Correios. Acesse a tela de cadastro da sua empresa ou do cliente e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "CEP Inválido": () => `O CEP informado no endereço é inválido. Acesse a tela de cadastro e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "Divergência de UF": () => `UF do endereço diverge. Acesse a tela de cadastro e confira a UF informada para o endereço.`,
+                
+                "Divergência de Município": () => `Município do endereço diverge. Acesse a tela de cadastro e confira o nome do município informado para o endereço.`,
+                
+                "Telefone Inválido": () => `Telefone informado é inválido. Acesse o cadastro da empresa ou do cliente e corrija o telefone, com pelo menos 8 dígitos.`,
+                
+                "Rejeição 252": () => `Chave de acesso com tamanho inválido. Confira se o xml gerado pela sua nota.`,
+                
+                "Total PIS divergente": () => `Total de PIS divergente. Verifique os valores de PIS em cada item e o total declarado.`,
+                
+                "Total COFINS divergente": () => `Total de COFINS divergente. Verifique os valores de COFINS em cada item e o total declarado.`
             };
 
             // Verifica se temos uma sugestão mapeada para essa rejeição
@@ -1689,6 +1731,25 @@
                 }
             }
             
+            // Para cada erro total (PIS/COFINS), também adicionar sugestão
+            for (const msg of totaisValidacao) {
+                msg.solucaoContabil = obterSugestaoContabil(
+                    msg.erro || '',
+                    'N/A',
+                    'N/A'
+                );
+            }
+            
+            // Para cada erro das novas validações, também adicionar sugestão
+            for (const erro of novasValidacoes) {
+                // Criar uma estrutura similar para compatibilidade
+                erro.solucaoContabil = obterSugestaoContabil(
+                    erro.erro || '',
+                    erro.item?.cProd || 'N/A',
+                    erro.item?.xProd || 'N/A'
+                );
+            }
+            
             let totalItens = itensProcessados.length;
             let ok = 0, aviso = 0, erro = 0;
             let totalCBenef = itensProcessados.filter(i => i.cBenef && i.cBenef.trim() !== '' && i.cBenef.trim() !== 'SEM CBENEF').length;
@@ -1974,7 +2035,38 @@
                             <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
                             <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                             <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
-                            ${msg.orientacao ? `<div><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                            ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                            ${msg.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                                <strong style="color: var(--primary);">🤖 Sugestão Contábil:</strong>
+                                <div style="margin-top: 4px;">
+                                    <span style="color: var(--text);">${msg.solucaoContabil}</span>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Renderizar erros das novas validações (telefone, CEP, chave de acesso, etc.)
+            dadosProcessados.novasValidacoes.forEach(erro => {
+                html += `
+                    <div class="diagnostic-item error">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                Problema Geral
+                            </div>
+                            <span class="badge badge-error">
+                                ERRO
+                            </span>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${erro.mensagem}</div>
+                            ${erro.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                                <strong style="color: var(--primary);">🤖 Sugestão Contábil:</strong>
+                                <div style="margin-top: 4px;">
+                                    <span style="color: var(--text);">${erro.solucaoContabil}</span>
+                                </div>
+                            </div>` : ''}
                         </div>
                     </div>
                 `;
