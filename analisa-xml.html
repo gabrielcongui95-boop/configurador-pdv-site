@@ -1718,7 +1718,7 @@
             const totaisValidacao = validarTotaisPISCOFINS(dados);
             const novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
             
-            // Para cada item com erro, obter sugestão contábil localmente
+            // Para cada item com erro, obter sugestão localmente
             for (const item of itensProcessados) {
                 for (const msg of item.validacao.mensagens) {
                     if (msg.tipo !== 'success') {
@@ -2037,7 +2037,7 @@
                             <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                             ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
                             ${msg.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
-                                <strong style="color: var(--primary);">🤖 Sugestão Contábil:</strong>
+                                <strong style="color: var(--primary);">🤖 Sugestão:</strong>
                                 <div style="margin-top: 4px;">
                                     <span style="color: var(--text);">${msg.solucaoContabil}</span>
                                 </div>
