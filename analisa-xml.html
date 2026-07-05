@@ -299,9 +299,13 @@
                 <div class="card-title">🔧 Diagnóstico Completo</div>
                 <div id="diagnostics"></div>
             </div>
+            <div class="card">
+                <div class="card-title">📊 Pré-visualização do Relatório</div>
+                <div id="relatorio-preview"></div>
+            </div>
             <div class="card" style="display:flex;justify-content:flex-end;gap:12px;">
                 <button class="btn btn-primary" onclick="toggleDebug()">📋 Mostrar Debug</button>
-                <button class="btn btn-success" onclick="exportarRelatorio()">📄 Exportar Relatório</button>
+                <button id="btn-baixar-relatorio" class="btn btn-success" onclick="exportarRelatorio()" disabled>📄 Baixar Relatório</button>
             </div>
             <div id="debug" class="debug-section"></div>
         </div>
@@ -1543,7 +1547,58 @@
         function renderizarTudo() {
             renderizarDocInfo();
             renderizarDiagnosticos();
+            renderizarRelatorioPreview();
+            // Mostra a seção de pré-visualização do relatório
+            document.getElementById('relatorio-preview').parentElement.style.display = 'block';
             document.getElementById('results').style.display = 'block';
+            document.getElementById('btn-baixar-relatorio').disabled = false;
+        }
+
+        function renderizarRelatorioPreview() {
+            const previewDiv = document.getElementById('relatorio-preview');
+            
+            // Verificar se há erros relacionados a CST ou cBenef em qualquer item
+            const temErroCST = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST'))
+            );
+            const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
+            );
+            
+            previewDiv.innerHTML = `
+                <h3 style="margin: 16px 0; color: var(--text);">Itens da Nota</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Produto</th>
+                                ${temErroCST ? '<th>CST</th>' : ''}
+                                ${temErroCBenef ? '<th>cBenef</th>' : ''}
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dadosProcessados.itensProcessados.map(item => {
+                                const s = item.validacao.status;
+                                const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
+                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK' : s === 'warning' ? 'AVISO' : 'ERRO'}</span>`;
+                                return `<tr class="${classe}">
+                                    <td>${item.nItem}</td>
+                                    <td>${item.xProd}</td>
+                                    ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
+                                    ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
+                                    <td>${badge}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <style>
+                    .item-erro { background-color: rgba(239, 68, 68, 0.05); }
+                    .item-aviso { background-color: rgba(245, 158, 11, 0.05); }
+                </style>
+            `;
         }
         function renderizarDocInfo() {
             const di = document.getElementById('doc-info');
@@ -1649,10 +1704,12 @@
                             </div>
                         </div>
                         <div class="diagnostic-grid">
+                            ${camposProblematicos.has('CST') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CST</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('CST') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CST || '-'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CST || '-'}</span>
                             </div>
+                            ` : ''}
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CSOSN</span>
                                 <span class="diagnostic-field-value" style="${camposProblematicos.has('CSOSN') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CSOSN || '-'}</span>
@@ -1661,10 +1718,12 @@
                                 <span class="diagnostic-field-label">CFOP</span>
                                 <span class="diagnostic-field-value" style="${camposProblematicos.has('CFOP') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CFOP || '-'}</span>
                             </div>
+                            ${camposProblematicos.has('cBenef') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">cBenef</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('cBenef') ? 'color: var(--error); font-weight: 700;' : ''}">${item.cBenef || '-'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cBenef || '-'}</span>
                             </div>
+                            ` : ''}
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">pRedBC</span>
                                 <span class="diagnostic-field-value" style="${camposProblematicos.has('pRedBC') ? 'color: var(--error); font-weight: 700;' : ''}">${item.pRedBC || '-'}</span>
@@ -1748,12 +1807,21 @@
         // ==========================================
         function exportarRelatorio() {
             const now = new Date().toLocaleString('pt-BR');
+            
+            // Verificar se há erros relacionados a CST ou cBenef em qualquer item
+            const temErroCST = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST'))
+            );
+            const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
+            );
+            
             const html = `
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Relatório </title>
+                    <title>Relatório de Validação NF-e</title>
                     <style>
                         *{font-family:Arial,sans-serif;}
                         body{background:#f0f4f8;padding:40px;}
@@ -1779,7 +1847,7 @@
                 </head>
                 <body>
                     <div class="container">
-                        <h1>Relatório </h1>
+                        <h1>Relatório de Validação NF-e</h1>
                         <p class="subtitulo">Emitido em: ${now}</p>
                         <div class="grid">
                             <div class="campo"><span class="campo-label">Número da Nota</span><span>${dadosProcessados.ide.nNF}</span></div>
@@ -1798,7 +1866,11 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Item</th><th>Produto</th><th>CST</th><th>cBenef</th><th>Status</th>
+                                    <th>Item</th>
+                                    <th>Produto</th>
+                                    ${temErroCST ? '<th>CST</th>' : ''}
+                                    ${temErroCBenef ? '<th>cBenef</th>' : ''}
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1808,7 +1880,13 @@
                                     const badge = s === 'success' ? '<span class="badge badge-success">OK</span>' : 
                                                   s === 'warning' ? '<span class="badge badge-warning">AVISO</span>' : 
                                                   '<span class="badge badge-error">ERRO</span>';
-                                    return `<tr class="${classe}"><td>${item.nItem}</td><td>${item.xProd}</td><td>${item.CST}</td><td>${item.cBenef || '-'}</td><td>${badge}</td></tr>`;
+                                    return `<tr class="${classe}">
+                                        <td>${item.nItem}</td>
+                                        <td>${item.xProd}</td>
+                                        ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
+                                        ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
+                                        <td>${badge}</td>
+                                    </tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -1895,6 +1973,7 @@
         function renderizarInutNFe(dados) {
             const di = document.getElementById('doc-info');
             const d = document.getElementById('diagnostics');
+            const previewDiv = document.getElementById('relatorio-preview');
             const uf = dados.cUF === '35' ? 'SP' : dados.cUF || '';
             
             // Renderiza info básica
@@ -1955,7 +2034,13 @@
                 </div>
             `;
             
+            // Oculta a pré-visualização do relatório para inutilização
+            previewDiv.innerHTML = '';
+            previewDiv.parentElement.style.display = 'none';
+            
             document.getElementById('results').style.display = 'block';
+            // Não habilita o botão para inutilização, pois não há relatório para exportar
+            document.getElementById('btn-baixar-relatorio').disabled = true;
         }
     </script>
 </body>
