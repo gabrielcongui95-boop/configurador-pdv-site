@@ -300,7 +300,7 @@
                 <div id="diagnostics"></div>
             </div>
             <div class="card">
-                <div class="card-title">Resumo da análise</div>
+                <div class="card-title">📊 Pré-visualização do Relatório</div>
                 <div id="relatorio-preview"></div>
             </div>
             <div class="card" style="display:flex;justify-content:flex-end;gap:12px;">
@@ -378,7 +378,14 @@
                 "ERRO_VALOR_ZERADO": () => `Erro no item "${xProd}" (Código: ${cProd}): O sistema identificou que este produto está com o preço unitário ou o valor total zerado. Acesse a tela de vendas ou o cadastro do item e informe um valor maior que zero para permitir o faturamento.`,
                 "ERRO_CSOSN_500_CFOP": () => `Erro no item "${xProd}" (Código: ${cProd}): Como o produto está configurado como CSOSN 500 (ICMS Cobrado Anteriormente por ST - Equivalente à nossa sigla "F"), ele exige um CFOP de Substituição Tributária. Acesse o cadastro e altere o CFOP deste item para 5.405.`,
                 "ERRO_DETALHE_ISS": () => `Erro no item "${xProd}" (Código: ${cProd}): Configurado com a Situação Tributária "V" (ISSQN - SERVIÇO). Há uma redução informada, mas faltam os detalhes da dedução da base de cálculo do ISS. Acesse o cadastro de serviços e complete os campos de parametrização da redução de ISS.`,
-                "ERRO_CST_PIS_COFINS": () => `Erro no item "${xProd}" (Código: ${cProd}): O CST de PIS ou COFINS informado é inválido. Acesse as configurações fiscais do produto no sistema e certifique-se de selecionar um código válido (como 49 para Operações de Saída ou 07/08 para produtos Monofásicos/Isentos).`
+                "ERRO_CST_PIS_COFINS": () => `Erro no item "${xProd}" (Código: ${cProd}): O CST de PIS ou COFINS informado é inválido. Acesse as configurações fiscais do produto no sistema e certifique-se de selecionar um código válido (como 49 para Operações de Saída ou 07/08 para produtos Monofásicos/Isentos).`,
+                "CST_INCOMPATIVEL_SIMPLES": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CST em Simples Nacional. Acesse o cadastro do produto e altere para usar CSOSN.`,
+                "CFOP_INCOMPATIVEL_COM_CSOSN_500": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CSOSN 500. Acesse o cadastro do produto e altere o CFOP para 5405 ou o CSOSN para outro valor.`,
+                "CFOP_OBRIGATORIO_5405": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CSOSN 500 exige CFOP 5405. Acesse o cadastro do produto e altere o CFOP para 5405.`,
+                "CSOSN_INCOMPATIVEL_REGIME_NORMAL": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CSOSN em Regime Normal. Acesse o cadastro do produto e altere para usar CST.`,
+                "CST_OBRIGATORIO_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5405 exige CST 60. Acesse o cadastro do produto e altere o CST para 60.`,
+                "CFOP_INCOMPATIVEL_COM_CST_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CST 60. Acesse o cadastro do produto e altere o CFOP ou o CST.`,
+                "CBENEF_OBRIGATORIO": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): cBenef é obrigatório para este item nesta UF. Acesse o cadastro do produto e informe o cBenef válido.`
             };
 
             // Verifica se temos uma sugestão mapeada para essa rejeição
@@ -833,6 +840,7 @@
                     xFant: getTextoElemento(emit, 'xFant'),
                     CNPJ: getTextoElemento(emit, 'CNPJ'),
                     IE: getTextoElemento(emit, 'IE'),
+                    CRT: getTextoElemento(emit, 'CRT'),
                     fone: enderEmit ? getTextoElemento(enderEmit, 'fone') : '',
                     CEP: enderEmit ? getTextoElemento(enderEmit, 'CEP') : '',
                     UF: enderEmit ? getTextoElemento(enderEmit, 'UF') : '',
@@ -902,6 +910,7 @@
             let vDedISSQN = '';
             let pDedISSQN = '';
             let xMotDedISSQN = '';
+            
             
             if (icmsContainer) {
                 temICMS = true;
@@ -989,10 +998,11 @@
         // ==========================================
         // VALIDAÇÃO DAS REGRAS
         // ==========================================
-        function validarItem(item, cUF, infAdic, modelo) {
+        function validarItem(item, cUF, infAdic, modelo, CRT) {
             const mensagens = [];
             const alertas = [];
             let status = 'success';
+            let regra = null;
             
             // Mapeamento de cUF para sigla
             const siglasUF = {
@@ -1003,24 +1013,19 @@
             };
             const siglaUF = siglasUF[cUF] || '';
             const cBenef = item.cBenef ? item.cBenef.trim() : '';
-            
-            // Se tem CSOSN (Simples Nacional), ignora cBenef
-            if (item.CSOSN) {
-                log(`Item ${item.nItem}: CSOSN ${item.CSOSN} (Simples Nacional) - cBenef não obrigatório`);
-                mensagens.push({
-                    tipo: 'success',
-                    erro: 'OK',
-                    desc: 'Simples Nacional - cBenef não obrigatório',
-                    motivo: 'Operação enquadrada no Simples Nacional',
-                    correcao: '',
-                    orientacao: '',
-                    rejeicao: '',
-                    campos: []
-                });
-                return { status, mensagens, alertas };
+
+            // Valida regras CRT
+            const regrasCRT = validarRegrasCRT(item, CRT, cUF);
+            if (regrasCRT.length > 0) {
+                mensagens.push(...regrasCRT);
+                status = 'error';
             }
             
-            if (!item.CST) {
+            // Se tem CSOSN (Simples Nacional), não precisa de CST
+            if (item.CSOSN) {
+                log(`Item ${item.nItem}: CSOSN ${item.CSOSN} (Simples Nacional)`);
+            } else if (!item.CST) {
+                // Apenas exigimos CST se não tem CSOSN
                 status = 'error';
                 mensagens.push({
                     tipo: 'error',
@@ -1032,205 +1037,208 @@
                     rejeicao: '',
                     campos: ['CST']
                 });
-                return { status, mensagens, alertas };
+                return { status, mensagens, alertas, regra };
             }
             
-            const cstNormalizado = item.CST.padStart(2, '0');
-            const regra = CST_REGRAS[cstNormalizado];
-            
-            if (!regra) {
-                status = 'warning';
-                mensagens.push({
-                    tipo: 'warning',
-                    erro: 'CST desconhecido',
-                    desc: `CST ${cstNormalizado} não está na lista padrão`,
-                    motivo: 'CST não reconhecido',
-                    correcao: 'Verificar se o CST é válido para a operação',
-                    orientacao: 'Confirmar o CST com o contador',
-                    rejeicao: '',
-                    campos: ['CST']
-                });
-                return { status, mensagens, alertas };
-            }
-            
-            log(`Item ${item.nItem}: CST ${cstNormalizado} (${regra.desc}) - cBenef: "${cBenef}"`);
-            
-            // 1. Bloqueio de "SEM CBENEF" (descontinuado em 01/07/2026)
-            if (cBenef === 'SEM CBENEF') {
-                status = 'error';
-                mensagens.push({
-                    tipo: 'error',
-                    erro: 'cBenef descontinuado',
-                    desc: 'O código "SEM CBENEF" foi descontinuado em 01/07/2026',
-                    motivo: 'Código de benefício obsoleto',
-                    correcao: 'Remover o cBenef ou utilizar um código válido',
-                    orientacao: 'Solicitar ao cliente que atualize o cadastro tributário',
-                    rejeicao: '',
-                    campos: ['cBenef']
-                });
-            }
-            
-            // 2. Obter lista de cBenef válidos para este item (regra.cBenefValidos + geral)
-            const cBenefValidosGlobais = Object.keys(CBENEF_REGRAS);
-            const cBenefValidosItem = regra.cBenefValidos || [];
-            const cBenefValidosTodos = [...new Set([...cBenefValidosGlobais, ...cBenefValidosItem, 'SEMOBRIGATORIEDADE'])];
-            const cstsDesobrigados = ['00', '02', '10', '15', '60', '61'];
-            const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
-            
-            // Aplicar 3 cenários fiscais
-            if (exigeCBenef) {
-                // CENÁRIO A: Rejeição 928 - cBenef obrigatório, mas vazio ou inválido
-                const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
-                if (!cBenefValido) {
+            // Validações específicas de CST (apenas se temos CST)
+            if (item.CST) {
+                const cstNormalizado = item.CST.padStart(2, '0');
+                regra = CST_REGRAS[cstNormalizado];
+                
+                if (!regra) {
+                    status = 'warning';
+                    mensagens.push({
+                        tipo: 'warning',
+                        erro: 'CST desconhecido',
+                        desc: `CST ${cstNormalizado} não está na lista padrão`,
+                        motivo: 'CST não reconhecido',
+                        correcao: 'Verificar se o CST é válido para a operação',
+                        orientacao: 'Confirmar o CST com o contador',
+                        rejeicao: '',
+                        campos: ['CST']
+                    });
+                    return { status, mensagens, alertas, regra };
+                }
+                
+                log(`Item ${item.nItem}: CST ${cstNormalizado} (${regra.desc}) - cBenef: "${cBenef}"`);
+                
+                // 1. Bloqueio de "SEM CBENEF" (descontinuado em 01/07/2026)
+                if (cBenef === 'SEM CBENEF') {
                     status = 'error';
                     mensagens.push({
                         tipo: 'error',
-                        erro: 'REJEICAO_928',
-                        desc: `Rejeição 928: CST ${cstNormalizado} (${regra.desc}) exige cBenef válido`,
-                        motivo: 'Faltou informar código de benefício fiscal ou código inválido',
-                        correcao: 'Informe o cBenef válido para este CST',
-                        orientacao: 'Consultar Tabela cBenef SEFAZ',
-                        rejeicao: '928',
+                        erro: 'cBenef descontinuado',
+                        desc: 'O código "SEM CBENEF" foi descontinuado em 01/07/2026',
+                        motivo: 'Código de benefício obsoleto',
+                        correcao: 'Remover o cBenef ou utilizar um código válido',
+                        orientacao: 'Solicitar ao cliente que atualize o cadastro tributário',
+                        rejeicao: '',
                         campos: ['cBenef']
                     });
-                } else {
-                    // Se cBenef é válido, valida as regras específicas do código
-                    if (cBenef === 'SP099090') {
-                        // Regra SP099090: Decisão judicial
-                        if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
-                            status = 'error';
-                            mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef não permitido para este CST',
-                                desc: `O cBenef SP099090 não é permitido para CST ${cstNormalizado}`,
-                                motivo: 'Código de benefício não compatível com o CST',
-                                correcao: 'Alterar o cBenef para um código válido para este CST',
-                                orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                rejeicao: '',
-                                campos: ['CST', 'cBenef']
-                            });
-                        } else {
-                            const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
-                            if (!textoComplementar) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'Processo judicial não informado',
-                                    desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
-                                    motivo: 'Faltou informar o processo judicial',
-                                    correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
-                                    orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
-                                    rejeicao: '',
-                                    campos: ['infAdFisco', 'infCpl']
-                                });
-                            }
-                        }
-                    } else if (cBenef === 'SP099000') {
-                        if (cstNormalizado !== '90') {
-                            status = 'error';
-                            mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef não permitido para este CST',
-                                desc: `O cBenef SP099000 só é permitido para CST 90`,
-                                motivo: 'Código de benefício não compatível com o CST',
-                                correcao: 'Alterar o cBenef para um código válido para este CST',
-                                orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                rejeicao: '',
-                                campos: ['CST', 'cBenef']
-                            });
-                        }
-                    } else if (cBenef === 'SP099009') {
-                        if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
-                            status = 'error';
-                            mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef não permitido para este CST',
-                                desc: `O cBenef SP099009 não é permitido para CST ${cstNormalizado}`,
-                                motivo: 'Código de benefício não compatível com o CST',
-                                correcao: 'Alterar o cBenef para um código válido para este CST',
-                                orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                rejeicao: '',
-                                campos: ['CST', 'cBenef']
-                            });
-                        }
-                    } else if (cBenef === 'SP099999') {
-                        if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
-                            status = 'error';
-                            mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef não permitido para este CST',
-                                desc: `O cBenef SP099999 só é permitido para CST 40 e 90`,
-                                motivo: 'Código de benefício não compatível com o CST',
-                                correcao: 'Alterar o cBenef para um código válido para este CST',
-                                orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                rejeicao: '',
-                                campos: ['CST', 'cBenef']
-                            });
-                        } else {
-                            const textoComplementar = infAdic.infCpl.trim();
-                            if (!textoComplementar) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'Fundamentação legal não informada',
-                                    desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
-                                    motivo: 'Faltou informar a fundamentação legal',
-                                    correcao: 'Incluir a fundamentação legal em infCpl',
-                                    orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
-                                    rejeicao: '',
-                                    campos: ['infCpl']
-                                });
-                            }
-                        }
-                    } else if (cBenef === 'SP020390') {
-                        if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
-                            status = 'error';
-                            mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef não permitido para este CST',
-                                desc: `O cBenef SP020390 só é permitido para CST 20 e 70`,
-                                motivo: 'Código de benefício não compatível com o CST',
-                                correcao: 'Alterar o cBenef para um código válido para este CST',
-                                orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                rejeicao: '',
-                                campos: ['CST', 'cBenef']
-                            });
-                        }
-                    }
-                    
-                    // Valida pRedBC para CST 20
-                    if (regra.precisaPREDBC && !item.pRedBC) {
+                }
+                
+                // 2. Obter lista de cBenef válidos para este item (regra.cBenefValidos + geral)
+                const cBenefValidosGlobais = Object.keys(CBENEF_REGRAS);
+                const cBenefValidosItem = regra.cBenefValidos || [];
+                const cBenefValidosTodos = [...new Set([...cBenefValidosGlobais, ...cBenefValidosItem, 'SEMOBRIGATORIEDADE'])];
+                const cstsDesobrigados = ['00', '02', '10', '15', '60', '61'];
+                const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
+                
+                // Aplicar 3 cenários fiscais
+                if (exigeCBenef) {
+                    // CENÁRIO A: Rejeição 928 - cBenef obrigatório, mas vazio ou inválido
+                    const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
+                    if (!cBenefValido) {
                         status = 'error';
                         mensagens.push({
                             tipo: 'error',
-                            erro: 'pRedBC obrigatório',
-                            desc: 'CST 20 exige percentual de redução da base de cálculo',
-                            motivo: 'Faltou informar o pRedBC',
-                            correcao: 'Preencher o campo % Base Red. no cadastro do produto',
-                            orientacao: 'Solicitar ao cliente que verifique o percentual',
-                            rejeicao: '',
-                            campos: ['pRedBC']
-                        });
-                    }
-                }
-            } else {
-                // Não exige cBenef
-                if (cBenef && cBenef !== 'SEM CBENEF') {
-                    // Verifica se o código é válido
-                    if (cBenefValidosTodos.includes(cBenef)) {
-                        // CENÁRIO B: Flexibilidade - código válido, não faz nada
-                        log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
-                    } else {
-                        // CENÁRIO C: Alerta SPED - código inválido
-                        alertas.push({
-                            tipo: 'warning',
-                            erro: 'ALERTA_SPED_CBENEF',
-                            desc: 'Código de benefício informado inválido para este CST',
-                            motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
-                            correcao: 'Remover o cBenef do cadastro do produto',
-                            orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
+                            erro: 'REJEICAO_928',
+                            desc: `Rejeição 928: CST ${cstNormalizado} (${regra.desc}) exige cBenef válido`,
+                            motivo: 'Faltou informar código de benefício fiscal ou código inválido',
+                            correcao: 'Informe o cBenef válido para este CST',
+                            orientacao: 'Consultar Tabela cBenef SEFAZ',
+                            rejeicao: '928',
                             campos: ['cBenef']
                         });
+                    } else {
+                        // Se cBenef é válido, valida as regras específicas do código
+                        if (cBenef === 'SP099090') {
+                            // Regra SP099090: Decisão judicial
+                            if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099090 não é permitido para CST ${cstNormalizado}`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            } else {
+                                const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
+                                if (!textoComplementar) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'Processo judicial não informado',
+                                        desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
+                                        motivo: 'Faltou informar o processo judicial',
+                                        correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
+                                        orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
+                                        rejeicao: '',
+                                        campos: ['infAdFisco', 'infCpl']
+                                    });
+                                }
+                            }
+                        } else if (cBenef === 'SP099000') {
+                            if (cstNormalizado !== '90') {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099000 só é permitido para CST 90`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        } else if (cBenef === 'SP099009') {
+                            if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099009 não é permitido para CST ${cstNormalizado}`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        } else if (cBenef === 'SP099999') {
+                            if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099999 só é permitido para CST 40 e 90`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            } else {
+                                const textoComplementar = infAdic.infCpl.trim();
+                                if (!textoComplementar) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'Fundamentação legal não informada',
+                                        desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
+                                        motivo: 'Faltou informar a fundamentação legal',
+                                        correcao: 'Incluir a fundamentação legal em infCpl',
+                                        orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
+                                        rejeicao: '',
+                                        campos: ['infCpl']
+                                    });
+                                }
+                            }
+                        } else if (cBenef === 'SP020390') {
+                            if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP020390 só é permitido para CST 20 e 70`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        }
+                        
+                        // Valida pRedBC para CST 20
+                        if (regra.precisaPREDBC && !item.pRedBC) {
+                            status = 'error';
+                            mensagens.push({
+                                tipo: 'error',
+                                erro: 'pRedBC obrigatório',
+                                desc: 'CST 20 exige percentual de redução da base de cálculo',
+                                motivo: 'Faltou informar o pRedBC',
+                                correcao: 'Preencher o campo % Base Red. no cadastro do produto',
+                                orientacao: 'Solicitar ao cliente que verifique o percentual',
+                                rejeicao: '',
+                                campos: ['pRedBC']
+                            });
+                        }
+                    }
+                } else {
+                    // Não exige cBenef
+                    if (cBenef && cBenef !== 'SEM CBENEF') {
+                        // Verifica se o código é válido
+                        if (cBenefValidosTodos.includes(cBenef)) {
+                            // CENÁRIO B: Flexibilidade - código válido, não faz nada
+                            log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
+                        } else {
+                            // CENÁRIO C: Alerta SPED - código inválido
+                            alertas.push({
+                                tipo: 'warning',
+                                erro: 'ALERTA_SPED_CBENEF',
+                                desc: 'Código de benefício informado inválido para este CST',
+                                motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
+                                correcao: 'Remover o cBenef do cadastro do produto',
+                                orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
+                                campos: ['cBenef']
+                            });
+                        }
                     }
                 }
             }
@@ -1349,6 +1357,126 @@
                 });
             }
             
+            return mensagens;
+        }
+
+        function validarRegrasCRT(item, CRT, cUF) {
+            const mensagens = [];
+            const siglasUFExigemCBenef = ['35', '43', '41', '33', '53']; // SP, RS, PR, RJ, DF (cUF codes)
+            const siglasUF = {
+                '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+                '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL',
+                '28':'SE','29':'BA','31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR',
+                '42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF'
+            };
+            const siglaUF = siglasUF[cUF] || '';
+
+            // Regras para Simples Nacional (CRT 1 ou 2)
+            if (CRT === '1' || CRT === '2') {
+                // Exclusividade CSOSN: Não pode ter CST, só CSOSN
+                if (item.CST && !item.CSOSN) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CST_INCOMPATIVEL_SIMPLES',
+                        desc: `Item ${item.nItem}: Uso de CST em Simples Nacional. Use CSOSN.`,
+                        motivo: 'Simples Nacional exige CSOSN ao invés de CST.',
+                        correcao: 'Altere o cadastro do produto para usar CSOSN.',
+                        orientacao: 'Acesse o cadastro do produto e altere para CSOSN.',
+                        rejeicao: '',
+                        campos: ['CST', 'CSOSN']
+                    });
+                }
+
+                // Cruzamento CFOP x CSOSN
+                if (item.CFOP === '5102' && item.CSOSN === '500') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_INCOMPATIVEL_COM_CSOSN_500',
+                        desc: `Item ${item.nItem}: CFOP 5102 incompatível com CSOSN 500. Para CSOSN 500 use CFOP 5405.`,
+                        motivo: 'CFOP 5102 é para operação normal, CSOSN 500 é para ST.',
+                        correcao: 'Altere o CFOP para 5405 ou o CSOSN para outro valor.',
+                        orientacao: 'Acesse o cadastro do produto e ajuste CFOP ou CSOSN.',
+                        rejeicao: '381',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                }
+
+                if (item.CSOSN === '500' && item.CFOP !== '5405') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_OBRIGATORIO_5405',
+                        desc: `Item ${item.nItem}: CSOSN 500 exige CFOP 5405.`,
+                        motivo: 'CSOSN 500 é para ST, exige CFOP de ST.',
+                        correcao: 'Altere o CFOP para 5405.',
+                        orientacao: 'Acesse o cadastro do produto e altere o CFOP para 5405.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                }
+            }
+
+            // Regras para Regime Normal (CRT 3)
+            if (CRT === '3') {
+                // Exclusividade CST: Não pode ter CSOSN, só CST
+                if (item.CSOSN && !item.CST) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CSOSN_INCOMPATIVEL_REGIME_NORMAL',
+                        desc: `Item ${item.nItem}: Uso de CSOSN em Regime Normal. Use CST.`,
+                        motivo: 'Regime Normal exige CST ao invés de CSOSN.',
+                        correcao: 'Altere o cadastro do produto para usar CST.',
+                        orientacao: 'Acesse o cadastro do produto e altere para CST.',
+                        rejeicao: '600',
+                        campos: ['CST', 'CSOSN']
+                    });
+                }
+
+                // Cruzamento CFOP x CST
+                if (item.CFOP === '5405' && item.CST !== '60') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CST_OBRIGATORIO_60',
+                        desc: `Item ${item.nItem}: CFOP 5405 exige CST 60.`,
+                        motivo: 'CFOP 5405 é para ST, exige CST 60.',
+                        correcao: 'Altere o CST para 60.',
+                        orientacao: 'Acesse o cadastro do produto e altere o CST para 60.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CST']
+                    });
+                }
+
+                if (item.CFOP === '5102' && item.CST === '60') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_INCOMPATIVEL_COM_CST_60',
+                        desc: `Item ${item.nItem}: CFOP 5102 não pode ser usado com CST 60.`,
+                        motivo: 'CFOP 5102 é para operação normal, CST 60 é para ST.',
+                        correcao: 'Altere o CFOP ou o CST.',
+                        orientacao: 'Acesse o cadastro do produto e ajuste CFOP ou CST.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CST']
+                    });
+                }
+            }
+
+            // Regra cBenef obrigatório para certas UFs
+            if (siglasUFExigemCBenef.includes(cUF)) {
+                const cstsQueExigemCBenef = ['20', '40', '41', '51'];
+                const csosnQueExigemCBenef = ['900']; // exemplo
+                if ((cstsQueExigemCBenef.includes(item.CST) || csosnQueExigemCBenef.includes(item.CSOSN)) && !item.cBenef) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CBENEF_OBRIGATORIO',
+                        desc: `Item ${item.nItem}: cBenef é obrigatório para este CST/CSOSN na UF ${siglaUF}.`,
+                        motivo: 'UF exige cBenef para operações com isenção, redução ou diferimento.',
+                        correcao: 'Informe o cBenef no cadastro do produto.',
+                        orientacao: 'Acesse o cadastro do produto e informe o cBenef válido.',
+                        rejeicao: '930',
+                        campos: ['cBenef']
+                    });
+                }
+            }
+
             return mensagens;
         }
         // ==========================================
@@ -1729,8 +1857,12 @@
             let total_cofins_icms = 0;
             let total_pis_issqn = 0;
             let total_cofins_issqn = 0;
+            const detalhesPISICMS = [];
+            const detalhesCOFINSICMS = [];
+            const detalhesPISISSQN = [];
+            const detalhesCOFINSISSQN = [];
             
-            // Somar valores dos itens
+            // Somar valores dos itens e criar mapeamento detalhado
             dados.itens.forEach(item => {
                 const vPIS = parseFloat(item.vPIS) || 0;
                 const vCOFINS = parseFloat(item.vCOFINS) || 0;
@@ -1738,10 +1870,14 @@
                 if (item.temICMS) {
                     total_pis_icms += vPIS;
                     total_cofins_icms += vCOFINS;
+                    detalhesPISICMS.push(`Item ${item.nItem}: R$ ${vPIS.toFixed(2)}`);
+                    detalhesCOFINSICMS.push(`Item ${item.nItem}: R$ ${vCOFINS.toFixed(2)}`);
                 }
                 if (item.temISSQN) {
                     total_pis_issqn += vPIS;
                     total_cofins_issqn += vCOFINS;
+                    detalhesPISISSQN.push(`Item ${item.nItem}: R$ ${vPIS.toFixed(2)}`);
+                    detalhesCOFINSISSQN.push(`Item ${item.nItem}: R$ ${vCOFINS.toFixed(2)}`);
                 }
             });
             
@@ -1759,11 +1895,11 @@
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total PIS divergente',
-                    desc: `Total do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}`,
+                    desc: `Soma do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}\nDetalhes: ${detalhesPISICMS.join(', ')}`,
                     motivo: 'Soma dos valores de PIS dos itens com ICMS não confere com o total em ICMSTot',
                     correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos itens',
                     orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
-                    rejeicao: '602',
+                    rejeicao: '533',
                     campos: ['vPIS (ICMSTot)']
                 });
             }
@@ -1772,11 +1908,11 @@
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total COFINS divergente',
-                    desc: `Total do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}`,
+                    desc: `Soma do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}\nDetalhes: ${detalhesCOFINSICMS.join(', ')}`,
                     motivo: 'Soma dos valores de COFINS dos itens com ICMS não confere com o total em ICMSTot',
-                    correcao: 'Ajustar o valor vCOFINS em ICMSTot para corresponder à soma dos itens',
-                    orientacao: 'Verificar os valores de COFINS em cada item e o total declarado',
-                    rejeicao: '603',
+                    correcao: 'Ajustar o % PIS e COFINS para corresponder à soma dos itens',
+                    orientacao: 'CST PIS e CST COFINS 06 e 07, que provavelmente não devem ter % de Pis ou Cofins',
+                    rejeicao: '534',
                     campos: ['vCOFINS (ICMSTot)']
                 });
             }
@@ -1790,7 +1926,7 @@
                     mensagens.push({
                         tipo: 'error',
                         erro: 'Total PIS divergente (ISSQN)',
-                        desc: `Total do PIS nos itens (ISSQN): R$ ${total_pis_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vPIS_issqn_tot.toFixed(2)}`,
+                        desc: `Soma do PIS nos itens (ISSQN): R$ ${total_pis_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vPIS_issqn_tot.toFixed(2)}\nDetalhes: ${detalhesPISISSQN.join(', ')}`,
                         motivo: 'Soma dos valores de PIS dos itens com ISSQN não confere com o total em ISSQNtot',
                         correcao: 'Ajustar o valor vPIS em ISSQNtot para corresponder à soma dos itens',
                         orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
@@ -1805,7 +1941,7 @@
                     mensagens.push({
                         tipo: 'error',
                         erro: 'Total COFINS divergente (ISSQN)',
-                        desc: `Total do COFINS nos itens (ISSQN): R$ ${total_cofins_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vCOFINS_issqn_tot.toFixed(2)}`,
+                        desc: `Soma do COFINS nos itens (ISSQN): R$ ${total_cofins_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vCOFINS_issqn_tot.toFixed(2)}\nDetalhes: ${detalhesCOFINSISSQN.join(', ')}`,
                         motivo: 'Soma dos valores de COFINS dos itens com ISSQN não confere com o total em ISSQNtot',
                         correcao: 'Ajustar o valor vCOFINS em ISSQNtot para corresponder à soma dos itens',
                         orientacao: 'Verificar os valores de COFINS em cada item e o total declarado',
@@ -1820,7 +1956,7 @@
         
         async function processarDados(dados) {
             const itensProcessados = dados.itens.map(item => ({
-                ...item, validacao: validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod)
+                ...item, validacao: validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
             }));
             const totaisValidacao = validarTotaisPISCOFINS(dados);
             const novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
@@ -2149,7 +2285,7 @@
                                             ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                                         </span>
                                     </div>
-                                    <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
+                                    <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc.replace(/\n/g, '<br>')}</div>
                                     <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                                     <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                                     ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
@@ -2169,7 +2305,7 @@
                                             <strong style="color: var(--warning)">${alerta.erro}</strong>
                                             <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA</span>
                                         </div>
-                                        <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc}</div>
+                                        <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc.replace(/\n/g, '<br>')}</div>
                                         <div style="margin-bottom:4px;"><strong>Motivo:</strong> ${alerta.motivo}</div>
                                         ${alerta.correcao ? `<div style="margin-bottom:4px;"><strong>Como Corrigir:</strong> ${alerta.correcao}</div>` : ''}
                                         ${alerta.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${alerta.orientacao}</div>` : ''}
@@ -2219,7 +2355,7 @@
                             </div>
                         </div>
                         <div style="margin-top: 16px;">
-                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
+                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc.replace(/\n/g, '<br>')}</div>
                             <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                             <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                             ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
@@ -2350,12 +2486,22 @@
                             </tbody>
                         </table>
                         <h2>Diagnósticos</h2>
+                        ${(dadosProcessados.totaisValidacao || []).map(msg => `
+                            <div class="diagnostico ${msg.tipo}">
+                                <h3>Erro Geral: ${msg.erro}${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}</h3>
+                                <div class="grid">
+                                    <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc.replace(/\n/g, '<br>')}</span></div>
+                                    <div class="campo"><span class="campo-label">Motivo</span><span>${msg.motivo}</span></div>
+                                    <div class="campo"><span class="campo-label">Como Corrigir</span><span>${msg.correcao}</span></div>
+                                </div>
+                            </div>
+                        `).join('')}
                         ${dadosProcessados.itensProcessados.flatMap(item => {
                             return item.validacao.mensagens.filter(m => m.tipo !== 'success').map(msg => `
                                 <div class="diagnostico ${msg.tipo}">
                                     <h3>Item ${item.nItem}: ${item.xProd} (${msg.erro})</h3>
                                     <div class="grid">
-                                        <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc}</span></div>
+                                        <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc.replace(/\n/g, '<br>')}</span></div>
                                         <div class="campo"><span class="campo-label">Motivo</span><span>${msg.motivo}</span></div>
                                         <div class="campo"><span class="campo-label">Como Corrigir</span><span>${msg.correcao}</span></div>
                                         <div class="campo"><span class="campo-label">Rejeição</span><span>${msg.rejeicao || '-'}</span></div>
@@ -2363,6 +2509,15 @@
                                 </div>
                             `);
                         }).join('')}
+                        ${(dadosProcessados.novasValidacoes || []).map(msg => `
+                            <div class="diagnostico error">
+                                <h3>Erro Estrutural/Matemático: ${msg.erro}</h3>
+                                <div class="grid">
+                                    <div class="campo"><span class="campo-label">Mensagem</span><span>${msg.mensagem.replace(/\n/g, '<br>')}</span></div>
+                                    ${msg.item ? `<div class="campo"><span class="campo-label">Item</span><span>${msg.item}</span></div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
                         ${dadosProcessados.stats.erro === 0 && dadosProcessados.stats.aviso === 0 ? 
                             '<div style="text-align:center;padding:40px;background:#d1fae5;color:#059669;border-radius:8px;font-weight:700;font-size:1.1rem;">✅ Nenhum problema encontrado!</div>' : ''}
                     </div>
