@@ -1857,12 +1857,8 @@
             let total_cofins_icms = 0;
             let total_pis_issqn = 0;
             let total_cofins_issqn = 0;
-            const detalhesPISICMS = [];
-            const detalhesCOFINSICMS = [];
-            const detalhesPISISSQN = [];
-            const detalhesCOFINSISSQN = [];
             
-            // Somar valores dos itens e criar mapeamento detalhado
+            // Somar valores dos itens
             dados.itens.forEach(item => {
                 const vPIS = parseFloat(item.vPIS) || 0;
                 const vCOFINS = parseFloat(item.vCOFINS) || 0;
@@ -1870,14 +1866,10 @@
                 if (item.temICMS) {
                     total_pis_icms += vPIS;
                     total_cofins_icms += vCOFINS;
-                    detalhesPISICMS.push(`Item ${item.nItem}: R$ ${vPIS.toFixed(2)}`);
-                    detalhesCOFINSICMS.push(`Item ${item.nItem}: R$ ${vCOFINS.toFixed(2)}`);
                 }
                 if (item.temISSQN) {
                     total_pis_issqn += vPIS;
                     total_cofins_issqn += vCOFINS;
-                    detalhesPISISSQN.push(`Item ${item.nItem}: R$ ${vPIS.toFixed(2)}`);
-                    detalhesCOFINSISSQN.push(`Item ${item.nItem}: R$ ${vCOFINS.toFixed(2)}`);
                 }
             });
             
@@ -1895,11 +1887,11 @@
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total PIS divergente',
-                    desc: `Soma do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}\nDetalhes: ${detalhesPISICMS.join(', ')}`,
+                    desc: `Total do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}`,
                     motivo: 'Soma dos valores de PIS dos itens com ICMS não confere com o total em ICMSTot',
                     correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos itens',
                     orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
-                    rejeicao: '533',
+                    rejeicao: '602',
                     campos: ['vPIS (ICMSTot)']
                 });
             }
@@ -1908,11 +1900,11 @@
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total COFINS divergente',
-                    desc: `Soma do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}\nDetalhes: ${detalhesCOFINSICMS.join(', ')}`,
+                    desc: `Total do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}`,
                     motivo: 'Soma dos valores de COFINS dos itens com ICMS não confere com o total em ICMSTot',
-                    correcao: 'Ajustar o % PIS e COFINS para corresponder à soma dos itens',
+                    correcao: 'Ajustar o % PIS e COFINS  para corresponder à soma dos itens',
                     orientacao: 'CST PIS e CST COFINS 06 e 07, que provavelmente não devem ter % de Pis ou Cofins',
-                    rejeicao: '534',
+                    rejeicao: '603',
                     campos: ['vCOFINS (ICMSTot)']
                 });
             }
@@ -1926,7 +1918,7 @@
                     mensagens.push({
                         tipo: 'error',
                         erro: 'Total PIS divergente (ISSQN)',
-                        desc: `Soma do PIS nos itens (ISSQN): R$ ${total_pis_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vPIS_issqn_tot.toFixed(2)}\nDetalhes: ${detalhesPISISSQN.join(', ')}`,
+                        desc: `Total do PIS nos itens (ISSQN): R$ ${total_pis_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vPIS_issqn_tot.toFixed(2)}`,
                         motivo: 'Soma dos valores de PIS dos itens com ISSQN não confere com o total em ISSQNtot',
                         correcao: 'Ajustar o valor vPIS em ISSQNtot para corresponder à soma dos itens',
                         orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
@@ -1941,7 +1933,7 @@
                     mensagens.push({
                         tipo: 'error',
                         erro: 'Total COFINS divergente (ISSQN)',
-                        desc: `Soma do COFINS nos itens (ISSQN): R$ ${total_cofins_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vCOFINS_issqn_tot.toFixed(2)}\nDetalhes: ${detalhesCOFINSISSQN.join(', ')}`,
+                        desc: `Total do COFINS nos itens (ISSQN): R$ ${total_cofins_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vCOFINS_issqn_tot.toFixed(2)}`,
                         motivo: 'Soma dos valores de COFINS dos itens com ISSQN não confere com o total em ISSQNtot',
                         correcao: 'Ajustar o valor vCOFINS em ISSQNtot para corresponder à soma dos itens',
                         orientacao: 'Verificar os valores de COFINS em cada item e o total declarado',
@@ -2285,7 +2277,7 @@
                                             ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                                         </span>
                                     </div>
-                                    <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc.replace(/\n/g, '<br>')}</div>
+                                    <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
                                     <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                                     <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                                     ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
@@ -2305,7 +2297,7 @@
                                             <strong style="color: var(--warning)">${alerta.erro}</strong>
                                             <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA</span>
                                         </div>
-                                        <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc.replace(/\n/g, '<br>')}</div>
+                                        <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc}</div>
                                         <div style="margin-bottom:4px;"><strong>Motivo:</strong> ${alerta.motivo}</div>
                                         ${alerta.correcao ? `<div style="margin-bottom:4px;"><strong>Como Corrigir:</strong> ${alerta.correcao}</div>` : ''}
                                         ${alerta.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${alerta.orientacao}</div>` : ''}
@@ -2355,7 +2347,7 @@
                             </div>
                         </div>
                         <div style="margin-top: 16px;">
-                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc.replace(/\n/g, '<br>')}</div>
+                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
                             <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                             <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                             ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
@@ -2486,22 +2478,12 @@
                             </tbody>
                         </table>
                         <h2>Diagnósticos</h2>
-                        ${(dadosProcessados.totaisValidacao || []).map(msg => `
-                            <div class="diagnostico ${msg.tipo}">
-                                <h3>Erro Geral: ${msg.erro}${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}</h3>
-                                <div class="grid">
-                                    <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc.replace(/\n/g, '<br>')}</span></div>
-                                    <div class="campo"><span class="campo-label">Motivo</span><span>${msg.motivo}</span></div>
-                                    <div class="campo"><span class="campo-label">Como Corrigir</span><span>${msg.correcao}</span></div>
-                                </div>
-                            </div>
-                        `).join('')}
                         ${dadosProcessados.itensProcessados.flatMap(item => {
                             return item.validacao.mensagens.filter(m => m.tipo !== 'success').map(msg => `
                                 <div class="diagnostico ${msg.tipo}">
                                     <h3>Item ${item.nItem}: ${item.xProd} (${msg.erro})</h3>
                                     <div class="grid">
-                                        <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc.replace(/\n/g, '<br>')}</span></div>
+                                        <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc}</span></div>
                                         <div class="campo"><span class="campo-label">Motivo</span><span>${msg.motivo}</span></div>
                                         <div class="campo"><span class="campo-label">Como Corrigir</span><span>${msg.correcao}</span></div>
                                         <div class="campo"><span class="campo-label">Rejeição</span><span>${msg.rejeicao || '-'}</span></div>
@@ -2509,15 +2491,6 @@
                                 </div>
                             `);
                         }).join('')}
-                        ${(dadosProcessados.novasValidacoes || []).map(msg => `
-                            <div class="diagnostico error">
-                                <h3>Erro Estrutural/Matemático: ${msg.erro}</h3>
-                                <div class="grid">
-                                    <div class="campo"><span class="campo-label">Mensagem</span><span>${msg.mensagem.replace(/\n/g, '<br>')}</span></div>
-                                    ${msg.item ? `<div class="campo"><span class="campo-label">Item</span><span>${msg.item}</span></div>` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
                         ${dadosProcessados.stats.erro === 0 && dadosProcessados.stats.aviso === 0 ? 
                             '<div style="text-align:center;padding:40px;background:#d1fae5;color:#059669;border-radius:8px;font-weight:700;font-size:1.1rem;">✅ Nenhum problema encontrado!</div>' : ''}
                     </div>
