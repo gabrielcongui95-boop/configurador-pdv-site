@@ -1,0 +1,3219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisa NF-e/NFC-e</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #1a202c;
+            --text-light: #64748b;
+            --primary: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -2px rgba(0,0,0,0.1);
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px 20px;
+        }
+        header h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+        .upload-area {
+            border: 3px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg);
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(37,99,235,0.05);
+        }
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .upload-text {
+            color: var(--text-light);
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+        .btn {
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1e40af;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .stat-card {
+            background: var(--bg);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .stat-success .stat-value { color: var(--success); }
+        .stat-warning .stat-value { color: var(--warning); }
+        .stat-error .stat-value { color: var(--error); }
+        .stat-primary .stat-value { color: var(--primary); }
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: var(--bg);
+            color: var(--text-light);
+            font-weight: 700;
+            text-align: left;
+            padding: 16px;
+            font-size: 0.9rem;
+        }
+        td {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+        tr:hover {
+            background: rgba(37,99,235,0.03);
+        }
+        .badge {
+            display: inline-flex;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .badge-success { background: rgba(16,185,129,0.15); color: #059669; }
+        .badge-warning { background: rgba(245,158,11,0.15); color: #d97706; }
+        .badge-error { background: rgba(239,68,68,0.15); color: #dc2626; }
+        .badge-info { background: rgba(37,99,235,0.15); color: #1e40af; }
+        .diagnostic-item {
+            border-left: 4px solid;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            background: var(--bg);
+        }
+        .diagnostic-item.error { border-color: var(--error); }
+        .diagnostic-item.warning { border-color: var(--warning); }
+        .diagnostic-item.success { border-color: var(--success); }
+        .diagnostic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .diagnostic-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .diagnostic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .diagnostic-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .diagnostic-field-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+        .diagnostic-field-value {
+            font-size: 0.95rem;
+        }
+        .loading {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text {
+            margin-top: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        .debug-section {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: var(--radius);
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .ai-status {
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+        .ai-status.info {
+            background: rgba(37,99,235,0.08);
+            color: #1e40af;
+        }
+        .ai-status.warning {
+            background: rgba(245,158,11,0.12);
+            color: #b45309;
+        }
+        .ai-status.error {
+            background: rgba(239,68,68,0.1);
+            color: #b91c1c;
+        }
+        .ai-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            background: #fafcff;
+            margin-bottom: 16px;
+        }
+        .ai-action-card {
+            display: none;
+            border: 1px solid rgba(37,99,235,0.15);
+            background: linear-gradient(180deg, rgba(37,99,235,0.04), rgba(37,99,235,0.02));
+        }
+        .ai-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .ai-action-text {
+            flex: 1;
+            min-width: 260px;
+        }
+        .ai-action-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        .ai-action-desc {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+        .btn-ai {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 22px;
+            border-radius: 999px;
+            box-shadow: 0 10px 24px rgba(37,99,235,0.14);
+        }
+        .ai-action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn-ai:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .inline-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        .ai-card h4 {
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+        .ai-section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-top: 10px;
+            margin-bottom: 4px;
+        }
+        .ai-list {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .ai-list li {
+            margin-bottom: 6px;
+        }
+        #results {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Analisando XML...</div>
+    </div>
+    <div class="container">
+        <header>
+            <h1>🤖 Analisa XML </h1>
+            <p><H3> NF-e/NFC-e  </H3></p>
+        </header>
+        <div class="card">
+            <div class="card-title">📁 Carregar XML</div>
+            <div id="upload-area" class="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Arraste o arquivo XML aqui ou clique para selecionar</div>
+                <input type="file" id="file-input" accept=".xml" style="display:none;">
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                    Selecionar Arquivo
+                </button>
+            </div>
+        </div>
+        <div id="results">
+            <div class="card">
+                <div class="card-title"> Dados do Documento</div>
+                <div id="doc-info" class="diagnostic-grid"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">🔧 Diagnóstico Completo</div>
+                <div id="diagnostics"></div>
+            </div>
+            <div id="ai-action-card" class="card ai-action-card">
+                <div class="ai-action-bar">
+                    <div class="ai-action-text">
+                        <div class="ai-action-title">🧠 Explicação Assistida por IA</div>
+                        <div class="ai-action-desc">Peça à IA uma leitura técnica curta sobre o que o validador local encontrou.</div>
+                    </div>
+                    <div class="ai-action-buttons">
+                        <button id="btn-analise-ia" class="btn btn-primary btn-ai" onclick="executarAnaliseIAPorDemanda()" disabled>🧠 Explicar com IA</button>
+                    </div>
+                </div>
+            </div>
+            <div id="ai-analysis-card" class="card" style="display:none;">
+                <div class="card-title">🧠 Assistente IA</div>
+                <div id="ai-analysis"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📊 Pré-visualização do Relatório</div>
+                <div id="relatorio-preview"></div>
+            </div>
+            <div class="card" style="display:flex;justify-content:flex-end;gap:12px;">
+                <button class="btn btn-primary" onclick="toggleDebug()">📋 Mostrar Debug</button>
+                <button id="btn-baixar-relatorio" class="btn btn-success" onclick="exportarRelatorio()" disabled>📄 Baixar Relatório</button>
+            </div>
+            <div id="debug" class="debug-section"></div>
+        </div>
+    </div>
+    <script>
+        // ==========================================
+        // CONFIGURAÇÕES GLOBAIS
+        // ==========================================
+        const NS_NFE = 'http://www.portalfiscal.inf.br/nfe';
+        const IA_CONFIG = {
+            provider: 'gemini',
+            models: ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+            endpointBase: 'https://generativelanguage.googleapis.com/v1beta/models',
+            timeoutMs: 45000,
+            apiKeys: [
+                'AQ.Ab8RN6JI1liAAMqmTNjTIlkUMY1ZrqdmBDKFbW043C6eu5mSnw',
+                'AQ.Ab8RN6ICQxvZXJTWNkB9NvYJa6F3wPS2RxXbCsdwhFBls6FdUQ',
+                'AQ.Ab8RN6JNGe6ra554vVy5Nm7AQtZ9m5OMCQcSMak7HZrC_c0lMg',
+                'AQ.Ab8RN6LlFrHRRUpKnRSiv6kvjSzWcm8kwWzoXfhoAHgwp0BYSg',
+                'AQ.Ab8RN6JIBaDrZXTi-6cLzLFAZk9_E2k1mm-Ud2kpvziYvl4dCQ'
+            ].filter(Boolean)
+        };
+        let xmlDoc = null;
+        let xmlConteudoAtual = '';
+        let analiseIAEmAndamento = false;
+
+        // Função de "Motor de Tradução Humana" local - mapeia rejeições em orientações contábeis
+        function obterSugestaoContabil(nomeRejeicao, cProd, xProd) {
+            // Dicionário de sugestões mapeado por nome da rejeição
+            const dicionarioSugestoes = {
+                "REJEICAO_928": () => `Rejeição 928 no item '${xProd}' (Código: ${cProd}). A 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO), o que obriga o preenchimento do benefício. Acesse o cadastro do produto e informe o código cBenef correto e ativo para este item antes de emitir novamente.`,
+                
+                "ALERTA_SPED_CBENEF": () => `Aviso no item '${xProd}' (Código: ${cProd}): Há um código de benefício informado que não existe na tabela oficial da SEFAZ. Como a 'Situação Tributária do cadastro de alíquotas' deste item não exige esse campo, acesse o cadastro e limpe/apague o campo cBenef para evitar multas em auditorias futuras do SPED.`,
+                
+                "CFOP incompatível com CST (NFC-e)": () => `Incompatibilidade fiscal detectada no item '${xProd}' (Código: ${cProd}). O CFOP de venda utilizado não é permitido para o CST configurado neste produto em operações de Cupom Eletrônico (NFC-e). Acesse o Cadastro do Produto, vá na aba Fiscal e ajuste o CFOP para 5.102 ou altere o CST para um condizente com a operação.`,
+                
+                "cBenef obrigatório": () => `O produto '${xProd}' (Código: ${cProd}) exige cBenef ou está inconsistente. No cadastro de itens, certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO) e preencha o código do benefício fiscal exigido pela SEFAZ.`,
+                
+                "CST 40 (Isenção) EXIGE cBenef": () => `O produto '${xProd}' (Código: ${cProd}) exige cBenef ou está inconsistente. No cadastro de itens, certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO) e preencha o código do benefício fiscal exigido pela SEFAZ.`,
+                
+                "CEP inexistente": () => `O CEP informado no endereço do emitente ou destinatário não existe na base dos Correios. Acesse a tela de cadastro da sua empresa ou do cliente e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "CST 00 (Tributado Integralmente)": () => `Erro no item '${xProd}' (Código: ${cProd}). Acesse as configurações do produto e, na 'Situação Tributária do cadastro de alíquotas', mude a opção para '01' (TRIBUTADO INTEGRALMENTE) e informe a alíquota correta do imposto.`,
+                
+                "CST 020 (Tributado com Redução)": () => `Divergência na redução de base do item '${xProd}' (Código: ${cProd}). No sistema, acesse a 'Situação Tributária do cadastro de alíquotas', configure como '01' e certifique-se de preencher o percentual correto no campo '% Base Red.'.`,
+                
+                "CST 041 (Não Tributado)": () => `Inconsistência no item '${xProd}' (Código: ${cProd}). Acesse o cadastro e verifique se a 'Situação Tributária do cadastro de alíquotas' está configurada corretamente com a sigla 'N' (NÃO TRIBUTADO).`,
+                
+                "CST 060 (Substituição Tributária)": () => `Falha de ST no item '${xProd}' (Código: ${cProd}). Acesse o cadastro e altere a 'Situação Tributária do cadastro de alíquotas' para a opção 'F' (SUBSTITUIÇÃO TRIBUTÁRIA) para corrigir o cálculo retido.`,
+                
+                "ISSQN (Serviço)": () => `A nota rejeitou porque o item '${xProd}' (Código: ${cProd}) é um serviço. No cadastro, mude a 'Situação Tributária do cadastro de alíquotas' para 'V' (ISSQN - SERVIÇO) para que o sistema processe como RPS/NFSe corretamente.`,
+                
+                "cBenef descontinuado": () => `O produto '${xProd}' (Código: ${cProd}) está usando código obsoleto. No cadastro de itens, remova o cBenef "SEM CBENEF" e configure corretamente a 'Situação Tributária do cadastro de alíquotas' conforme o caso.`,
+                
+                "cBenef informado indevidamente": () => `O item '${xProd}' (Código: ${cProd}) tem cBenef desnecessário. No cadastro, remova o código de benefício fiscal e certifique-se de que a 'Situação Tributária do cadastro de alíquotas' está configurada corretamente.`,
+                
+                "cBenef incompatível com UF": () => `Código de benefício incompatível no item '${xProd}' (Código: ${cProd}). No cadastro de itens, verifique o cBenef informado e a sigla da UF no cadastro do produto, e altere o cBenef para começar com a sigla correta da UF.`,
+                
+                "cBenef não permitido para este CST": () => `Incompatibilidade no item '${xProd}' (Código: ${cProd}). No cadastro de itens, ajuste a 'Situação Tributária do cadastro de alíquotas' ou o cBenef para que ambos sejam compatíveis.`,
+                
+                "Processo judicial não informado": () => `Falta informação no item '${xProd}' (Código: ${cProd}). No cadastro ou no xml, inclua o número do processo judicial nas informações complementares.`,
+                
+                "Fundamentação legal não informada": () => `Falta fundamentação no item '${xProd}' (Código: ${cProd}). Inclua a fundamentação legal nas informações complementares do xml ou no cadastro do produto.`,
+                
+                "pRedBC obrigatório": () => `Falta percentual no item '${xProd}' (Código: ${cProd}). No cadastro de itens, acesse a 'Situação Tributária do cadastro de alíquotas' e preencha o campo '% Base Red.' com o valor correto.`,
+                
+                "CFOP incompatível com CST (NFC-e)": () => `Incompatibilidade fiscal detectada no item '${xProd}' (Código: ${cProd}). Acesse o Cadastro do Produto, vá na aba Fiscal e ajuste o CFOP para 5.102 ou altere o CST para um condizente com a operação.`,
+                
+                "Rejeição CEP Incorreto": () => `O CEP informado no endereço do emitente ou destinatário não existe na base dos Correios. Acesse a tela de cadastro da sua empresa ou do cliente e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "CEP Inválido": () => `O CEP informado no endereço é inválido. Acesse a tela de cadastro e corrija o CEP para que o endereço seja validado e a nota possa ser emitida.`,
+                
+                "Divergência de UF": () => `UF do endereço diverge. Acesse a tela de cadastro e confira a UF informada para o endereço.`,
+                
+                "Divergência de Município": () => `Município do endereço diverge. Acesse a tela de cadastro e confira o nome do município informado para o endereço.`,
+                
+                "Telefone Inválido": () => `Telefone informado é inválido. Acesse o cadastro da empresa ou do cliente e corrija o telefone, com pelo menos 8 dígitos.`,
+                
+                "Rejeição 252": () => `Chave de acesso com tamanho inválido. Confira se o xml gerado pela sua nota.`,
+                
+                "Total PIS divergente": () => `Total de PIS divergente. Verifique os valores de PIS em cada item e o total declarado.`,
+                
+                "Total COFINS divergente": () => `Total de COFINS divergente. Verifique os valores de COFINS em cada item e o total declarado.`,
+                "ERRO_NCM_TAMANHO": () => `Erro no item "${xProd}" (Código: ${cProd}): O código NCM informado está incompleto ou incorreto. O NCM precisa ter exatamente 8 números. Acesse o cadastro do produto e consulte a tabela fiscal para atualizar o código correto.`,
+                "ERRO_VALOR_ZERADO": () => `Erro no item "${xProd}" (Código: ${cProd}): O sistema identificou que este produto está com o preço unitário ou o valor total zerado. Acesse a tela de vendas ou o cadastro do item e informe um valor maior que zero para permitir o faturamento.`,
+                "ERRO_CSOSN_500_CFOP": () => `Erro no item "${xProd}" (Código: ${cProd}): Como o produto está configurado como CSOSN 500 (ICMS Cobrado Anteriormente por ST - Equivalente à nossa sigla "F"), ele exige um CFOP de Substituição Tributária. Acesse o cadastro e altere o CFOP deste item para 5.405.`,
+                "ERRO_DETALHE_ISS": () => `Erro no item "${xProd}" (Código: ${cProd}): Configurado com a Situação Tributária "V" (ISSQN - SERVIÇO). Há uma redução informada, mas faltam os detalhes da dedução da base de cálculo do ISS. Acesse o cadastro de serviços e complete os campos de parametrização da redução de ISS.`,
+                "ERRO_CST_PIS_COFINS": () => `Erro no item "${xProd}" (Código: ${cProd}): O CST de PIS ou COFINS informado é inválido. Acesse as configurações fiscais do produto no sistema e certifique-se de selecionar um código válido (como 49 para Operações de Saída ou 07/08 para produtos Monofásicos/Isentos).`,
+                "CST_INCOMPATIVEL_SIMPLES": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CST em Simples Nacional. Acesse o cadastro do produto e altere para usar CSOSN.`,
+                "CFOP_INCOMPATIVEL_COM_CSOSN_500": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CSOSN 500. Acesse o cadastro do produto e altere o CFOP para 5405 ou o CSOSN para outro valor.`,
+                "CFOP_OBRIGATORIO_5405": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CSOSN 500 exige CFOP 5405. Acesse o cadastro do produto e altere o CFOP para 5405.`,
+                "CSOSN_INCOMPATIVEL_REGIME_NORMAL": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CSOSN em Regime Normal. Acesse o cadastro do produto e altere para usar CST.`,
+                "CST_OBRIGATORIO_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5405 exige CST 60. Acesse o cadastro do produto e altere o CST para 60.`,
+                "CFOP_INCOMPATIVEL_COM_CST_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CST 60. Acesse o cadastro do produto e altere o CFOP ou o CST.`,
+                "CBENEF_OBRIGATORIO": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): cBenef é obrigatório para este item nesta UF. Acesse o cadastro do produto e informe o cBenef válido.`
+            };
+
+            // Verifica se temos uma sugestão mapeada para essa rejeição
+            if (dicionarioSugestoes[nomeRejeicao]) {
+                return dicionarioSugestoes[nomeRejeicao]();
+            }
+
+            // Fallback genérico para rejeições não mapeadas
+            return `Identifiquei uma inconsistência no produto '${xProd}' (Código: ${cProd}) relacionada à regra: '${nomeRejeicao}'. Por favor, acesse o painel de parametrização fiscal deste item no sistema de retaguarda para revisar o cadastro.`;
+        }
+        let dadosProcessados = null;
+        let logsDebug = [];
+        // Regras oficiais SEFAZ-SP
+        const CST_REGRAS = {
+            '00': { desc: 'Tributação Integral', aceitaCBenef: false, aliq: '01' },
+            '02': { desc: 'Tributação Integral (2)', aceitaCBenef: false, aliq: '01' },
+            '10': { desc: 'Tributada com ST', aceitaCBenef: false, aliq: '01' },
+            '15': { desc: 'ST (2)', aceitaCBenef: false, aliq: '01' },
+            '20': { desc: 'Redução de Base', aceitaCBenef: true, aliq: '01', precisaPREDBC: true, cBenefValidos: ['SP099090','SP099009','SP020390'] },
+            '30': { desc: 'Isenção/ST', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['SP099090','SP099009'] },
+            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['SP099090','SP099009','SP099999'] },
+            '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['SP099090','SP099009'] },
+            '50': { desc: 'Suspensão', aceitaCBenef: true, aliq: 'S', cBenefValidos: ['SP099090','SP099009'] },
+            '51': { desc: 'Diferimento', aceitaCBenef: true, aliq: 'D', cBenefValidos: ['SP099090','SP099009'] },
+            '53': { desc: 'Monofásica Combustíveis', aceitaCBenef: true, aliq: 'M', cBenefValidos: ['SP099090','SP099009'] },
+            '60': { desc: 'ICMS ST', aceitaCBenef: false, aliq: 'F' },
+            '61': { desc: 'ICMS ST (2)', aceitaCBenef: false, aliq: 'F' },
+            '70': { desc: 'Redução + ST', aceitaCBenef: true, aliq: '01', cBenefValidos: ['SP099090','SP099009','SP020390'] },
+            '90': { desc: 'Outros', aceitaCBenef: true, aliq: 'V', cBenefValidos: ['SP099090','SP099000','SP099009','SP099999'] }
+        };
+
+        // Regras específicas dos códigos cBenef
+        const CBENEF_REGRAS = {
+            'SP099090': {
+                desc: 'Benefício concedido por decisão judicial',
+                cstsValidos: ['20','30','40','41','50','51','53','70','90'],
+                exigencia: 'Obrigatório indicar número do processo judicial nas informações complementares'
+            },
+            'SP099000': {
+                desc: 'Remessas entre estabelecimentos do mesmo titular (transferências)',
+                cstsValidos: ['90'],
+                exigencia: 'Deve cumprir o Anexo XI da Portaria SRE 41/2023'
+            },
+            'SP099009': {
+                desc: 'Operações com emissão pelo Regime Especial da NFF (Nota Fiscal Fácil)',
+                cstsValidos: ['20','30','40','41','50','51','53','70','90'],
+                exigencia: 'Uso exclusivo para notas emitidas pelo Ajuste SINIEF 37/2019 e Portaria SRE 97/22'
+            },
+            'SP099999': {
+                desc: 'Operações sem benefício fiscal, mas com emissão NF sem destaque de ICMS',
+                cstsValidos: ['40','90'],
+                exigencia: 'Obrigatório indicar fundamentação legal nas informações complementares'
+            },
+            'SP020390': {
+                desc: 'Redução de Base de Cálculo - PRODUTOS ALIMENTÍCIOS',
+                cstsValidos: ['20','70'],
+                exigencia: ''
+            }
+        };
+
+        // ==========================================
+        // REGRAS DE VALIDAÇÃO CFOP x CST/CSOSN
+        // ==========================================
+
+        // REGRAS PARA NFC-e (MODELO 65)
+        const REGRAS_NFCE = {
+            csosn: {
+                '102': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '103': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '300': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '400': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '900': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '500': ['5405', '5656', '5667', '5910']
+            },
+            cst: {
+                '00': ['5101', '5102', '5103', '5104', '5115'],
+                '20': ['5101', '5102', '5103', '5104', '5115'],
+                '40': ['5101', '5102', '5103', '5104', '5115'],
+                '41': ['5101', '5102', '5103', '5104', '5115'],
+                '90': ['5101', '5102', '5103', '5104', '5115'],
+                '60': ['5405', '5656', '5667']
+            }
+        };
+
+        // REGRAS PARA NF-e (MODELO 55)
+        const REGRAS_NFE = {
+            // CFOPs de retenção de ST
+            cfopRetencaoST: ['5401', '5402', '5403', '6401', '6402', '6403'],
+            // CSTs permitidos para retenção de ST
+            cstRetencaoST: ['10', '30', '70'],
+            // CSOSNs permitidos para retenção de ST
+            csosnRetencaoST: ['201', '202', '203'],
+            // CFOPs de revenda de ST
+            cfopRevendaST: ['5405', '6404'],
+            // CST permitido para revenda de ST
+            cstRevendaST: ['60'],
+            // CSOSN permitido para revenda de ST
+            csosnRevendaST: ['500'],
+            // CSTs proibidos para operação normal
+            cstProibidosNormal: ['10', '30', '60', '70'],
+            // CSTs permitidos para operação normal
+            cstPermitidosNormal: ['00', '20', '40', '41', '50', '51', '90'],
+            // CSOSNs proibidos para operação normal
+            csosnProibidosNormal: ['201', '202', '203', '500'],
+            // CSOSNs permitidos para operação normal
+            csosnPermitidosNormal: ['101', '102', '103', '300', '400', '900']
+        };
+
+        // Função de validação CFOP para NFC-e (modelo 65)
+        function validarCFOP_NFCE(item, mensagens) {
+            const cfop = item.CFOP;
+            const cst = item.CST;
+            const csosn = item.CSOSN;
+
+            if (csosn) {
+                // Validação por CSOSN
+                const cfopsValidos = REGRAS_NFCE.csosn[csosn];
+                if (cfopsValidos && !cfopsValidos.includes(cfop)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP incompatível com CSOSN (NFC-e)',
+                        desc: `CFOP ${cfop} não é permitido para CSOSN ${csosn} na NFC-e.`,
+                        motivo: 'Incompatibilidade entre CFOP e CSOSN (Regra 386)',
+                        correcao: `Altere o CFOP para um dos válidos: ${cfopsValidos.join(', ')}.`,
+                        orientacao: 'Verificar o CFOP correto para essa operação.',
+                        rejeicao: '386',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                    return false;
+                }
+            } else if (cst) {
+                // Validação por CST
+                const cfopsValidos = REGRAS_NFCE.cst[cst];
+                if (cfopsValidos && !cfopsValidos.includes(cfop)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP incompatível com CST (NFC-e)',
+                        desc: `CFOP ${cfop} não é permitido para CST ${cst} na NFC-e.`,
+                        motivo: 'Incompatibilidade entre CFOP e CST (Regra 382)',
+                        correcao: `Altere o CFOP para um dos válidos: ${cfopsValidos.join(', ')}.`,
+                        orientacao: 'Verificar o CFOP correto para essa operação.',
+                        rejeicao: '382',
+                        campos: ['CFOP', 'CST']
+                    });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Função de validação CFOP para NF-e (modelo 55)
+        function validarCFOP_NFE(item, mensagens) {
+            const cfop = item.CFOP;
+            const cst = item.CST;
+            const csosn = item.CSOSN;
+
+            // Verifica se é CFOP de retenção de ST
+            if (REGRAS_NFE.cfopRetencaoST.includes(cfop)) {
+                if (csosn) {
+                    if (!REGRAS_NFE.csosnRetencaoST.includes(csosn)) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'CSOSN incompatível com CFOP de retenção de ST (NF-e)',
+                            desc: `CFOP ${cfop} (retenção de ST) não é permitido com CSOSN ${csosn}.`,
+                            motivo: 'Incompatibilidade entre CFOP e CSOSN (Regra 374)',
+                            correcao: `Altere o CSOSN para um dos válidos: ${REGRAS_NFE.csosnRetencaoST.join(', ')}.`,
+                            orientacao: 'Verificar o CSOSN correto para retenção de ST.',
+                            rejeicao: '374',
+                            campos: ['CFOP', 'CSOSN']
+                        });
+                        return false;
+                    }
+                } else if (cst) {
+                    if (!REGRAS_NFE.cstRetencaoST.includes(cst)) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'CST incompatível com CFOP de retenção de ST (NF-e)',
+                            desc: `CFOP ${cfop} (retenção de ST) não é permitido com CST ${cst}.`,
+                            motivo: 'Incompatibilidade entre CFOP e CST (Regra 374)',
+                            correcao: `Altere o CST para um dos válidos: ${REGRAS_NFE.cstRetencaoST.join(', ')}.`,
+                            orientacao: 'Verificar o CST correto para retenção de ST.',
+                            rejeicao: '374',
+                            campos: ['CFOP', 'CST']
+                        });
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Verifica se é CFOP de revenda de ST
+            if (REGRAS_NFE.cfopRevendaST.includes(cfop)) {
+                if (csosn) {
+                    if (!REGRAS_NFE.csosnRevendaST.includes(csosn)) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'CSOSN incompatível com CFOP de revenda de ST (NF-e)',
+                            desc: `CFOP ${cfop} (revenda de ST) não é permitido com CSOSN ${csosn}.`,
+                            motivo: 'Incompatibilidade entre CFOP e CSOSN (Regra 374)',
+                            correcao: `Altere o CSOSN para: ${REGRAS_NFE.csosnRevendaST.join(', ')}.`,
+                            orientacao: 'Verificar o CSOSN correto para revenda de ST.',
+                            rejeicao: '374',
+                            campos: ['CFOP', 'CSOSN']
+                        });
+                        return false;
+                    }
+                } else if (cst) {
+                    if (!REGRAS_NFE.cstRevendaST.includes(cst)) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'CST incompatível com CFOP de revenda de ST (NF-e)',
+                            desc: `CFOP ${cfop} (revenda de ST) não é permitido com CST ${cst}.`,
+                            motivo: 'Incompatibilidade entre CFOP e CST (Regra 374)',
+                            correcao: `Altere o CST para: ${REGRAS_NFE.cstRevendaST.join(', ')}.`,
+                            orientacao: 'Verificar o CST correto para revenda de ST.',
+                            rejeicao: '374',
+                            campos: ['CFOP', 'CST']
+                        });
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Operação normal (sem ST)
+            if (csosn) {
+                if (REGRAS_NFE.csosnProibidosNormal.includes(csosn)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CSOSN incompatível com CFOP normal (NF-e)',
+                        desc: `CFOP ${cfop} não é permitido com CSOSN ${csosn}.`,
+                        motivo: 'Incompatibilidade entre CFOP e CSOSN (Regra 374)',
+                        correcao: `Altere o CSOSN para um dos válidos: ${REGRAS_NFE.csosnPermitidosNormal.join(', ')}.`,
+                        orientacao: 'Verificar o CSOSN correto para essa operação.',
+                        rejeicao: '374',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                    return false;
+                }
+            } else if (cst) {
+                if (REGRAS_NFE.cstProibidosNormal.includes(cst)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CST incompatível com CFOP normal (NF-e)',
+                        desc: `CFOP ${cfop} não é permitido com CST ${cst}.`,
+                        motivo: 'Incompatibilidade entre CFOP e CST (Regra 374)',
+                        correcao: `Altere o CST para um dos válidos: ${REGRAS_NFE.cstPermitidosNormal.join(', ')}.`,
+                        orientacao: 'Verificar o CST correto para essa operação.',
+                        rejeicao: '374',
+                        campos: ['CFOP', 'CST']
+                    });
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Função principal de validação CFOP
+        function validarCFOP(item, modelo, mensagens) {
+            if (modelo === '65') {
+                return validarCFOP_NFCE(item, mensagens);
+            } else if (modelo === '55') {
+                return validarCFOP_NFE(item, mensagens);
+            }
+            return true; // Se não for 55 ou 65, não valida
+        }
+        // ==========================================
+        // FUNÇÕES AUXILIARES
+        // ==========================================
+        // ==========================================
+        // FUNÇÕES AUXILIARES DE LEITURA XML
+        // ==========================================
+        
+        function log(mensagem, tipo = 'info') {
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            logsDebug.push(`[${timestamp}] [${tipo.toUpperCase()}] ${mensagem}`);
+            console.log(`[${tipo.toUpperCase()}] ${mensagem}`);
+        }
+        function setLoadingText(texto) {
+            const el = document.querySelector('.loading-text');
+            if (el) el.textContent = texto;
+        }
+        function escapeHtml(valor) {
+            return String(valor ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function limparRespostaJSON(texto) {
+            if (!texto) return '';
+            const semMarkdown = texto.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+            return semMarkdown.trim();
+        }
+        function extrairTextoGemini(data) {
+            const partes = data?.candidates?.[0]?.content?.parts || [];
+            return partes.map(parte => parte.text || '').join('').trim();
+        }
+        function normalizarLista(valor) {
+            if (Array.isArray(valor)) {
+                return valor.map(item => String(item).trim()).filter(Boolean);
+            }
+            if (typeof valor === 'string') {
+                return valor.split(/\n|;|,/).map(item => item.trim()).filter(Boolean);
+            }
+            return [];
+        }
+        function deduplicarLista(lista) {
+            return [...new Set((lista || []).map(item => String(item).trim()).filter(Boolean))];
+        }
+        function obterCampoMensagem(msg, chaves) {
+            for (const chave of chaves) {
+                if (msg && msg[chave] !== undefined && msg[chave] !== null && String(msg[chave]).trim() !== '') {
+                    return msg[chave];
+                }
+            }
+            return '';
+        }
+        function coletarDiagnosticosConsolidados(dados) {
+            const grupos = new Map();
+            const adicionar = (entrada) => {
+                const codigo = entrada.codigo || 'N/A';
+                const nome = entrada.nome || 'Sem nome';
+                const chave = `${codigo}::${nome}::${entrada.tipo || 'info'}`;
+                if (!grupos.has(chave)) {
+                    grupos.set(chave, {
+                        codigo,
+                        nome,
+                        tipo: entrada.tipo || 'info',
+                        descricoesLocais: [],
+                        motivosLocais: [],
+                        correcoesLocais: [],
+                        orientacoesLocais: [],
+                        camposEnvolvidos: [],
+                        ocorrencias: []
+                    });
+                }
+                const grupo = grupos.get(chave);
+                if (entrada.descricaoLocal) grupo.descricoesLocais.push(entrada.descricaoLocal);
+                if (entrada.motivoLocal) grupo.motivosLocais.push(entrada.motivoLocal);
+                if (entrada.correcaoLocal) grupo.correcoesLocais.push(entrada.correcaoLocal);
+                if (entrada.orientacaoLocal) grupo.orientacoesLocais.push(entrada.orientacaoLocal);
+                grupo.camposEnvolvidos.push(...(entrada.camposEnvolvidos || []));
+                grupo.ocorrencias.push(entrada.ocorrencia);
+            };
+
+            (dados.itensProcessados || []).forEach(item => {
+                (item.validacao?.mensagens || [])
+                    .filter(msg => msg.tipo !== 'success')
+                    .forEach(msg => {
+                        adicionar({
+                            codigo: msg.rejeicao || 'N/A',
+                            nome: msg.erro || 'Inconsistência sem nome',
+                            tipo: msg.tipo || 'error',
+                            descricaoLocal: msg.desc || '',
+                            motivoLocal: msg.motivo || '',
+                            correcaoLocal: msg.correcao || '',
+                            orientacaoLocal: msg.orientacao || '',
+                            camposEnvolvidos: msg.campos || [],
+                            ocorrencia: {
+                                item: item.nItem || '',
+                                codigoProduto: item.cProd || '',
+                                descricaoProduto: item.xProd || '',
+                                detalhe: msg.desc || '',
+                                trechoXMLImposto: item.xmlTrecho || ''
+                            }
+                        });
+                    });
+
+                (item.validacao?.alertas || []).forEach(alerta => {
+                    adicionar({
+                        codigo: alerta.rejeicao || 'N/A',
+                        nome: alerta.erro || 'Alerta de auditoria',
+                        tipo: 'warning',
+                        descricaoLocal: alerta.desc || '',
+                        motivoLocal: alerta.motivo || '',
+                        correcaoLocal: alerta.correcao || '',
+                        orientacaoLocal: alerta.orientacao || '',
+                        camposEnvolvidos: alerta.campos || [],
+                        ocorrencia: {
+                            item: item.nItem || '',
+                            codigoProduto: item.cProd || '',
+                            descricaoProduto: item.xProd || '',
+                            detalhe: alerta.desc || '',
+                            trechoXMLImposto: item.xmlTrecho || ''
+                        }
+                    });
+                });
+            });
+
+            (dados.totaisValidacao || []).forEach(msg => {
+                adicionar({
+                    codigo: msg.rejeicao || 'N/A',
+                    nome: msg.erro || 'Divergência de totais',
+                    tipo: msg.tipo || 'error',
+                    descricaoLocal: msg.desc || '',
+                    motivoLocal: msg.motivo || '',
+                    correcaoLocal: msg.correcao || '',
+                    orientacaoLocal: msg.orientacao || '',
+                    camposEnvolvidos: msg.campos || [],
+                    ocorrencia: {
+                        item: 'TOTAL',
+                        codigoProduto: '',
+                        descricaoProduto: 'Totais do documento',
+                        detalhe: msg.desc || '',
+                        trechoXMLImposto: ''
+                    }
+                });
+            });
+
+            (dados.novasValidacoes || []).forEach(msg => {
+                adicionar({
+                    codigo: msg.rejeicao || 'N/A',
+                    nome: msg.erro || 'Inconsistência geral',
+                    tipo: msg.tipo || 'error',
+                    descricaoLocal: msg.desc || msg.mensagem || '',
+                    motivoLocal: msg.motivo || '',
+                    correcaoLocal: msg.correcao || '',
+                    orientacaoLocal: msg.orientacao || '',
+                    camposEnvolvidos: msg.campos || [],
+                    ocorrencia: {
+                        item: msg.item?.nItem || 'GERAL',
+                        codigoProduto: msg.item?.cProd || '',
+                        descricaoProduto: msg.item?.xProd || 'Documento',
+                        detalhe: msg.mensagem || msg.desc || '',
+                        trechoXMLImposto: msg.item?.xmlTrecho || ''
+                    }
+                });
+            });
+
+            return Array.from(grupos.values()).map(grupo => ({
+                codigo: grupo.codigo,
+                nome: grupo.nome,
+                tipo: grupo.tipo,
+                descricoesLocais: deduplicarLista(grupo.descricoesLocais),
+                motivosLocais: deduplicarLista(grupo.motivosLocais),
+                correcoesLocais: deduplicarLista(grupo.correcoesLocais),
+                orientacoesLocais: deduplicarLista(grupo.orientacoesLocais),
+                camposEnvolvidos: deduplicarLista(grupo.camposEnvolvidos),
+                ocorrencias: grupo.ocorrencias
+            }));
+        }
+        function montarPayloadIA(dados) {
+            const diagnosticosConsolidados = coletarDiagnosticosConsolidados(dados);
+            return {
+                resumoDocumento: {
+                    numero: dados.ide?.nNF || '',
+                    serie: dados.ide?.serie || '',
+                    modelo: dados.ide?.mod || '',
+                    chaveAcesso: dados.ide?.chaveAcesso || '',
+                    emitente: dados.emit?.xNome || '',
+                    cnpjEmitente: dados.emit?.CNPJ || '',
+                    totalItens: dados.stats?.totalItens || 0,
+                    itensComErro: dados.stats?.erro || 0,
+                    itensComAviso: dados.stats?.aviso || 0
+                },
+                diagnosticosConsolidados
+            };
+        }
+        function montarPromptIA(xmlCompleto, payloadMotor) {
+            return [
+                'Você é um assistente técnico fiscal.',
+                'A validação oficial já foi executada localmente e está correta.',
+                'Sua função é resumir de forma objetiva o erro encontrado e orientar a correção prática.',
+                'NÃO revalide o XML.',
+                'NÃO procure novas rejeições.',
+                'NÃO contradiga o motor local.',
+                'Use o XML somente como contexto.',
+                'Seja breve e direto.',
+                'Não copie literalmente o texto do motor local.',
+                'Não repita a mensagem do validador com outras palavras.',
+                'Entregue uma síntese técnica útil em linguagem clara.',
+                'Explique qual tag, grupo ou campo está causando o problema e por quê.',
+                'Informe uma correção prática e específica.',
+                'Não inclua exemplos, boas práticas ou explicações extensas.',
+                'Responda SOMENTE em JSON válido.',
+                'Estrutura obrigatória:',
+                '{"analises":[{"codigo":"string","nome":"string","diagnosticoObjetivo":"string","ondeErro":"string","camposEnvolvidos":["string"],"correcao":"string"}]}',
+                'Se o diagnóstico não tiver código de rejeição, preserve "N/A".',
+                'Baseie cada análise exclusivamente na lista consolidada de diagnósticos do motor local abaixo.',
+                '',
+                'XML COMPLETO:',
+                xmlCompleto,
+                '',
+                'RESULTADO DO MOTOR LOCAL:',
+                JSON.stringify(payloadMotor)
+            ].join('\n');
+        }
+        function normalizarRespostaAnaliseIA(analises) {
+            return (Array.isArray(analises) ? analises : []).map(analise => ({
+                codigo: obterCampoMensagem(analise, ['codigo']) || 'N/A',
+                nome: obterCampoMensagem(analise, ['nome']) || 'Diagnóstico sem nome',
+                diagnosticoObjetivo: obterCampoMensagem(analise, ['diagnosticoObjetivo', 'resumoTecnico', 'causaProvavel']),
+                ondeErro: obterCampoMensagem(analise, ['ondeErro', 'ondeEstaOErro', 'localErro', 'erro']),
+                camposEnvolvidos: deduplicarLista(normalizarLista(analise.camposEnvolvidos)),
+                correcao: obterCampoMensagem(analise, ['correcao', 'comoCorrigir', 'possivelCorrecao'])
+            }));
+        }
+        function extrairJsonSeguro(texto) {
+            const limpo = limparRespostaJSON(texto);
+            return JSON.parse(limpo);
+        }
+        function erroEhLimite(status, data) {
+            const texto = JSON.stringify(data || {});
+            return status === 429 || /RESOURCE_EXHAUSTED|rate limit|quota/i.test(texto);
+        }
+        function obterModelosIA() {
+            return Array.isArray(IA_CONFIG.models) && IA_CONFIG.models.length
+                ? IA_CONFIG.models
+                : ['gemini-3.5-flash'];
+        }
+        async function chamarGeminiComRotacao(prompt) {
+            let ultimoErro = null;
+            const modelos = obterModelosIA();
+            for (const modelo of modelos) {
+                for (const apiKey of IA_CONFIG.apiKeys) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), IA_CONFIG.timeoutMs);
+                    try {
+                        const resposta = await fetch(
+                            `${IA_CONFIG.endpointBase}/${modelo}:generateContent`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-goog-api-key': apiKey
+                                },
+                                signal: controller.signal,
+                                body: JSON.stringify({
+                                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                                    generationConfig: {
+                                        temperature: 0.1,
+                                        topP: 0.7,
+                                        maxOutputTokens: 1800,
+                                        responseMimeType: 'application/json'
+                                    }
+                                })
+                            }
+                        );
+                        clearTimeout(timeoutId);
+                        const data = await resposta.json().catch(() => ({}));
+                        if (!resposta.ok) {
+                            ultimoErro = new Error(data?.error?.message || `Falha HTTP ${resposta.status}`);
+                            const mensagemErro = JSON.stringify(data || {});
+                            const modeloInvalido = resposta.status === 404 || /model|not found|unsupported/i.test(mensagemErro);
+                            if (modeloInvalido) {
+                                break;
+                            }
+                            if (erroEhLimite(resposta.status, data) || resposta.status >= 500 || resposta.status === 401 || resposta.status === 403) {
+                                continue;
+                            }
+                            throw ultimoErro;
+                        }
+                        return extrairJsonSeguro(extrairTextoGemini(data));
+                    } catch (erro) {
+                        clearTimeout(timeoutId);
+                        ultimoErro = erro;
+                        if (erro.name === 'AbortError') {
+                            continue;
+                        }
+                    }
+                }
+            }
+            throw ultimoErro || new Error('Serviço de IA temporariamente indisponível.');
+        }
+        async function chamarProvedorIA(prompt) {
+            if (IA_CONFIG.provider === 'gemini') {
+                return chamarGeminiComRotacao(prompt);
+            }
+            throw new Error(`Provedor de IA não suportado: ${IA_CONFIG.provider}`);
+        }
+        async function gerarAnaliseIA(dados) {
+            const payloadMotor = montarPayloadIA(dados);
+            if (!payloadMotor.diagnosticosConsolidados.length) {
+                return {
+                    status: 'sem-diagnosticos',
+                    mensagem: 'Nenhuma rejeição, aviso ou inconsistência foi encontrada pelo motor local.'
+                };
+            }
+            const prompt = montarPromptIA(xmlConteudoAtual, payloadMotor);
+            try {
+                const resposta = await chamarProvedorIA(prompt);
+                return {
+                    status: 'ok',
+                    modo: 'assistida',
+                    analises: normalizarRespostaAnaliseIA(resposta?.analises)
+                };
+            } catch (erro) {
+                log(`Falha na integração com IA: ${erro.message}`, 'error');
+                return {
+                    status: 'erro',
+                    mensagem: 'Serviço de IA temporariamente indisponível.'
+                };
+            }
+        }
+        function temDiagnosticosParaIA() {
+            if (!dadosProcessados) return false;
+            const payloadMotor = montarPayloadIA(dadosProcessados);
+            return (payloadMotor.diagnosticosConsolidados || []).length > 0;
+        }
+        function atualizarBotaoIA() {
+            const btn = document.getElementById('btn-analise-ia');
+            const card = document.getElementById('ai-action-card');
+            if (!btn) return;
+            if (card) {
+                card.style.display = dadosProcessados ? 'block' : 'none';
+            }
+            if (analiseIAEmAndamento) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="inline-spinner"></span><span>Consultando IA...</span>';
+                return;
+            }
+            const habilitado = temDiagnosticosParaIA();
+            btn.disabled = !habilitado;
+            btn.textContent = dadosProcessados?.analiseIA?.modo === 'assistida' ? '🔄 Gerar novamente com IA' : '🧠 Explicar com IA';
+        }
+        async function executarAnaliseIAPorDemanda() {
+            if (!dadosProcessados || analiseIAEmAndamento || !temDiagnosticosParaIA()) {
+                return;
+            }
+            analiseIAEmAndamento = true;
+            atualizarBotaoIA();
+            try {
+                dadosProcessados.analiseIA = await gerarAnaliseIA(dadosProcessados);
+                renderizarAnaliseIA();
+            } finally {
+                analiseIAEmAndamento = false;
+                atualizarBotaoIA();
+            }
+        }
+
+        // Função robusta para pegar elemento com namespace ou sem
+        function getElementoPai(filho) {
+            let elem = filho;
+            while (elem.parentNode && elem.nodeType === 1) {
+                if (elem.tagName && elem.tagName.toLowerCase() === 'det') return elem;
+                elem = elem.parentNode;
+            }
+            return null;
+        }
+        
+        function getElemento(pai, tagName) {
+            if (!pai) return null;
+            
+            // Tenta com namespace
+            let elem = pai.getElementsByTagNameNS(NS_NFE, tagName)[0];
+            if (elem) return elem;
+            
+            // Tenta sem namespace
+            elem = pai.getElementsByTagName(tagName)[0];
+            if (elem) return elem;
+            
+            // Tenta com case-insensitive
+            const allElements = pai.getElementsByTagName('*');
+            for (let i = 0; i < allElements.length; i++) {
+                const elemTeste = allElements[i];
+                if (elemTeste.tagName && elemTeste.tagName.toLowerCase() === tagName.toLowerCase()) {
+                    return elemTeste;
+                }
+            }
+            return null;
+        }
+
+        function getTextoElemento(pai, tagName) {
+            const elem = getElemento(pai, tagName);
+            if (elem) {
+                return elem.textContent.trim();
+            }
+            return '';
+        }
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        function toggleDebug() {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.style.display = debugDiv.style.display === 'block' ? 'none' : 'block';
+            debugDiv.innerHTML = logsDebug.join('<br>');
+        }
+        // ==========================================
+        // LEITURA DO XML
+        // ==========================================
+        function lerXML(arquivo) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parser = new DOMParser();
+                        let xmlString = e.target.result;
+                        xmlConteudoAtual = xmlString;
+                        xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                        
+                        const parserError = xmlDoc.querySelector('parsererror');
+                        if (parserError) throw new Error('XML inválido ou corrompido');
+                        
+                        logsDebug = [];
+                        log('Iniciando leitura do XML...');
+                        
+                        // Verifica se é uma inutilização de NF-e (ProcInutNFe)
+                        let inutNFeRoot = getElemento(xmlDoc, 'ProcInutNFe');
+                        if (inutNFeRoot) {
+                            // Lida com ProcInutNFe
+                            log('Arquivo identificado como ProcInutNFe (Inutilização de NF-e)');
+                            // Vamos verificar se há a tag <infInut> dentro de <inutNFe>
+                            const inutNFe = getElemento(inutNFeRoot, 'inutNFe');
+                            const infInut = inutNFe ? getElemento(inutNFe, 'infInut') : null;
+                            if (infInut) {
+                                const cUF = getTextoElemento(infInut, 'cUF');
+                                const ano = getTextoElemento(infInut, 'ano');
+                                const CNPJ = getTextoElemento(infInut, 'CNPJ');
+                                const mod = getTextoElemento(infInut, 'mod');
+                                const serie = getTextoElemento(infInut, 'serie');
+                                const nNFIni = getTextoElemento(infInut, 'nNFIni');
+                                const nNFFin = getTextoElemento(infInut, 'nNFFin');
+                                const xJust = getTextoElemento(infInut, 'xJust');
+                                
+                                // Prepara dados de inutilização
+                                const dadosInut = {
+                                    tipo: 'Inutilização de NF-e',
+                                    cUF: cUF,
+                                    ano: ano,
+                                    CNPJ: CNPJ,
+                                    modelo: mod,
+                                    serie: serie,
+                                    nNFIni: nNFIni,
+                                    nNFFin: nNFFin,
+                                    xJust: xJust
+                                };
+                                
+                                resolve({
+                                    tipo: 'inutNFe',
+                                    dados: dadosInut
+                                });
+                            } else {
+                                throw new Error('Arquivo não é uma NF-e/NFC-e válida (ProcInutNFe incompleta)');
+                            }
+                            return;
+                        }
+                        
+                        // Encontra a tag <NFe> ou <nfeProc>
+                        let nfeRoot = getElemento(xmlDoc, 'NFe');
+                        if (!nfeRoot) nfeRoot = getElemento(xmlDoc, 'nfeProc');
+                        if (!nfeRoot) {
+                            const allRoots = Array.from(xmlDoc.children);
+                            for (let i = 0; i < allRoots.length; i++) {
+                                if (allRoots[i].tagName.toLowerCase().includes('nfe')) {
+                                    nfeRoot = allRoots[i];
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!nfeRoot) throw new Error('Arquivo não é uma NF-e/NFC-e válida');
+                        
+                        const infNFe = getElemento(nfeRoot, 'infNFe');
+                        if (!infNFe) throw new Error('Tag <infNFe> não encontrada');
+                        
+                        const ide = getElemento(infNFe, 'ide');
+                        const emit = getElemento(infNFe, 'emit');
+                        const infAdic = getElemento(infNFe, 'infAdic');
+                        
+                        // Pega todos os itens <det>
+                        const dets = [];
+                        let detsFromNS = infNFe.getElementsByTagNameNS(NS_NFE, 'det');
+                        if (detsFromNS.length > 0) {
+                            for (let i = 0; i < detsFromNS.length; i++) dets.push(detsFromNS[i]);
+                        } else {
+                            let detsFromTag = infNFe.getElementsByTagName('det');
+                            for (let i = 0; i < detsFromTag.length; i++) dets.push(detsFromTag[i]);
+                        }
+                        
+                        log(`Total de itens encontrados: ${dets.length}`);
+                        
+                        const total = getElemento(infNFe, 'total');
+            const icmsTot = total ? getElemento(total, 'ICMSTot') : null;
+            const issqnTot = total ? getElemento(total, 'ISSQNtot') : null;
+            
+            // Extract access key
+            let chaveAcesso = getTextoElemento(infNFe, 'chNFe');
+            if (!chaveAcesso) {
+                const id = infNFe.getAttribute('Id');
+                if (id && id.startsWith('NFe')) {
+                    chaveAcesso = id.substring(3);
+                }
+            }
+
+            // Extract emit endereco and dest
+            const enderEmit = getElemento(emit, 'enderEmit');
+            const dest = getElemento(infNFe, 'dest');
+            const enderDest = dest ? getElemento(dest, 'enderDest') : null;
+
+            const dados = {
+                ide: {
+                    nNF: getTextoElemento(ide, 'nNF'),
+                    serie: getTextoElemento(ide, 'serie'),
+                    mod: getTextoElemento(ide, 'mod'),
+                    dhEmi: getTextoElemento(ide, 'dhEmi') || getTextoElemento(ide, 'dEmi'),
+                    cUF: getTextoElemento(ide, 'cUF'),
+                    chaveAcesso: chaveAcesso
+                },
+                emit: {
+                    xNome: getTextoElemento(emit, 'xNome'),
+                    xFant: getTextoElemento(emit, 'xFant'),
+                    CNPJ: getTextoElemento(emit, 'CNPJ'),
+                    IE: getTextoElemento(emit, 'IE'),
+                    CRT: getTextoElemento(emit, 'CRT'),
+                    fone: enderEmit ? getTextoElemento(enderEmit, 'fone') : '',
+                    CEP: enderEmit ? getTextoElemento(enderEmit, 'CEP') : '',
+                    UF: enderEmit ? getTextoElemento(enderEmit, 'UF') : '',
+                    xMun: enderEmit ? getTextoElemento(enderEmit, 'xMun') : '',
+                    xLgr: enderEmit ? getTextoElemento(enderEmit, 'xLgr') : ''
+                },
+                dest: dest ? {
+                    CEP: enderDest ? getTextoElemento(enderDest, 'CEP') : '',
+                    UF: enderDest ? getTextoElemento(enderDest, 'UF') : '',
+                    xMun: enderDest ? getTextoElemento(enderDest, 'xMun') : '',
+                    xLgr: enderDest ? getTextoElemento(enderDest, 'xLgr') : ''
+                } : null,
+                infAdic: {
+                    infAdFisco: infAdic ? getTextoElemento(infAdic, 'infAdFisco') : '',
+                    infCpl: infAdic ? getTextoElemento(infAdic, 'infCpl') : ''
+                },
+                totals: {
+                    icmstot: {
+                        vPIS: icmsTot ? getTextoElemento(icmsTot, 'vPIS') : '0',
+                        vCOFINS: icmsTot ? getTextoElemento(icmsTot, 'vCOFINS') : '0'
+                    },
+                    issqntot: {
+                        vPIS: issqnTot ? getTextoElemento(issqnTot, 'vPIS') : '0',
+                        vCOFINS: issqnTot ? getTextoElemento(issqnTot, 'vCOFINS') : '0'
+                    }
+                },
+                itens: dets.map(det => processarItem(det))
+            };
+                        
+                        log('Leitura do XML concluída com sucesso!');
+                        resolve(dados);
+                    } catch (erro) {
+                        log(erro.message, 'error');
+                        reject(erro);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+                reader.readAsText(arquivo);
+            });
+        }
+
+        function processarItem(det) {
+            const nItem = det.getAttribute('nItem') || '';
+            const prod = getElemento(det, 'prod');
+            const xProd = getTextoElemento(prod, 'xProd');
+            const cProd = getTextoElemento(prod, 'cProd');
+            const NCM = getTextoElemento(prod, 'NCM');
+            const CFOP = getTextoElemento(prod, 'CFOP');
+            const cBenef = getTextoElemento(prod, 'cBenef');
+            const vUnCom = getTextoElemento(prod, 'vUnCom');
+            const vProd = getTextoElemento(prod, 'vProd');
+            
+            log(`Item ${nItem}: "${xProd}" - cBenef: "${cBenef}"`);
+            
+            const imposto = getElemento(det, 'imposto');
+            const icmsContainer = imposto ? getElemento(imposto, 'ICMS') : null;
+            const issqnContainer = imposto ? getElemento(imposto, 'ISSQN') : null;
+            let CST = '';
+            let CSOSN = '';
+            let pRedBC = '';
+            let vPIS = '0';
+            let CST_PIS = '';
+            let vCOFINS = '0';
+            let CST_COFINS = '';
+            let temICMS = false;
+            let temISSQN = false;
+            let vDedISSQN = '';
+            let pDedISSQN = '';
+            let xMotDedISSQN = '';
+            
+            
+            if (icmsContainer) {
+                temICMS = true;
+                // Tenta encontrar todos os tags ICMSxx
+                const icmsTags = ['ICMS00', 'ICMS10', 'ICMS20', 'ICMS40', 'ICMS41', 'ICMS60', 
+                                  'ICMS90', 'ICMS30', 'ICMS50', 'ICMS51', 'ICMS53', 'ICMS70'];
+                
+                for (let tag of icmsTags) {
+                    let elem = getElemento(icmsContainer, tag);
+                    if (elem) {
+                        CST = getTextoElemento(elem, 'CST');
+                        if (!CST && tag.startsWith('ICMS')) {
+                            CST = tag.replace('ICMS', '');
+                        }
+                        pRedBC = getTextoElemento(elem, 'pRedBC');
+                        log(`Item ${nItem}: Encontrado <${tag}> - CST: "${CST}"`);
+                        break;
+                    }
+                }
+                
+                // Se não encontrou CST, tenta CSOSN
+                if (!CST) {
+                    const csosnTags = ['ICMSSN102','ICMSSN103','ICMSSN201','ICMSSN202','ICMSSN500','ICMSSN900'];
+                    for (let tag of csosnTags) {
+                        let elem = getElemento(icmsContainer, tag);
+                        if (elem) {
+                            CSOSN = getTextoElemento(elem, 'CSOSN');
+                            if (!CSOSN && tag.startsWith('ICMSSN')) {
+                                CSOSN = tag.replace('ICMSSN', '');
+                            }
+                            log(`Item ${nItem}: Encontrado <${tag}> - CSOSN: "${CSOSN}"`);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (issqnContainer) {
+                temISSQN = true;
+                vDedISSQN = getTextoElemento(issqnContainer, 'vDed');
+                pDedISSQN = getTextoElemento(issqnContainer, 'pDed');
+                xMotDedISSQN = getTextoElemento(issqnContainer, 'xMotDed');
+            }
+            
+            // Ler PIS e COFINS (incluindo PISOutr e COFINSOutr)
+            if (imposto) {
+                const pisContainer = getElemento(imposto, 'PIS');
+                if (pisContainer) {
+                    const pisTags = ['PISAliq', 'PISQtde', 'PISNT', 'PISOutr'];
+                    for (let tag of pisTags) {
+                        let elem = getElemento(pisContainer, tag);
+                        if (elem) {
+                            vPIS = getTextoElemento(elem, 'vPIS') || '0';
+                            CST_PIS = getTextoElemento(elem, 'CST') || '';
+                            log(`Item ${nItem}: Encontrado <${tag}> - vPIS: "${vPIS}", CST: "${CST_PIS}"`);
+                            break;
+                        }
+                    }
+                }
+                
+                const cofinsContainer = getElemento(imposto, 'COFINS');
+                if (cofinsContainer) {
+                    const cofinsTags = ['COFINSAliq', 'COFINSQtde', 'COFINSNT', 'COFINSOutr'];
+                    for (let tag of cofinsTags) {
+                        let elem = getElemento(cofinsContainer, tag);
+                        if (elem) {
+                            vCOFINS = getTextoElemento(elem, 'vCOFINS') || '0';
+                            CST_COFINS = getTextoElemento(elem, 'CST') || '';
+                            log(`Item ${nItem}: Encontrado <${tag}> - vCOFINS: "${vCOFINS}", CST: "${CST_COFINS}"`);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Guardar o elemento XML para extrair o trecho depois
+            const xmlTrecho = imposto ? new XMLSerializer().serializeToString(imposto) : '';
+            
+            return { 
+                nItem, xProd, cProd, NCM, CFOP, cBenef, CST, CSOSN, pRedBC, 
+                vPIS, CST_PIS, vCOFINS, CST_COFINS, temICMS, temISSQN, xmlTrecho,
+                vUnCom, vProd, vDedISSQN, pDedISSQN, xMotDedISSQN
+            };
+        }
+        // ==========================================
+        // VALIDAÇÃO DAS REGRAS
+        // ==========================================
+        function validarItem(item, cUF, infAdic, modelo, CRT) {
+            const mensagens = [];
+            const alertas = [];
+            let status = 'success';
+            let regra = null;
+            
+            // Mapeamento de cUF para sigla
+            const siglasUF = {
+                '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+                '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL',
+                '28':'SE','29':'BA','31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR',
+                '42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF'
+            };
+            const siglaUF = siglasUF[cUF] || '';
+            const cBenef = item.cBenef ? item.cBenef.trim() : '';
+
+            // Valida regras CRT
+            const regrasCRT = validarRegrasCRT(item, CRT, cUF);
+            if (regrasCRT.length > 0) {
+                mensagens.push(...regrasCRT);
+                status = 'error';
+            }
+            
+            // Se tem CSOSN (Simples Nacional), não precisa de CST
+            if (item.CSOSN) {
+                log(`Item ${item.nItem}: CSOSN ${item.CSOSN} (Simples Nacional)`);
+            } else if (!item.CST) {
+                // Apenas exigimos CST se não tem CSOSN
+                status = 'error';
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'CST não encontrado',
+                    desc: 'Item sem Código de Situação Tributária',
+                    motivo: 'Cadastro tributário incompleto',
+                    correcao: 'Verificar o cadastro do produto e o CST no ERP',
+                    orientacao: 'Solicitar ao cliente que verifique o cadastro tributário',
+                    rejeicao: '',
+                    campos: ['CST']
+                });
+                return { status, mensagens, alertas, regra };
+            }
+            
+            // Validações específicas de CST (apenas se temos CST)
+            if (item.CST) {
+                const cstNormalizado = item.CST.padStart(2, '0');
+                regra = CST_REGRAS[cstNormalizado];
+                
+                if (!regra) {
+                    status = 'warning';
+                    mensagens.push({
+                        tipo: 'warning',
+                        erro: 'CST desconhecido',
+                        desc: `CST ${cstNormalizado} não está na lista padrão`,
+                        motivo: 'CST não reconhecido',
+                        correcao: 'Verificar se o CST é válido para a operação',
+                        orientacao: 'Confirmar o CST com o contador',
+                        rejeicao: '',
+                        campos: ['CST']
+                    });
+                    return { status, mensagens, alertas, regra };
+                }
+                
+                log(`Item ${item.nItem}: CST ${cstNormalizado} (${regra.desc}) - cBenef: "${cBenef}"`);
+                
+                // 1. Bloqueio de "SEM CBENEF" (descontinuado em 01/07/2026)
+                if (cBenef === 'SEM CBENEF') {
+                    status = 'error';
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'cBenef descontinuado',
+                        desc: 'O código "SEM CBENEF" foi descontinuado em 01/07/2026',
+                        motivo: 'Código de benefício obsoleto',
+                        correcao: 'Remover o cBenef ou utilizar um código válido',
+                        orientacao: 'Solicitar ao cliente que atualize o cadastro tributário',
+                        rejeicao: '',
+                        campos: ['cBenef']
+                    });
+                }
+                
+                // 2. Obter lista de cBenef válidos para este item (regra.cBenefValidos + geral)
+                const cBenefValidosGlobais = Object.keys(CBENEF_REGRAS);
+                const cBenefValidosItem = regra.cBenefValidos || [];
+                const cBenefValidosTodos = [...new Set([...cBenefValidosGlobais, ...cBenefValidosItem, 'SEMOBRIGATORIEDADE'])];
+                const cstsDesobrigados = ['00', '02', '10', '15', '60', '61'];
+                const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
+                
+                // Aplicar 3 cenários fiscais
+                if (exigeCBenef) {
+                    // CENÁRIO A: Rejeição 928 - cBenef obrigatório, mas vazio ou inválido
+                    const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
+                    if (!cBenefValido) {
+                        status = 'error';
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'REJEICAO_928',
+                            desc: `Rejeição 928: CST ${cstNormalizado} (${regra.desc}) exige cBenef válido`,
+                            motivo: 'Faltou informar código de benefício fiscal ou código inválido',
+                            correcao: 'Informe o cBenef válido para este CST',
+                            orientacao: 'Consultar Tabela cBenef SEFAZ',
+                            rejeicao: '928',
+                            campos: ['cBenef']
+                        });
+                    } else {
+                        // Se cBenef é válido, valida as regras específicas do código
+                        if (cBenef === 'SP099090') {
+                            // Regra SP099090: Decisão judicial
+                            if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099090 não é permitido para CST ${cstNormalizado}`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            } else {
+                                const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
+                                if (!textoComplementar) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'Processo judicial não informado',
+                                        desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
+                                        motivo: 'Faltou informar o processo judicial',
+                                        correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
+                                        orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
+                                        rejeicao: '',
+                                        campos: ['infAdFisco', 'infCpl']
+                                    });
+                                }
+                            }
+                        } else if (cBenef === 'SP099000') {
+                            if (cstNormalizado !== '90') {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099000 só é permitido para CST 90`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        } else if (cBenef === 'SP099009') {
+                            if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099009 não é permitido para CST ${cstNormalizado}`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        } else if (cBenef === 'SP099999') {
+                            if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP099999 só é permitido para CST 40 e 90`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            } else {
+                                const textoComplementar = infAdic.infCpl.trim();
+                                if (!textoComplementar) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'Fundamentação legal não informada',
+                                        desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
+                                        motivo: 'Faltou informar a fundamentação legal',
+                                        correcao: 'Incluir a fundamentação legal em infCpl',
+                                        orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
+                                        rejeicao: '',
+                                        campos: ['infCpl']
+                                    });
+                                }
+                            }
+                        } else if (cBenef === 'SP020390') {
+                            if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'cBenef não permitido para este CST',
+                                    desc: `O cBenef SP020390 só é permitido para CST 20 e 70`,
+                                    motivo: 'Código de benefício não compatível com o CST',
+                                    correcao: 'Alterar o cBenef para um código válido para este CST',
+                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                    rejeicao: '',
+                                    campos: ['CST', 'cBenef']
+                                });
+                            }
+                        }
+                        
+                        // Valida pRedBC para CST 20
+                        if (regra.precisaPREDBC && !item.pRedBC) {
+                            status = 'error';
+                            mensagens.push({
+                                tipo: 'error',
+                                erro: 'pRedBC obrigatório',
+                                desc: 'CST 20 exige percentual de redução da base de cálculo',
+                                motivo: 'Faltou informar o pRedBC',
+                                correcao: 'Preencher o campo % Base Red. no cadastro do produto',
+                                orientacao: 'Solicitar ao cliente que verifique o percentual',
+                                rejeicao: '',
+                                campos: ['pRedBC']
+                            });
+                        }
+                    }
+                } else {
+                    // Não exige cBenef
+                    if (cBenef && cBenef !== 'SEM CBENEF') {
+                        // Verifica se o código é válido
+                        if (cBenefValidosTodos.includes(cBenef)) {
+                            // CENÁRIO B: Flexibilidade - código válido, não faz nada
+                            log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
+                        } else {
+                            // CENÁRIO C: Alerta SPED - código inválido
+                            alertas.push({
+                                tipo: 'warning',
+                                erro: 'ALERTA_SPED_CBENEF',
+                                desc: 'Código de benefício informado inválido para este CST',
+                                motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
+                                correcao: 'Remover o cBenef do cadastro do produto',
+                                orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
+                                campos: ['cBenef']
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Validação das novas regras (4-8)
+            const novasMensagens = validarNovasRegras(item);
+            if (novasMensagens.length > 0) {
+                mensagens.push(...novasMensagens);
+                status = 'error';
+            }
+
+            // Validação CFOP x CST/CSOSN
+            const cfopValido = validarCFOP(item, modelo, mensagens);
+            if (!cfopValido) {
+                status = 'error';
+            }
+
+            if (status === 'success' && mensagens.length === 0 && alertas.length === 0) {
+                mensagens.push({
+                    tipo: 'success',
+                    erro: 'OK',
+                    desc: 'Item validado com sucesso!',
+                    motivo: '',
+                    correcao: '',
+                    orientacao: '',
+                    rejeicao: '',
+                    campos: []
+                });
+            }
+
+            return { status, mensagens, alertas, regra };
+        }
+
+        function validarNovasRegras(item) {
+            const mensagens = [];
+            
+            // REGRA 4: NCM com tamanho incorreto
+            const ncmLimpo = item.NCM.replace(/\D/g, '');
+            if (ncmLimpo !== '00' && ncmLimpo.length !== 8) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'ERRO_NCM_TAMANHO',
+                    desc: 'NCM com tamanho incorreto. Deve ter 8 dígitos.',
+                    motivo: 'NCM informado não tem o tamanho padrão de 8 dígitos.',
+                    correcao: 'Acesse o cadastro do produto e atualize o NCM para um valor válido com 8 dígitos.',
+                    orientacao: 'Verificar a tabela de NCM correta.',
+                    campos: ['NCM']
+                });
+            }
+            
+            // REGRA 5: Produto com valor zerado
+            const vUnComNum = parseFloat(item.vUnCom) || 0;
+            const vProdNum = parseFloat(item.vProd) || 0;
+            if (vUnComNum <= 0 || vProdNum <= 0) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'ERRO_VALOR_ZERADO',
+                    desc: 'Valor unitário ou total do item é menor ou igual a zero.',
+                    motivo: 'Item com valor zerado não é permitido.',
+                    correcao: 'Acesse a tela de vendas ou o cadastro do item e informe um valor maior que zero.',
+                    orientacao: 'Verificar o preço do produto.',
+                    campos: ['vUnCom', 'vProd']
+                });
+            }
+            
+            // REGRA 6: CSOSN 500 exige CFOP de ST
+            if (item.CSOSN === '500' && !['5405', '5656', '5667', '6404'].includes(item.CFOP)) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'ERRO_CSOSN_500_CFOP',
+                    desc: 'CSOSN 500 exige CFOP de Substituição Tributária.',
+                    motivo: 'CFOP informado não é de ST.',
+                    correcao: 'Altere o CFOP para 5405 (ou outro CFOP de ST válido).',
+                    orientacao: 'Verificar o CFOP correto para operação de ST.',
+                    campos: ['CFOP', 'CSOSN']
+                });
+            }
+            
+            // REGRA 7: Falta detalhamento de redução de ISSQN
+            if (item.temISSQN && item.vDedISSQN && parseFloat(item.vDedISSQN) > 0) {
+                if (!item.pDedISSQN || !item.xMotDedISSQN) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'ERRO_DETALHE_ISS',
+                        desc: 'Dedução de ISS informada, mas falta percentual ou motivo.',
+                        motivo: 'Faltam detalhes da redução de ISSQN.',
+                        correcao: 'Acesse o cadastro de serviços e complete os campos de parametrização da redução de ISS.',
+                        orientacao: 'Verificar a parametrização do ISSQN.',
+                        campos: ['pDed', 'xMotDed']
+                    });
+                }
+            }
+            
+            // REGRA 8: CST PIS e COFINS inválidos
+            const cstsValidos = ['01', '02', '04', '06', '07', '08', '49', '99'];
+            if (item.CST_PIS && !cstsValidos.includes(item.CST_PIS)) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'ERRO_CST_PIS_COFINS',
+                    desc: `CST PIS ${item.CST_PIS} inválido.`,
+                    motivo: 'CST PIS não está na lista de valores válidos.',
+                    correcao: 'Acesse as configurações fiscais do produto e escolha um CST de PIS válido (01, 02, 04, 06, 07, 08, 49, 99).',
+                    orientacao: 'Verificar o CST PIS correto.',
+                    campos: ['CST_PIS']
+                });
+            }
+            if (item.CST_COFINS && !cstsValidos.includes(item.CST_COFINS)) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'ERRO_CST_PIS_COFINS',
+                    desc: `CST COFINS ${item.CST_COFINS} inválido.`,
+                    motivo: 'CST COFINS não está na lista de valores válidos.',
+                    correcao: 'Acesse as configurações fiscais do produto e escolha um CST de COFINS válido (01, 02, 04, 06, 07, 08, 49, 99).',
+                    orientacao: 'Verificar o CST COFINS correto.',
+                    campos: ['CST_COFINS']
+                });
+            }
+            
+            return mensagens;
+        }
+
+        function validarRegrasCRT(item, CRT, cUF) {
+            const mensagens = [];
+            const siglasUFExigemCBenef = ['35', '43', '41', '33', '53']; // SP, RS, PR, RJ, DF (cUF codes)
+            const siglasUF = {
+                '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+                '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL',
+                '28':'SE','29':'BA','31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR',
+                '42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF'
+            };
+            const siglaUF = siglasUF[cUF] || '';
+
+            // Regras para Simples Nacional (CRT 1 ou 2)
+            if (CRT === '1' || CRT === '2') {
+                // Exclusividade CSOSN: Não pode ter CST, só CSOSN
+                if (item.CST && !item.CSOSN) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CST_INCOMPATIVEL_SIMPLES',
+                        desc: `Item ${item.nItem}: Uso de CST em Simples Nacional. Use CSOSN.`,
+                        motivo: 'Simples Nacional exige CSOSN ao invés de CST.',
+                        correcao: 'Altere o cadastro do produto para usar CSOSN.',
+                        orientacao: 'Acesse o cadastro do produto e altere para CSOSN.',
+                        rejeicao: '',
+                        campos: ['CST', 'CSOSN']
+                    });
+                }
+
+                // Cruzamento CFOP x CSOSN
+                if (item.CFOP === '5102' && item.CSOSN === '500') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_INCOMPATIVEL_COM_CSOSN_500',
+                        desc: `Item ${item.nItem}: CFOP 5102 incompatível com CSOSN 500. Para CSOSN 500 use CFOP 5405.`,
+                        motivo: 'CFOP 5102 é para operação normal, CSOSN 500 é para ST.',
+                        correcao: 'Altere o CFOP para 5405 ou o CSOSN para outro valor.',
+                        orientacao: 'Acesse o cadastro do produto e ajuste CFOP ou CSOSN.',
+                        rejeicao: '381',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                }
+
+                if (item.CSOSN === '500' && item.CFOP !== '5405') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_OBRIGATORIO_5405',
+                        desc: `Item ${item.nItem}: CSOSN 500 exige CFOP 5405.`,
+                        motivo: 'CSOSN 500 é para ST, exige CFOP de ST.',
+                        correcao: 'Altere o CFOP para 5405.',
+                        orientacao: 'Acesse o cadastro do produto e altere o CFOP para 5405.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CSOSN']
+                    });
+                }
+            }
+
+            // Regras para Regime Normal (CRT 3)
+            if (CRT === '3') {
+                // Exclusividade CST: Não pode ter CSOSN, só CST
+                if (item.CSOSN && !item.CST) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CSOSN_INCOMPATIVEL_REGIME_NORMAL',
+                        desc: `Item ${item.nItem}: Uso de CSOSN em Regime Normal. Use CST.`,
+                        motivo: 'Regime Normal exige CST ao invés de CSOSN.',
+                        correcao: 'Altere o cadastro do produto para usar CST.',
+                        orientacao: 'Acesse o cadastro do produto e altere para CST.',
+                        rejeicao: '600',
+                        campos: ['CST', 'CSOSN']
+                    });
+                }
+
+                // Cruzamento CFOP x CST
+                if (item.CFOP === '5405' && item.CST !== '60') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CST_OBRIGATORIO_60',
+                        desc: `Item ${item.nItem}: CFOP 5405 exige CST 60.`,
+                        motivo: 'CFOP 5405 é para ST, exige CST 60.',
+                        correcao: 'Altere o CST para 60.',
+                        orientacao: 'Acesse o cadastro do produto e altere o CST para 60.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CST']
+                    });
+                }
+
+                if (item.CFOP === '5102' && item.CST === '60') {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CFOP_INCOMPATIVEL_COM_CST_60',
+                        desc: `Item ${item.nItem}: CFOP 5102 não pode ser usado com CST 60.`,
+                        motivo: 'CFOP 5102 é para operação normal, CST 60 é para ST.',
+                        correcao: 'Altere o CFOP ou o CST.',
+                        orientacao: 'Acesse o cadastro do produto e ajuste CFOP ou CST.',
+                        rejeicao: '',
+                        campos: ['CFOP', 'CST']
+                    });
+                }
+            }
+
+            // Regra cBenef obrigatório para certas UFs
+            if (siglasUFExigemCBenef.includes(cUF)) {
+                const cstsQueExigemCBenef = ['20', '40', '41', '51'];
+                const csosnQueExigemCBenef = ['900']; // exemplo
+                if ((cstsQueExigemCBenef.includes(item.CST) || csosnQueExigemCBenef.includes(item.CSOSN)) && !item.cBenef) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'CBENEF_OBRIGATORIO',
+                        desc: `Item ${item.nItem}: cBenef é obrigatório para este CST/CSOSN na UF ${siglaUF}.`,
+                        motivo: 'UF exige cBenef para operações com isenção, redução ou diferimento.',
+                        correcao: 'Informe o cBenef no cadastro do produto.',
+                        orientacao: 'Acesse o cadastro do produto e informe o cBenef válido.',
+                        rejeicao: '930',
+                        campos: ['cBenef']
+                    });
+                }
+            }
+
+            return mensagens;
+        }
+        // ==========================================
+        // NOVAS FUNÇÕES DE VALIDAÇÃO
+        // ==========================================
+        
+        /**
+         * Valida o dígito verificador da chave de acesso (Rejeição 252)
+         * @param {string} chaveAcesso - Chave de acesso completa (44 dígitos)
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarDVChaveAcesso(chaveAcesso) {
+            const erros = [];
+            if (!chaveAcesso || chaveAcesso.length !== 44) {
+                erros.push({
+                    erro: 'Rejeição 252',
+                    mensagem: 'Chave de acesso com tamanho inválido (deve ter 44 dígitos)',
+                    item: null
+                });
+                return erros;
+            }
+            
+            const primeiros43 = chaveAcesso.slice(0, 43);
+            const dvInformado = parseInt(chaveAcesso.charAt(43), 10);
+            
+            let soma = 0;
+            let peso = 2;
+            for (let i = primeiros43.length - 1; i >= 0; i--) {
+                const digito = parseInt(primeiros43.charAt(i), 10);
+                soma += digito * peso;
+                peso++;
+                if (peso > 9) {
+                    peso = 2;
+                }
+            }
+            
+            let dvCalculado = 11 - (soma % 11);
+            if (dvCalculado >= 10) {
+                dvCalculado = 0;
+            }
+            
+            if (dvCalculado !== dvInformado) {
+                erros.push({
+                    erro: 'Rejeição 252',
+                    mensagem: `Dígito verificador da chave de acesso inválido (esperado ${dvCalculado}, informado ${dvInformado})`,
+                    item: null
+                });
+            }
+            
+            return erros;
+        }
+        
+        /**
+         * Valida o dígito verificador de um código GTIN (EAN-8, EAN-13, EAN-14, UPC-A)
+         * @param {string} gtin - Código GTIN
+         * @returns {boolean} True se o GTIN for válido
+         */
+        function validarGTIN(gtin) {
+            if (!gtin || typeof gtin !== 'string') return false;
+            
+            const gtinLimpo = gtin.trim();
+            if (gtinLimpo === 'SEM GTIN') return true;
+            
+            if (!/^\d+$/.test(gtinLimpo)) return false;
+            
+            const tamanhosValidos = [8, 12, 13, 14];
+            if (!tamanhosValidos.includes(gtinLimpo.length)) return false;
+            
+            let soma = 0;
+            const reverso = gtinLimpo.split('').reverse();
+            const dvInformado = parseInt(reverso[0], 10);
+            
+            for (let i = 1; i < reverso.length; i++) {
+                const digito = parseInt(reverso[i], 10);
+                if (i % 2 === 1) {
+                    soma += digito * 3;
+                } else {
+                    soma += digito * 1;
+                }
+            }
+            
+            const resto = soma % 10;
+            const dvCalculado = resto === 0 ? 0 : 10 - resto;
+            return dvCalculado === dvInformado;
+        }
+        
+        /**
+         * Valida todos os códigos GTIN (cEAN e cEANTrib) dos itens (Rejeições 611 e 612)
+         * @param {Document} xmlDoc - Documento XML parseado
+         * @param {string} NS_NFE - Namespace da NF-e
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarGTINsItens(xmlDoc, NS_NFE) {
+            const erros = [];
+            const dets = [];
+            
+            let nfeRoot = getElemento(xmlDoc, 'NFe');
+            if (!nfeRoot) nfeRoot = getElemento(xmlDoc, 'nfeProc');
+            const infNFe = nfeRoot ? getElemento(nfeRoot, 'infNFe') : null;
+            
+            if (!infNFe) return erros;
+            
+            const detsFromNS = infNFe.getElementsByTagNameNS(NS_NFE, 'det');
+            if (detsFromNS.length > 0) {
+                for (let i = 0; i < detsFromNS.length; i++) dets.push(detsFromNS[i]);
+            } else {
+                const detsFromTag = infNFe.getElementsByTagName('det');
+                for (let i = 0; i < detsFromTag.length; i++) dets.push(detsFromTag[i]);
+            }
+            
+            dets.forEach(det => {
+                const nItem = det.getAttribute('nItem') || '';
+                const prod = getElemento(det, 'prod');
+                if (!prod) return;
+                
+                const cEAN = getTextoElemento(prod, 'cEAN');
+                const cEANTrib = getTextoElemento(prod, 'cEANTrib');
+                
+                if (cEAN && cEAN.trim() !== '' && !validarGTIN(cEAN)) {
+                    erros.push({
+                        erro: 'Rejeição 611',
+                        mensagem: `Código GTIN (cEAN) inválido para o item ${nItem}: ${cEAN}`,
+                        item: nItem
+                    });
+                }
+                
+                if (cEANTrib && cEANTrib.trim() !== '' && !validarGTIN(cEANTrib)) {
+                    erros.push({
+                        erro: 'Rejeição 612',
+                        mensagem: `Código GTIN tributário (cEANTrib) inválido para o item ${nItem}: ${cEANTrib}`,
+                        item: nItem
+                    });
+                }
+            });
+            
+            return erros;
+        }
+        
+
+        
+        /**
+         * Valida os totais de vProd e vICMS no ICMSTot (Rejeições 528 e 531)
+         * @param {Document} xmlDoc - Documento XML parseado
+         * @param {string} NS_NFE - Namespace da NF-e
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarTotaisICMSProd(xmlDoc, NS_NFE) {
+            const erros = [];
+            let somaVProd = 0;
+            let somaVICMS = 0;
+            
+            let nfeRoot = getElemento(xmlDoc, 'NFe');
+            if (!nfeRoot) nfeRoot = getElemento(xmlDoc, 'nfeProc');
+            const infNFe = nfeRoot ? getElemento(nfeRoot, 'infNFe') : null;
+            
+            if (!infNFe) return erros;
+            
+            const dets = [];
+            const detsFromNS = infNFe.getElementsByTagNameNS(NS_NFE, 'det');
+            if (detsFromNS.length > 0) {
+                for (let i = 0; i < detsFromNS.length; i++) dets.push(detsFromNS[i]);
+            } else {
+                const detsFromTag = infNFe.getElementsByTagName('det');
+                for (let i = 0; i < detsFromTag.length; i++) dets.push(detsFromTag[i]);
+            }
+            
+            dets.forEach(det => {
+                const prod = getElemento(det, 'prod');
+                const imposto = getElemento(det, 'imposto');
+                const icmsContainer = imposto ? getElemento(imposto, 'ICMS') : null;
+                
+                if (prod) {
+                    const vProd = parseFloat(getTextoElemento(prod, 'vProd')) || 0;
+                    somaVProd += vProd;
+                }
+                
+                if (icmsContainer) {
+                    const icmsTags = ['ICMS00', 'ICMS10', 'ICMS20', 'ICMS40', 'ICMS41', 'ICMS60', 
+                                      'ICMS90', 'ICMS30', 'ICMS50', 'ICMS51', 'ICMS53', 'ICMS70'];
+                    let vICMS = 0;
+                    for (let tag of icmsTags) {
+                        const elem = getElemento(icmsContainer, tag);
+                        if (elem) {
+                            vICMS = parseFloat(getTextoElemento(elem, 'vICMS')) || 0;
+                            break;
+                        }
+                    }
+                    const csosnTags = ['ICMSSN102','ICMSSN103','ICMSSN201','ICMSSN202','ICMSSN500','ICMSSN900'];
+                    for (let tag of csosnTags) {
+                        const elem = getElemento(icmsContainer, tag);
+                        if (elem) {
+                            vICMS = parseFloat(getTextoElemento(elem, 'vICMS')) || 0;
+                            break;
+                        }
+                    }
+                    somaVICMS += vICMS;
+                }
+            });
+            
+            const total = getElemento(infNFe, 'total');
+            const icmsTot = total ? getElemento(total, 'ICMSTot') : null;
+            if (icmsTot) {
+                const vProdTotal = parseFloat(getTextoElemento(icmsTot, 'vProd')) || 0;
+                const vICMSTotal = parseFloat(getTextoElemento(icmsTot, 'vICMS')) || 0;
+                
+                const somaVProdArred = Math.round(somaVProd * 100) / 100;
+                const vProdTotalArred = Math.round(vProdTotal * 100) / 100;
+                if (Math.abs(somaVProdArred - vProdTotalArred) > 0.01) {
+                    erros.push({
+                        erro: 'Rejeição 528',
+                        mensagem: `Total de vProd no ICMSTot (${vProdTotal.toFixed(2)}) difere da soma dos itens (${somaVProdArred.toFixed(2)})`,
+                        item: null
+                    });
+                }
+                
+                const somaVICMSArred = Math.round(somaVICMS * 100) / 100;
+                const vICMSTotalArred = Math.round(vICMSTotal * 100) / 100;
+                if (Math.abs(somaVICMSArred - vICMSTotalArred) > 0.01) {
+                    erros.push({
+                        erro: 'Rejeição 531',
+                        mensagem: `Total de vICMS no ICMSTot (${vICMSTotal.toFixed(2)}) difere da soma dos itens (${somaVICMSArred.toFixed(2)})`,
+                        item: null
+                    });
+                }
+            }
+            
+            return erros;
+        }
+        
+        /**
+         * Valida o telefone do emitente
+         * @param {string} fone - Telefone do emitente
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarTelefoneEmitente(fone) {
+            const erros = [];
+            if (!fone) return erros;
+            
+            // Remove caracteres não numéricos
+            const foneLimpo = fone.replace(/\D/g, '');
+            
+            if (foneLimpo.length < 8) {
+                erros.push({
+                    erro: 'Telefone Inválido',
+                    mensagem: 'Erro: Telefone do emitente inválido. Deve conter pelo menos 8 dígitos.',
+                    item: null
+                });
+            }
+            
+            return erros;
+        }
+        
+        /**
+         * Normaliza texto para comparação (remove acentos e converte para maiúsculas)
+         * @param {string} texto - Texto a ser normalizado
+         * @returns {string} Texto normalizado
+         */
+        function normalizarTexto(texto) {
+            if (!texto) return '';
+            return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+        }
+        
+        /**
+         * Sanitiza e valida CEP, consulta ViaCEP e compara dados
+         * @param {string} cep - CEP a ser validado
+         * @param {string} tipo - 'emitente' ou 'destinatario'
+         * @param {string} ufXML - UF do XML
+         * @param {string} xMunXML - Município do XML
+         * @param {string} xLgrXML - Logradouro do XML
+         * @returns {Promise<Array>} Lista de erros encontrados
+         */
+        async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML) {
+            const erros = [];
+            if (!cep) return erros;
+            
+            // Sanitiza o CEP (remove caracteres não numéricos)
+            const cepLimpo = cep.replace(/\D/g, '');
+            
+            // Valida comprimento do CEP
+            if (cepLimpo.length !== 8) {
+                erros.push({
+                    erro: 'CEP Inválido',
+                    mensagem: `CEP do ${tipo} inválido. Deve conter 8 dígitos numéricos.`,
+                    item: null
+                });
+                return erros;
+            }
+            
+            try {
+                // Consulta ViaCEP
+                const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                const data = await response.json();
+                
+                if (data.erro) {
+                    erros.push({
+                        erro: 'Rejeição CEP Incorreto',
+                        mensagem: `Rejeição : CEP ${cep} informado no ${tipo} não existe na base dos Correios.`,
+                        item: null
+                    });
+                    return erros;
+                }
+                
+                // Compara UF
+                const ufXMLLimpo = normalizarTexto(ufXML);
+                const ufAPILimpo = normalizarTexto(data.uf);
+                if (ufXMLLimpo && ufAPILimpo && ufXMLLimpo !== ufAPILimpo) {
+                    erros.push({
+                        erro: 'Divergência de UF',
+                        mensagem: `UF do ${tipo} diverge: XML = ${ufXML}, Correios = ${data.uf}`,
+                        item: null
+                    });
+                }
+                
+                // Compara Município
+                const xMunXMLLimpo = normalizarTexto(xMunXML);
+                const xMunAPILimpo = normalizarTexto(data.localidade);
+                if (xMunXMLLimpo && xMunAPILimpo && xMunXMLLimpo !== xMunAPILimpo) {
+                    erros.push({
+                        erro: 'Divergência de Município',
+                        mensagem: `Município do ${tipo} diverge: XML = ${xMunXML}, Correios = ${data.localidade}`,
+                        item: null
+                    });
+                }
+                
+            } catch (error) {
+                log(`Erro ao consultar ViaCEP para ${tipo}: ${error.message}`, 'error');
+                // Não adiciona erro se a API estiver indisponível
+            }
+            
+            return erros;
+        }
+        
+        /**
+         * Executa todas as novas validações
+         * @param {Document} xmlDoc - Documento XML parseado
+         * @param {string} NS_NFE - Namespace da NF-e
+         * @param {object} dados - Dados extraídos do XML
+         * @returns {Promise<Array>} Lista com todos os erros encontrados
+         */
+        async function executarNovasValidacoes(xmlDoc, NS_NFE, dados) {
+            const todosErros = [];
+            
+            // Valida telefone do emitente
+            const errosTelefone = validarTelefoneEmitente(dados.emit.fone);
+            todosErros.push(...errosTelefone);
+            
+            // Valida chave de acesso (usando a já extraída em dados.ide.chaveAcesso)
+            if (dados.ide.chaveAcesso) {
+                const errosDV = validarDVChaveAcesso(dados.ide.chaveAcesso);
+                todosErros.push(...errosDV);
+            }
+            
+            const errosGTIN = validarGTINsItens(xmlDoc, NS_NFE);
+            todosErros.push(...errosGTIN);
+            
+            const errosTotais = validarTotaisICMSProd(xmlDoc, NS_NFE);
+            todosErros.push(...errosTotais);
+            
+            // Valida CEP do emitente
+            const errosCEPEmit = await validarCEP(dados.emit.CEP, 'emitente', dados.emit.UF, dados.emit.xMun, dados.emit.xLgr);
+            todosErros.push(...errosCEPEmit);
+            
+            // Valida CEP do destinatário (se existir)
+            if (dados.dest) {
+                const errosCEPDest = await validarCEP(dados.dest.CEP, 'destinatario', dados.dest.UF, dados.dest.xMun, dados.dest.xLgr);
+                todosErros.push(...errosCEPDest);
+            }
+            
+            return todosErros;
+        }
+        
+        // ==========================================
+        // PROCESSAMENTO GERAL
+        // ==========================================
+        function validarTotaisPISCOFINS(dados) {
+            const mensagens = [];
+            let total_pis_icms = 0;
+            let total_cofins_icms = 0;
+            let total_pis_issqn = 0;
+            let total_cofins_issqn = 0;
+            
+            // Somar valores dos itens
+            dados.itens.forEach(item => {
+                const vPIS = parseFloat(item.vPIS) || 0;
+                const vCOFINS = parseFloat(item.vCOFINS) || 0;
+                
+                if (item.temICMS) {
+                    total_pis_icms += vPIS;
+                    total_cofins_icms += vCOFINS;
+                }
+                if (item.temISSQN) {
+                    total_pis_issqn += vPIS;
+                    total_cofins_issqn += vCOFINS;
+                }
+            });
+            
+            // Arredondar para 2 casas decimais
+            total_pis_icms = Math.round(total_pis_icms * 100) / 100;
+            total_cofins_icms = Math.round(total_cofins_icms * 100) / 100;
+            total_pis_issqn = Math.round(total_pis_issqn * 100) / 100;
+            total_cofins_issqn = Math.round(total_cofins_issqn * 100) / 100;
+            
+            // Comparar com ICMSTot
+            const vPIS_icms_tot = parseFloat(dados.totals.icmstot.vPIS) || 0;
+            const vCOFINS_icms_tot = parseFloat(dados.totals.icmstot.vCOFINS) || 0;
+            
+            if (Math.abs(total_pis_icms - vPIS_icms_tot) > 0.01) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'Total PIS divergente',
+                    desc: `Total do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}`,
+                    motivo: 'Soma dos valores de PIS dos itens com ICMS não confere com o total em ICMSTot',
+                    correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos itens',
+                    orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
+                    rejeicao: '602',
+                    campos: ['vPIS (ICMSTot)']
+                });
+            }
+            
+            if (Math.abs(total_cofins_icms - vCOFINS_icms_tot) > 0.01) {
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'Total COFINS divergente',
+                    desc: `Total do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}`,
+                    motivo: 'Soma dos valores de COFINS dos itens com ICMS não confere com o total em ICMSTot',
+                    correcao: 'Ajustar o % PIS e COFINS  para corresponder à soma dos itens',
+                    orientacao: 'CST PIS e CST COFINS 06 e 07, que provavelmente não devem ter % de Pis ou Cofins',
+                    rejeicao: '603',
+                    campos: ['vCOFINS (ICMSTot)']
+                });
+            }
+            
+            // Comparar com ISSQNtot (se houver itens com ISSQN)
+            const vPIS_issqn_tot = parseFloat(dados.totals.issqntot.vPIS) || 0;
+            const vCOFINS_issqn_tot = parseFloat(dados.totals.issqntot.vCOFINS) || 0;
+            
+            if (total_pis_issqn > 0 || vPIS_issqn_tot > 0) {
+                if (Math.abs(total_pis_issqn - vPIS_issqn_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total PIS divergente (ISSQN)',
+                        desc: `Total do PIS nos itens (ISSQN): R$ ${total_pis_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vPIS_issqn_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de PIS dos itens com ISSQN não confere com o total em ISSQNtot',
+                        correcao: 'Ajustar o valor vPIS em ISSQNtot para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
+                        rejeicao: '602',
+                        campos: ['vPIS (ISSQNtot)']
+                    });
+                }
+            }
+            
+            if (total_cofins_issqn > 0 || vCOFINS_issqn_tot > 0) {
+                if (Math.abs(total_cofins_issqn - vCOFINS_issqn_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total COFINS divergente (ISSQN)',
+                        desc: `Total do COFINS nos itens (ISSQN): R$ ${total_cofins_issqn.toFixed(2)} vs Total declarado em ISSQNtot: R$ ${vCOFINS_issqn_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de COFINS dos itens com ISSQN não confere com o total em ISSQNtot',
+                        correcao: 'Ajustar o valor vCOFINS em ISSQNtot para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de COFINS em cada item e o total declarado',
+                        rejeicao: '603',
+                        campos: ['vCOFINS (ISSQNtot)']
+                    });
+                }
+            }
+            
+            return mensagens;
+        }
+        
+        async function processarDados(dados) {
+            const itensProcessados = dados.itens.map(item => ({
+                ...item, validacao: validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
+            }));
+            const totaisValidacao = validarTotaisPISCOFINS(dados);
+            const novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
+            
+            // Para cada item com erro, obter sugestão contábil localmente
+            for (const item of itensProcessados) {
+                // Processar mensagens de erro/aviso
+                for (const msg of item.validacao.mensagens) {
+                    if (msg.tipo !== 'success') {
+                        msg.solucaoContabil = obterSugestaoContabil(
+                            msg.erro || '',
+                            item.cProd,
+                            item.xProd
+                        );
+                    }
+                }
+                // Processar alertas específicos
+                for (const alerta of item.validacao.alertas || []) {
+                    alerta.solucaoContabil = obterSugestaoContabil(
+                        alerta.erro || '',
+                        item.cProd,
+                        item.xProd
+                    );
+                }
+            }
+            
+            // Para cada erro total (PIS/COFINS), também adicionar sugestão
+            for (const msg of totaisValidacao) {
+                msg.solucaoContabil = obterSugestaoContabil(
+                    msg.erro || '',
+                    'N/A',
+                    'N/A'
+                );
+            }
+            
+            // Para cada erro das novas validações, também adicionar sugestão
+            for (const erro of novasValidacoes) {
+                // Criar uma estrutura similar para compatibilidade
+                erro.solucaoContabil = obterSugestaoContabil(
+                    erro.erro || '',
+                    erro.item?.cProd || 'N/A',
+                    erro.item?.xProd || 'N/A'
+                );
+            }
+            
+            let totalItens = itensProcessados.length;
+            let ok = 0, aviso = 0, erro = 0;
+            let totalCBenef = itensProcessados.filter(i => i.cBenef && i.cBenef.trim() !== '' && i.cBenef.trim() !== 'SEM CBENEF').length;
+            let totalCSOSN = itensProcessados.filter(i => i.CSOSN).length;
+            let totalCST = itensProcessados.filter(i => i.CST).length;
+            itensProcessados.forEach(i => {
+                if (i.validacao.status === 'success') ok++;
+                else if (i.validacao.status === 'warning') aviso++;
+                else erro++;
+            });
+            if (totaisValidacao.length > 0) erro++;
+            if (novasValidacoes.length > 0) erro += novasValidacoes.length;
+            return {
+                ...dados,
+                itensProcessados,
+                totaisValidacao,
+                novasValidacoes,
+                stats: { totalItens, ok, aviso, erro, totalCBenef, totalCSOSN, totalCST }
+            };
+        }
+        // ==========================================
+        // RENDERIZAÇÃO DA INTERFACE
+        // ==========================================
+        function renderizarTudo() {
+            renderizarDocInfo();
+            renderizarDiagnosticos();
+            renderizarAnaliseIA();
+            atualizarBotaoIA();
+            renderizarRelatorioPreview();
+            // Mostra a seção de pré-visualização do relatório
+            document.getElementById('relatorio-preview').parentElement.style.display = 'block';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('btn-baixar-relatorio').disabled = false;
+        }
+        function renderizarAnaliseIA() {
+            const card = document.getElementById('ai-analysis-card');
+            const container = document.getElementById('ai-analysis');
+            const analiseIA = dadosProcessados?.analiseIA;
+            if (!card || !container) return;
+
+            if (!analiseIA) {
+                card.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+            card.style.display = 'block';
+            if (analiseIA.status === 'sem-diagnosticos') {
+                container.innerHTML = `<div class="ai-status info">${escapeHtml(analiseIA.mensagem)}</div>`;
+                return;
+            }
+            if (analiseIA.status === 'erro') {
+                container.innerHTML = `<div class="ai-status error">${escapeHtml(analiseIA.mensagem)}</div>`;
+                return;
+            }
+
+            const statusIntro = 'A IA destaca o desvio técnico concreto no XML e o ajuste objetivo esperado, com base no motor local.';
+
+            const cards = (analiseIA.analises || []).map(analise => `
+                <div class="ai-card">
+                    <h4>${escapeHtml(analise.nome)} ${analise.codigo && analise.codigo !== 'N/A' ? `(Rejeição ${escapeHtml(analise.codigo)})` : ''}</h4>
+                    <div class="ai-section-title">Diagnóstico objetivo</div>
+                    <div>${escapeHtml(analise.diagnosticoObjetivo || 'Não informado.')}</div>
+                    <div class="ai-section-title">Onde está o erro</div>
+                    <div>${escapeHtml(analise.ondeErro || 'Não informado.')}</div>
+                    <div class="ai-section-title">Campos envolvidos</div>
+                    <div>${analise.camposEnvolvidos?.length ? escapeHtml(analise.camposEnvolvidos.join(', ')) : 'Não informado.'}</div>
+                    <div class="ai-section-title">Como corrigir</div>
+                    <div>${escapeHtml(analise.correcao || 'Não informado.')}</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="ai-status info">
+                    ${escapeHtml(statusIntro)}
+                </div>
+                ${cards || '<div class="ai-status warning">A IA não retornou análises estruturadas para os diagnósticos encontrados.</div>'}
+            `;
+        }
+
+        function renderizarRelatorioPreview() {
+            const previewDiv = document.getElementById('relatorio-preview');
+            
+            // Verificar se há erros relacionados a campos em qualquer item
+            const temErroCST = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST'))
+            );
+            const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
+            );
+            const temErroNCM = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('NCM'))
+            );
+            const temErroValor = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('vUnCom') || (msg.campos || []).includes('vProd'))
+            );
+            const temErroCSTPIS = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST_PIS'))
+            );
+            const temErroCSTCOFINS = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST_COFINS'))
+            );
+            
+            previewDiv.innerHTML = `
+                <h3 style="margin: 16px 0; color: var(--text);">Itens da Nota</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Produto</th>
+                                ${temErroCST ? '<th>CST</th>' : ''}
+                                ${temErroCBenef ? '<th>cBenef</th>' : ''}
+                                ${temErroNCM ? '<th>NCM</th>' : ''}
+                                ${temErroValor ? '<th>Valor Unitário</th><th>Valor Total</th>' : ''}
+                                ${temErroCSTPIS ? '<th>CST PIS</th>' : ''}
+                                ${temErroCSTCOFINS ? '<th>CST COFINS</th>' : ''}
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dadosProcessados.itensProcessados.map(item => {
+                                const s = item.validacao.status;
+                                const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
+                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK' : s === 'warning' ? 'AVISO' : 'ERRO'}</span>`;
+                                return `<tr class="${classe}">
+                                    <td>${item.nItem}</td>
+                                    <td>${item.xProd}</td>
+                                    ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
+                                    ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
+                                    ${temErroNCM ? `<td>${item.NCM || '-'}</td>` : ''}
+                                    ${temErroValor ? `<td>${item.vUnCom || '0'}</td><td>${item.vProd || '0'}</td>` : ''}
+                                    ${temErroCSTPIS ? `<td>${item.CST_PIS || '-'}</td>` : ''}
+                                    ${temErroCSTCOFINS ? `<td>${item.CST_COFINS || '-'}</td>` : ''}
+                                    <td>${badge}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <style>
+                    .item-erro { background-color: rgba(239, 68, 68, 0.05); }
+                    .item-aviso { background-color: rgba(245, 158, 11, 0.05); }
+                </style>
+            `;
+        }
+        function renderizarDocInfo() {
+            const di = document.getElementById('doc-info');
+            const uf = dadosProcessados.ide.cUF === '35' ? 'SP' : dadosProcessados.ide.cUF || '';
+            const data = dadosProcessados.ide.dhEmi ? new Date(dadosProcessados.ide.dhEmi).toLocaleDateString('pt-BR') : '';
+            di.innerHTML = `
+                ${dadosProcessados.ide.chaveAcesso ? `
+                <div class="diagnostic-field" style="grid-column: 1 / -1;">
+                    <span class="diagnostic-field-label">Chave de Acesso</span>
+                    <span class="diagnostic-field-value" style="font-family: monospace; font-size: 0.9rem;">${dadosProcessados.ide.chaveAcesso}</span>
+                </div>
+                ` : ''}
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Número da Nota</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.ide.nNF}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Série</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.ide.serie}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Modelo</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.ide.mod}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Data de Emissão</span>
+                    <span class="diagnostic-field-value">${data}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">UF</span>
+                    <span class="diagnostic-field-value">${uf}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Razão Social</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.emit.xNome}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">CNPJ</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.emit.CNPJ}</span>
+                </div>
+            `;
+        }
+        function renderizarDiagnosticos() {
+            const d = document.getElementById('diagnostics');
+            const itensComProblema = dadosProcessados.itensProcessados.filter(
+                i => i.validacao.mensagens.some(m => m.tipo !== 'success') || (i.validacao.alertas && i.validacao.alertas.length > 0)
+            );
+            const totaisComProblema = dadosProcessados.totaisValidacao || [];
+            const novasValidacoes = dadosProcessados.novasValidacoes || [];
+            
+            if (itensComProblema.length === 0 && totaisComProblema.length === 0 && novasValidacoes.length === 0) {
+                d.innerHTML = `
+                    <div style="text-align:center;padding:60px;">
+                        <div style="font-size:4rem;">✅</div>
+                        <div style="margin-top:20px;color:var(--success);font-weight:700;font-size:1.25rem;">
+                            Nenhum problema encontrado! Documento validado com sucesso.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            // Renderizar novas validações
+            if (novasValidacoes.length > 0) {
+                html += `
+                    <div class="diagnostic-item error">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                Erros Estruturais e Matemáticos
+                            </div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <h4 style="margin-bottom:8px;color:var(--text);">Problemas Encontrados:</h4>
+                            ${novasValidacoes.map(msg => `
+                                <div style="padding:12px;background:var(--bg);border-left:4px solid var(--error);border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                        <strong style="color:var(--error)">${msg.erro}</strong>
+                                        <span class="badge badge-error" style="font-size:0.8rem;">
+                                            ERRO
+                                        </span>
+                                    </div>
+                                    <div style="margin-bottom:4px;"><strong>Mensagem:</strong> ${msg.mensagem}</div>
+                                    ${msg.item ? `<div style="margin-bottom:4px;"><strong>Item:</strong> ${msg.item}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Renderizar itens com problemas (agrupados por item)
+            itensComProblema.forEach(item => {
+                const mensagensItem = item.validacao.mensagens.filter(m => m.tipo !== 'success');
+                if (mensagensItem.length === 0) return;
+                
+                // Coletar todos os campos problemáticos para este item
+                const camposProblematicos = new Set();
+                mensagensItem.forEach(msg => {
+                    (msg.campos || []).forEach(campo => camposProblematicos.add(campo));
+                });
+                
+                html += `
+                    <div class="diagnostic-item error">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                Item ${item.nItem}: ${item.xProd}
+                            </div>
+                        </div>
+                        <div class="diagnostic-grid">
+                            ${camposProblematicos.has('CST') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CST || '-'}</span>
+                            </div>
+                            ` : ''}
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CSOSN</span>
+                                <span class="diagnostic-field-value" style="${camposProblematicos.has('CSOSN') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CSOSN || '-'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CFOP</span>
+                                <span class="diagnostic-field-value" style="${camposProblematicos.has('CFOP') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CFOP || '-'}</span>
+                            </div>
+                            ${camposProblematicos.has('cBenef') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">cBenef</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cBenef || '-'}</span>
+                            </div>
+                            ` : ''}
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pRedBC</span>
+                                <span class="diagnostic-field-value" style="${camposProblematicos.has('pRedBC') ? 'color: var(--error); font-weight: 700;' : ''}">${item.pRedBC || '-'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vPIS</span>
+                                <span class="diagnostic-field-value" style="${camposProblematicos.has('vPIS') ? 'color: var(--error); font-weight: 700;' : ''}">${item.vPIS || '0'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCOFINS</span>
+                                <span class="diagnostic-field-value" style="${camposProblematicos.has('vCOFINS') ? 'color: var(--error); font-weight: 700;' : ''}">${item.vCOFINS || '0'}</span>
+                            </div>
+                            ${camposProblematicos.has('NCM') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">NCM</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.NCM || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vUnCom') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">Valor Unitário</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vUnCom || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vProd') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">Valor Total</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vProd || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('CST_PIS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST PIS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CST_PIS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('CST_COFINS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST COFINS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CST_COFINS || '-'}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <h4 style="margin-bottom: 8px; color: var(--text);">Problemas Encontrados:</h4>
+                            ${mensagensItem.map(msg => `
+                                <div style="padding: 12px; background: var(--bg); border-left: 4px solid ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <strong style="color: ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}">${msg.erro}</strong>
+                                        <span class="badge badge-${msg.tipo}" style="font-size: 0.8rem;">
+                                            ${msg.tipo === 'error' ? 'ERRO' : 'AVISO'}
+                                            ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
+                                        </span>
+                                    </div>
+                                    <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
+                                    <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
+                                    <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
+                                    ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                                        <strong style="color: var(--primary);">🤖 Sugestão:</strong>
+                                        <div style="margin-top: 4px;">
+                                            <span style="color: var(--text);">${msg.solucaoContabil}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${item.validacao.alertas && item.validacao.alertas.length > 0 ? `
+                                <h4 style="margin-top:16px; margin-bottom:8px; color: var(--warning);">⚠️ Alertas de Auditoria:</h4>
+                                ${item.validacao.alertas.map(alerta => `
+                                    <div style="padding: 12px; background: #fffbeb; border-left: 4px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom:8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                            <strong style="color: var(--warning)">${alerta.erro}</strong>
+                                            <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA</span>
+                                        </div>
+                                        <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc}</div>
+                                        <div style="margin-bottom:4px;"><strong>Motivo:</strong> ${alerta.motivo}</div>
+                                        ${alerta.correcao ? `<div style="margin-bottom:4px;"><strong>Como Corrigir:</strong> ${alerta.correcao}</div>` : ''}
+                                        ${alerta.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${alerta.orientacao}</div>` : ''}
+                                        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
+                                            <strong style="color: var(--primary);">🤖 Sugestão:</strong>
+                                            <div style="margin-top:4px;">
+                                                <span style="color: var(--text);">${alerta.solucaoContabil}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Renderizar problemas nos totais (PIS/COFINS)
+            totaisComProblema.forEach(msg => {
+                html += `
+                    <div class="diagnostic-item ${msg.tipo}">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                Totais do Documento
+                            </div>
+                            <span class="badge badge-${msg.tipo}">
+                                ${msg.tipo === 'error' ? 'ERRO' : 'AVISO'}
+                                ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
+                            </span>
+                        </div>
+                        <div class="diagnostic-grid">
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vPIS (ICMSTot)</span>
+                                <span class="diagnostic-field-value" style="${(msg.campos || []).includes('vPIS (ICMSTot)') ? 'color: var(--error); font-weight: 700;' : ''}">${dadosProcessados.totals.icmstot.vPIS || '0'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCOFINS (ICMSTot)</span>
+                                <span class="diagnostic-field-value" style="${(msg.campos || []).includes('vCOFINS (ICMSTot)') ? 'color: var(--error); font-weight: 700;' : ''}">${dadosProcessados.totals.icmstot.vCOFINS || '0'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vPIS (ISSQNTot)</span>
+                                <span class="diagnostic-field-value" style="${(msg.campos || []).includes('vPIS (ISSQNTot)') ? 'color: var(--error); font-weight: 700;' : ''}">${dadosProcessados.totals.issqntot.vPIS || '0'}</span>
+                            </div>
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCOFINS (ISSQNTot)</span>
+                                <span class="diagnostic-field-value" style="${(msg.campos || []).includes('vCOFINS (ISSQNTot)') ? 'color: var(--error); font-weight: 700;' : ''}">${dadosProcessados.totals.issqntot.vCOFINS || '0'}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${msg.desc}</div>
+                            <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
+                            <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
+                            ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                            ${msg.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                                <strong style="color: var(--primary);">🤖 Sugestão Contábil:</strong>
+                                <div style="margin-top: 4px;">
+                                    <span style="color: var(--text);">${msg.solucaoContabil}</span>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Renderizar erros das novas validações (telefone, CEP, chave de acesso, etc.)
+            dadosProcessados.novasValidacoes.forEach(erro => {
+                html += `
+                    <div class="diagnostic-item error">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                Problema Geral
+                            </div>
+                            <span class="badge badge-error">
+                                ERRO
+                            </span>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${erro.mensagem}</div>
+                            ${erro.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                                <strong style="color: var(--primary);">🤖 Sugestão Contábil:</strong>
+                                <div style="margin-top: 4px;">
+                                    <span style="color: var(--text);">${erro.solucaoContabil}</span>
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            d.innerHTML = html;
+        }
+        // ==========================================
+        // EXPORTAÇÃO DO RELATÓRIO
+        // ==========================================
+        function exportarRelatorio() {
+            const now = new Date().toLocaleString('pt-BR');
+            
+            // Verificar se há erros relacionados a CST ou cBenef em qualquer item
+            const temErroCST = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST'))
+            );
+            const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
+            );
+
+            // Verificar se há QUALQUER problema (itens, totais ou novas validações)
+            const temProblemas = 
+                dadosProcessados.stats.erro > 0 || 
+                dadosProcessados.stats.aviso > 0 || 
+                dadosProcessados.totaisValidacao.length > 0 || 
+                dadosProcessados.novasValidacoes.length > 0;
+            
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Relatório  NF-e</title>
+                    <style>
+                        *{font-family:Arial,sans-serif;}
+                        body{background:#f0f4f8;padding:40px;}
+                        .container{max-width:1200px;margin:0 auto;background:white;padding:40px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+                        h1{color:#2563eb;margin-bottom:10px;}
+                        h2{color:#1e293b;margin-top:30px;margin-bottom:15px;}
+                        h3{color:#334155;margin-bottom:10px;}
+                        .subtitulo{color:#64748b;margin-bottom:30px;}
+                        table{width:100%;border-collapse:collapse;margin-bottom:30px;}
+                        th,td{padding:12px;text-align:left;border-bottom:1px solid #e2e8f0;}
+                        th{background:#f0f4f8;color:#64748b;font-weight:700;}
+                        .item-erro{background:#fff1f2;}
+                        .item-aviso{background:#fffbeb;}
+                        .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:700;font-size:0.85rem;}
+                        .badge-success{background:#d1fae5;color:#059669;}
+                        .badge-warning{background:#fef3c7;color:#d97706;}
+                        .badge-error{background:#fee2e2;color:#dc2626;}
+                        .diagnostico{border-left:4px solid;padding:20px;margin-bottom:15px;border-radius:0 8px 8px 0;background:#f8fafc;}
+                        .diagnostico.error{border-color:#ef4444;}
+                        .diagnostico.warning{border-color:#f59e0b;}
+                        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;}
+                        .campo{display:flex;flex-direction:column;gap:4px;}
+                        .campo-label{font-size:0.85rem;font-weight:700;color:#64748b;}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>Relatório NF-e</h1>
+                        <p class="subtitulo">Emitido em: ${now}</p>
+                        <div class="grid">
+                            <div class="campo"><span class="campo-label">Número da Nota</span><span>${dadosProcessados.ide.nNF}</span></div>
+                            <div class="campo"><span class="campo-label">Série</span><span>${dadosProcessados.ide.serie}</span></div>
+                            <div class="campo"><span class="campo-label">Modelo</span><span>${dadosProcessados.ide.mod}</span></div>
+                            <div class="campo"><span class="campo-label">Emitente</span><span>${dadosProcessados.emit.xNome}</span></div>
+                        </div>
+                        <h2>Resumo</h2>
+                        <div class="grid">
+                            <div class="campo"><span class="campo-label">Total de Itens</span><span>${dadosProcessados.stats.totalItens}</span></div>
+                            <div class="campo"><span class="campo-label">Itens OK</span><span>${dadosProcessados.stats.ok}</span></div>
+                            <div class="campo"><span class="campo-label">Itens com Aviso</span><span>${dadosProcessados.stats.aviso}</span></div>
+                            <div class="campo"><span class="campo-label">Itens com Erro</span><span>${dadosProcessados.stats.erro}</span></div>
+                        </div>
+                        <h2>Itens da Nota</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Produto</th>
+                                    ${temErroCST ? '<th>CST</th>' : ''}
+                                    ${temErroCBenef ? '<th>cBenef</th>' : ''}
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dadosProcessados.itensProcessados.map(item => {
+                                    const s = item.validacao.status;
+                                    const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
+                                    const badge = s === 'success' ? '<span class="badge badge-success">OK</span>' : 
+                                                  s === 'warning' ? '<span class="badge badge-warning">AVISO</span>' : 
+                                                  '<span class="badge badge-error">ERRO</span>';
+                                    return `<tr class="${classe}">
+                                        <td>${item.nItem}</td>
+                                        <td>${item.xProd}</td>
+                                        ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
+                                        ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
+                                        <td>${badge}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        <h2>Diagnósticos</h2>
+                        
+                        <!-- Renderizar erros das novas validações (telefone, CEP, chave de acesso, etc.) -->
+                        ${dadosProcessados.novasValidacoes.length > 0 ? `
+                            <h3 style="margin-bottom:10px;">Erros Estruturais e Matemáticos</h3>
+                            ${dadosProcessados.novasValidacoes.map(erro => `
+                                <div class="diagnostico error">
+                                    <h3>${erro.erro}</h3>
+                                    <div class="grid">
+                                        <div class="campo"><span class="campo-label">Descrição</span><span>${erro.mensagem}</span></div>
+                                        ${erro.item ? `<div class="campo"><span class="campo-label">Item</span><span>${erro.item}</span></div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        ` : ''}
+                        
+                        <!-- Renderizar problemas nos totais (PIS/COFINS) -->
+                        ${dadosProcessados.totaisValidacao.length > 0 ? dadosProcessados.totaisValidacao.map(msg => `
+                            <div class="diagnostico ${msg.tipo}">
+                                <h3>Totais do Documento ${msg.rejeicao ? '(Rejeição ' + msg.rejeicao + ')' : ''}</h3>
+                                <div class="grid">
+                                    <div class="campo"><span class="campo-label">vPIS (ICMSTot)</span><span>${dadosProcessados.totals.icmstot.vPIS || '0'}</span></div>
+                                    <div class="campo"><span class="campo-label">vCOFINS (ICMSTot)</span><span>${dadosProcessados.totals.icmstot.vCOFINS || '0'}</span></div>
+                                    <div class="campo"><span class="campo-label">vPIS (ISSQNTot)</span><span>${dadosProcessados.totals.issqntot.vPIS || '0'}</span></div>
+                                    <div class="campo"><span class="campo-label">vCOFINS (ISSQNTot)</span><span>${dadosProcessados.totals.issqntot.vCOFINS || '0'}</span></div>
+                                </div>
+                                <div style="margin-top:15px;">
+                                    <div style="margin-bottom:5px;"><strong>Descrição:</strong> ${msg.desc}</div>
+                                    <div style="margin-bottom:5px;"><strong>Motivo:</strong> ${msg.motivo}</div>
+                                    <div style="margin-bottom:5px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
+                                </div>
+                            </div>
+                        `).join('') : ''}
+                        
+                        <!-- Renderizar problemas dos itens -->
+                        ${dadosProcessados.itensProcessados.flatMap(item => {
+                            return item.validacao.mensagens.filter(m => m.tipo !== 'success').map(msg => `
+                                <div class="diagnostico ${msg.tipo}">
+                                    <h3>Item ${item.nItem}: ${item.xProd} (${msg.erro})</h3>
+                                    <div class="grid">
+                                        <div class="campo"><span class="campo-label">Descrição</span><span>${msg.desc}</span></div>
+                                        <div class="campo"><span class="campo-label">Motivo</span><span>${msg.motivo}</span></div>
+                                        <div class="campo"><span class="campo-label">Como Corrigir</span><span>${msg.correcao}</span></div>
+                                        <div class="campo"><span class="campo-label">Rejeição</span><span>${msg.rejeicao || '-'}</span></div>
+                                    </div>
+                                </div>
+                            `);
+                        }).join('')}
+                        
+                        ${!temProblemas ? 
+                            '<div style="text-align:center;padding:40px;background:#d1fae5;color:#059669;border-radius:8px;font-weight:700;font-size:1.1rem;">✅ Nenhum problema encontrado!</div>' : ''}
+                    </div>
+                </body>
+                </html>
+            `;
+            const blob = new Blob([html], {type:'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio-nfe-nota-${dadosProcessados.ide.nNF}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        // ==========================================
+        // EVENTOS DA INTERFACE
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const ua = document.getElementById('upload-area');
+            const fi = document.getElementById('file-input');
+            ua.addEventListener('dragover', e => {
+                e.preventDefault();
+                ua.classList.add('dragover');
+            });
+            ua.addEventListener('dragleave', e => {
+                e.preventDefault();
+                ua.classList.remove('dragover');
+            });
+            ua.addEventListener('drop', async e => {
+                e.preventDefault();
+                ua.classList.remove('dragover');
+                const arquivo = e.dataTransfer.files[0];
+                if (arquivo && arquivo.name.endsWith('.xml')) {
+                    await processarArquivo(arquivo);
+                } else {
+                    alert('Por favor, selecione um arquivo XML válido!');
+                }
+            });
+            ua.addEventListener('click', e => {
+                if (e.target.tagName !== 'BUTTON') fi.click();
+            });
+            fi.addEventListener('change', async e => {
+                const arquivo = e.target.files[0];
+                if (arquivo) await processarArquivo(arquivo);
+            });
+        });
+        async function processarArquivo(arquivo) {
+            showLoading();
+            setLoadingText('Analisando XML...');
+            try {
+                analiseIAEmAndamento = false;
+                const dados = await lerXML(arquivo);
+                
+                if (dados.tipo === 'inutNFe') {
+                    // Renderiza dados de inutilização
+                    renderizarInutNFe(dados.dados);
+                } else {
+                    // Renderiza NF-e normal
+                    dadosProcessados = await processarDados(dados);
+                    dadosProcessados.analiseIA = null;
+                    renderizarTudo();
+                }
+            } catch (erro) {
+                alert(`Erro: ${erro.message}`);
+            } finally {
+                setLoadingText('Analisando XML...');
+                hideLoading();
+            }
+        }
+        
+        function renderizarInutNFe(dados) {
+            const di = document.getElementById('doc-info');
+            const d = document.getElementById('diagnostics');
+            const previewDiv = document.getElementById('relatorio-preview');
+            const aiCard = document.getElementById('ai-analysis-card');
+            const aiActionCard = document.getElementById('ai-action-card');
+            const btnIA = document.getElementById('btn-analise-ia');
+            const uf = dados.cUF === '35' ? 'SP' : dados.cUF || '';
+            dadosProcessados = null;
+            if (aiCard) aiCard.style.display = 'none';
+            if (aiActionCard) aiActionCard.style.display = 'none';
+            if (btnIA) {
+                btnIA.disabled = true;
+                btnIA.textContent = '🧠 Explicar com IA';
+            }
+            
+            // Renderiza info básica
+            di.innerHTML = `
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Tipo de Documento</span>
+                    <span class="diagnostic-field-value">${dados.tipo}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">UF</span>
+                    <span class="diagnostic-field-value">${uf}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Ano</span>
+                    <span class="diagnostic-field-value">${dados.ano}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">CNPJ</span>
+                    <span class="diagnostic-field-value">${dados.CNPJ}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Modelo</span>
+                    <span class="diagnostic-field-value">${dados.modelo}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Série</span>
+                    <span class="diagnostic-field-value">${dados.serie}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Número Inicial</span>
+                    <span class="diagnostic-field-value">${dados.nNFIni}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Número Final</span>
+                    <span class="diagnostic-field-value">${dados.nNFFin}</span>
+                </div>
+            `;
+            
+            // Renderiza justificativa
+            d.innerHTML = `
+                <div class="diagnostic-item success">
+                    <div class="diagnostic-header">
+                        <div class="diagnostic-title">
+                            Justificativa
+                        </div>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <p style="padding: 12px; background: var(--bg); border-left:4px solid var(--success); border-radius:0 var(--radius) var(--radius) 0;">
+                            ${dados.xJust}
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align:center;padding:60px;">
+                    <div style="font-size:4rem;">📄</div>
+                    <div style="margin-top:20px;color:var(--text-secondary);font-weight:700;font-size:1.25rem;">
+                        Arquivo de inutilização de NF-e carregado com sucesso!
+                    </div>
+                </div>
+            `;
+            
+            // Oculta a pré-visualização do relatório para inutilização
+            previewDiv.innerHTML = '';
+            previewDiv.parentElement.style.display = 'none';
+            
+            document.getElementById('results').style.display = 'block';
+            // Não habilita o botão para inutilização, pois não há relatório para exportar
+            document.getElementById('btn-baixar-relatorio').disabled = true;
+        }
+    </script>
+</body>
+</html>
