@@ -376,39 +376,41 @@
             <h1>🤖 Analisa XML </h1>
             <p><H3> NF-e/NFC-e  </H3></p>
         </header>
-        <div class="card">
-            <div class="card-title">📄 Analisar XML</div>
-            <div style="display:flex;gap:10px;margin-bottom:16px;">
-                <button class="btn btn-primary" id="btn-tab-arquivo" style="background:var(--primary);color:white;">Arquivo XML</button>
-                <button class="btn" id="btn-tab-conteudo" style="background:var(--border);color:var(--text);">Conteúdo XML</button>
-            </div>
-            
-            <!-- Arquivo XML section -->
-            <div id="section-arquivo">
-                <div id="upload-area" class="upload-area">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">Arraste o arquivo XML aqui ou clique para selecionar</div>
-                    <input type="file" id="file-input" accept=".xml" style="display:none;">
-                    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-                        Selecionar Arquivo
-                    </button>
+        <div id="upload-container">
+            <div class="card">
+                <div class="card-title">📄 Analisar XML</div>
+                <div style="display:flex;gap:10px;margin-bottom:16px;">
+                    <button class="btn btn-primary" id="btn-tab-arquivo" style="background:var(--primary);color:white;">Arquivo XML</button>
+                    <button class="btn" id="btn-tab-conteudo" style="background:var(--border);color:var(--text);">Conteúdo XML</button>
                 </div>
-            </div>
-            
-            <!-- Conteúdo XML section -->
-            <div id="section-conteudo" style="display:none;">
-                <div style="display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;">
-                    <textarea id="paste-area" placeholder="Cole o conteúdo do XML aqui..." style="width:100%;max-width:600px;min-height:150px;padding:12px;border-radius:8px;border:1px dashed var(--border);background:var(--card);color:var(--text);font-family:monospace;"></textarea>
-                    <button class="btn btn-primary" id="btn-analisar-paste">Analisar Conteúdo Colado</button>
+                
+                <!-- Arquivo XML section -->
+                <div id="section-arquivo">
+                    <div id="upload-area" class="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Arraste o arquivo XML aqui ou clique para selecionar</div>
+                        <input type="file" id="file-input" accept=".xml" style="display:none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                            Selecionar Arquivo
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Conteúdo XML section -->
+                <div id="section-conteudo" style="display:none;">
+                    <div style="display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;">
+                        <textarea id="paste-area" placeholder="Cole o conteúdo do XML aqui..." style="width:100%;max-width:600px;min-height:150px;padding:12px;border-radius:8px;border:1px dashed var(--border);background:var(--card);color:var(--text);font-family:monospace;"></textarea>
+                        <button class="btn btn-primary" id="btn-analisar-paste">Analisar Conteúdo Colado</button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Floating Limpar button -->
-        <button id="btn-limpar" style="position:fixed;bottom:24px;right:24px;padding:14px 24px;font-size:1rem;font-weight:bold;border-radius:50px;border:none;background:var(--error);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:100;">
-            🗑️ Limpar
+        <!-- Floating Nova Análise button -->
+        <button id="btn-limpar" style="position:fixed;bottom:24px;right:24px;padding:14px 24px;font-size:1rem;font-weight:bold;border-radius:50px;border:none;background:var(--error);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:100;display:none;">
+            🔄 Nova Análise
         </button>
-        <div id="results">
+        <div id="results" style="display:none;">
             <div class="card">
                 <div class="card-title"> Dados do Documento</div>
                 <div id="doc-info" class="diagnostic-grid"></div>
@@ -3328,9 +3330,25 @@
             btnTabArquivo.addEventListener('click', switchToArquivo);
             btnTabConteudo.addEventListener('click', switchToConteudo);
             
-            // Limpar button - refresh page
+            // Nova Análise button - reset UI
             btnLimpar.addEventListener('click', () => {
-                window.location.reload();
+                // Show upload container, hide results and button
+                document.getElementById('upload-container').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('btn-limpar').style.display = 'none';
+                
+                // Reset fields
+                document.getElementById('file-input').value = '';
+                document.getElementById('paste-area').value = '';
+                
+                // Switch back to Arquivo tab
+                switchToArquivo();
+                
+                // Reset data
+                dadosProcessados = null;
+                xmlDoc = null;
+                xmlConteudoAtual = '';
+                logsDebug = [];
             });
             
             // Make upload area focusable
@@ -3396,6 +3414,11 @@
                     dadosProcessados.analiseIA = null;
                     renderizarTudo();
                 }
+                
+                // Hide upload container, show Nova Análise button, show results
+                document.getElementById('upload-container').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('btn-limpar').style.display = 'block';
             } catch (erro) {
                 alert(`Erro: ${erro.message}`);
             } finally {
