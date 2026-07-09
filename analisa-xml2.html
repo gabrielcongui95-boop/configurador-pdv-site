@@ -12,18 +12,18 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         :root {
-            --bg: #f0f4f8;
-            --card: #ffffff;
-            --text: #1a202c;
-            --text-light: #64748b;
-            --primary: #2563eb;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --border: #e2e8f0;
-            --radius: 12px;
-            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -2px rgba(0,0,0,0.1);
-        }
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #f8fafc;
+                --text-light: #94a3b8;
+                --primary: #3b82f6;
+                --success: #10b981;
+                --warning: #f59e0b;
+                --error: #ef4444;
+                --border: #334155;
+                --radius: 12px;
+                --shadow: 0 4px 6px -1px rgba(0,0,0,0.3),0 2px 4px -2px rgba(0,0,0,0.2);
+            }
         body {
             background: var(--bg);
             color: var(--text);
@@ -210,7 +210,7 @@
         .loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.95);
+            background: rgba(15,23,42,0.95);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -397,22 +397,7 @@
                 <div id="diagnostics"></div>
             </div>
             <div id="ai-action-card" class="card ai-action-card">
-                <div class="ai-action-bar">
-                    <div class="ai-action-text">
-                        <div class="ai-action-title">🧠 Explicação Assistida por IA</div>
-                        <div class="ai-action-desc">Peça à IA uma leitura técnica curta sobre o que o validador local encontrou.</div>
-                    </div>
-                    <div class="ai-action-buttons">
-                        <button id="btn-analise-ia" class="btn btn-primary btn-ai" onclick="executarAnaliseIAPorDemanda()" disabled>🧠 Explicar com IA</button>
-                    </div>
-                </div>
-            </div>
-            <div id="ai-analysis-card" class="card" style="display:none;">
-                <div class="card-title">🧠 Assistente IA</div>
-                <div id="ai-analysis"></div>
-            </div>
-            <div class="card">
-                <div class="card-title">📊 Pré-visualização do Relatório</div>
+                <div class="card-title">📋 itens da nota</div>
                 <div id="relatorio-preview"></div>
             </div>
             <div class="card" style="display:flex;justify-content:flex-end;gap:12px;">
@@ -496,6 +481,16 @@
                 
                 "Telefone Inválido": () => `Telefone informado é inválido. Acesse o cadastro da empresa ou do cliente e corrija o telefone, com pelo menos 8 dígitos.`,
                 
+                "Divergência de UF": () => `A UF informada não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para a UF correta de acordo com o CEP.`,
+                
+                "Divergência de Município": () => `O município informado não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para o município correto de acordo com o CEP.`,
+                
+                "Divergência de Logradouro": () => `O logradouro (rua/avenida) informado não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para o logradouro correto de acordo com o CEP.`,
+                
+                "CEP Incorreto": () => `O CEP informado não corresponde ao endereço. Acesse o cadastro do cliente e atualize o CEP para o sugerido pelo validador.`,
+                
+                "CEP em Branco ou Inválido": () => `O CEP está em branco ou inválido. Acesse o cadastro do cliente e preencha o CEP sugerido pelo validador.`,
+
                 "Rejeição 252": () => `Chave de acesso com tamanho inválido. Confira se o xml gerado pela sua nota.`,
                 
                 "Total PIS divergente": () => `Total de PIS divergente. Verifique os valores de PIS em cada item e o total declarado.`,
@@ -1332,7 +1327,8 @@
                     CEP: enderDest ? getTextoElemento(enderDest, 'CEP') : '',
                     UF: enderDest ? getTextoElemento(enderDest, 'UF') : '',
                     xMun: enderDest ? getTextoElemento(enderDest, 'xMun') : '',
-                    xLgr: enderDest ? getTextoElemento(enderDest, 'xLgr') : ''
+                    xLgr: enderDest ? getTextoElemento(enderDest, 'xLgr') : '',
+                    xBairro: enderDest ? getTextoElemento(enderDest, 'xBairro') : ''
                 } : null,
                 infAdic: {
                     infAdFisco: infAdic ? getTextoElemento(infAdic, 'infAdFisco') : '',
@@ -1384,9 +1380,16 @@
             let pRedBC = '';
             let vPIS = '0';
             let CST_PIS = '';
+            let pPIS = '';
+            let vBCPIS = '';
             let vCOFINS = '0';
             let CST_COFINS = '';
+            let pCOFINS = '';
+            let vBCCOFINS = '';
             let temICMS = false;
+            let vBCICMS = '';
+            let pICMS = '';
+            let vICMS = '';
             let temISSQN = false;
             let vDedISSQN = '';
             let pDedISSQN = '';
@@ -1407,6 +1410,9 @@
                             CST = tag.replace('ICMS', '');
                         }
                         pRedBC = getTextoElemento(elem, 'pRedBC');
+                        vBCICMS = getTextoElemento(elem, 'vBC') || '';
+                        pICMS = getTextoElemento(elem, 'pICMS') || '';
+                        vICMS = getTextoElemento(elem, 'vICMS') || '';
                         log(`Item ${nItem}: Encontrado <${tag}> - CST: "${CST}"`);
                         break;
                     }
@@ -1422,6 +1428,9 @@
                             if (!CSOSN && tag.startsWith('ICMSSN')) {
                                 CSOSN = tag.replace('ICMSSN', '');
                             }
+                            vBCICMS = getTextoElemento(elem, 'vBC') || '';
+                            pICMS = getTextoElemento(elem, 'pICMS') || '';
+                            vICMS = getTextoElemento(elem, 'vICMS') || '';
                             log(`Item ${nItem}: Encontrado <${tag}> - CSOSN: "${CSOSN}"`);
                             break;
                         }
@@ -1446,6 +1455,8 @@
                         if (elem) {
                             vPIS = getTextoElemento(elem, 'vPIS') || '0';
                             CST_PIS = getTextoElemento(elem, 'CST') || '';
+                            pPIS = getTextoElemento(elem, 'pPIS') || '';
+                            vBCPIS = getTextoElemento(elem, 'vBC') || '';
                             log(`Item ${nItem}: Encontrado <${tag}> - vPIS: "${vPIS}", CST: "${CST_PIS}"`);
                             break;
                         }
@@ -1460,6 +1471,8 @@
                         if (elem) {
                             vCOFINS = getTextoElemento(elem, 'vCOFINS') || '0';
                             CST_COFINS = getTextoElemento(elem, 'CST') || '';
+                            pCOFINS = getTextoElemento(elem, 'pCOFINS') || '';
+                            vBCCOFINS = getTextoElemento(elem, 'vBC') || '';
                             log(`Item ${nItem}: Encontrado <${tag}> - vCOFINS: "${vCOFINS}", CST: "${CST_COFINS}"`);
                             break;
                         }
@@ -1472,14 +1485,17 @@
             
             return { 
                 nItem, xProd, cProd, NCM, CFOP, cBenef, CST, CSOSN, pRedBC, 
-                vPIS, CST_PIS, vCOFINS, CST_COFINS, temICMS, temISSQN, xmlTrecho,
+                vPIS, CST_PIS, pPIS, vBCPIS, vCOFINS, CST_COFINS, pCOFINS, vBCCOFINS,
+                temICMS, vBCICMS, pICMS, vICMS, temISSQN, xmlTrecho,
                 vUnCom, vProd, vDedISSQN, pDedISSQN, xMotDedISSQN
             };
         }
         // ==========================================
         // VALIDAÇÃO DAS REGRAS
         // ==========================================
-        function validarItem(item, cUF, infAdic, modelo, CRT) {
+        async function validarItem(item, cUF, infAdic, modelo, CRT) {
+            log(`Iniciando validação do item ${item.nItem} (${item.xProd})`);
+            log(`Dados do item: ${JSON.stringify(item)}`);
             const mensagens = [];
             const alertas = [];
             let status = 'success';
@@ -1494,6 +1510,24 @@
             };
             const siglaUF = siglasUF[cUF] || '';
             const cBenef = item.cBenef ? item.cBenef.trim() : '';
+
+            // Valida NCM
+            if (item.NCM) {
+                const resultadoNCM = await validarNCM(item.NCM);
+                if (!resultadoNCM.valido) {
+                    status = 'error';
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'NCM Inválido',
+                        desc: `NCM ${item.NCM} inválido ou não existe na base oficial`,
+                        motivo: 'Código NCM inválido ou desatualizado',
+                        correcao: 'Consultar a contabilidade da loja ou a lista oficial de NCMs no site do IBGE',
+                        orientacao: 'Verificar o NCM correto para o produto',
+                        rejeicao: '',
+                        campos: ['NCM']
+                    });
+                }
+            }
 
             // Valida regras CRT
             const regrasCRT = validarRegrasCRT(item, CRT, cUF);
@@ -2209,6 +2243,50 @@
             
             return erros;
         }
+
+        /**
+         * Valida o NCM usando a Brasil API (mais confiável)
+         * @param {string} ncm - NCM a ser validado
+         * @returns {Promise<{valido: boolean, descricao?: string}>} Resultado da validação
+         */
+        async function validarNCM(ncm) {
+            if (!ncm) {
+                return { valido: false };
+            }
+
+            // Sanitiza o NCM (remove caracteres não numéricos)
+            const ncmLimpo = ncm.replace(/\D/g, '');
+
+            // Valida comprimento (NCM deve ter 8 dígitos)
+            if (ncmLimpo.length !== 8) {
+                return { valido: false };
+            }
+
+            try {
+                // Consulta a Brasil API para verificar se o NCM existe
+                const response = await fetch(`https://brasilapi.com.br/api/ncm/v1/${ncmLimpo}`);
+                
+                if (!response.ok) {
+                    return { valido: false };
+                }
+
+                const data = await response.json();
+                
+                // Se a API retornar dados, o NCM é válido
+                if (data && data.codigo) {
+                    return { 
+                        valido: true, 
+                        descricao: data.descricao 
+                    };
+                }
+
+                return { valido: false };
+            } catch (error) {
+                // Se houver erro na requisição (ex: sem conexão), não exibe falso alerta
+                log(`Erro ao validar NCM ${ncmLimpo}: ${error.message}`, 'warn');
+                return { valido: true }; // Assume válido se a API estiver indisponível
+            }
+        }
         
         /**
          * Normaliza texto para comparação (remove acentos e converte para maiúsculas)
@@ -2229,55 +2307,101 @@
          * @param {string} xLgrXML - Logradouro do XML
          * @returns {Promise<Array>} Lista de erros encontrados
          */
-        async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML) {
+        async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML) {
             const erros = [];
-            if (!cep) return erros;
             
             // Sanitiza o CEP (remove caracteres não numéricos)
             const cepLimpo = cep.replace(/\D/g, '');
-            
-            // Valida comprimento do CEP
-            if (cepLimpo.length !== 8) {
-                erros.push({
-                    erro: 'CEP Inválido',
-                    mensagem: `CEP do ${tipo} inválido. Deve conter 8 dígitos numéricos.`,
-                    item: null
-                });
-                return erros;
-            }
+            const cepValido = cepLimpo.length === 8;
             
             try {
-                // Consulta ViaCEP
-                const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-                const data = await response.json();
+                if (cepValido) {
+                    // Primeiro, tenta CEP → Endereço
+                    const responseCEP = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                    const dataCEP = await responseCEP.json();
+                    
+                    if (!dataCEP.erro) {
+                        // CEP válido, compara endereço
+                        const enderecoCorreto = `${dataCEP.logradouro}${dataCEP.bairro ? ', ' + dataCEP.bairro : ''}${dataCEP.localidade ? ', ' + dataCEP.localidade : ''} - ${dataCEP.uf}, CEP: ${dataCEP.cep}`;
+                        
+                        // Compara UF
+                        const ufXMLLimpo = normalizarTexto(ufXML);
+                        const ufAPILimpo = normalizarTexto(dataCEP.uf);
+                        if (ufXMLLimpo && ufAPILimpo && ufXMLLimpo !== ufAPILimpo) {
+                            erros.push({
+                                erro: 'Divergência de UF',
+                                mensagem: `UF do ${tipo} diverge: XML = ${ufXML}, Correios = ${dataCEP.uf}. Endereço correto: ${enderecoCorreto}`,
+                                item: null
+                            });
+                        }
+                        
+                        // Compara Município
+                        const xMunXMLLimpo = normalizarTexto(xMunXML);
+                        const xMunAPILimpo = normalizarTexto(dataCEP.localidade);
+                        if (xMunXMLLimpo && xMunAPILimpo && xMunXMLLimpo !== xMunAPILimpo) {
+                            erros.push({
+                                erro: 'Divergência de Município',
+                                mensagem: `Município do ${tipo} diverge: XML = ${xMunXML}, Correios = ${dataCEP.localidade}. Endereço correto: ${enderecoCorreto}`,
+                                item: null
+                            });
+                        }
+                        
+                        // Compara Logradouro
+                        const xLgrXMLLimpo = normalizarTexto(xLgrXML);
+                        const xLgrAPILimpo = normalizarTexto(dataCEP.logradouro);
+                        if (xLgrXMLLimpo && xLgrAPILimpo && xLgrXMLLimpo !== xLgrAPILimpo) {
+                            erros.push({
+                                erro: 'Divergência de Logradouro',
+                                mensagem: `Logradouro do ${tipo} diverge: XML = ${xLgrXML}, Correios = ${dataCEP.logradouro}. Endereço correto: ${enderecoCorreto}`,
+                                item: null
+                            });
+                        }
+                        
+                        return erros;
+                    }
+                }
                 
-                if (data.erro) {
+                // Se chegamos aqui: CEP é inválido, vazio ou não encontrado → tenta Endereço → CEP
+                if (ufXML && xMunXML && xLgrXML) {
+                    // Prepara URL para consulta reversa (ViaCEP: /ws/{UF}/{cidade}/{logradouro}/json/)
+                    const ufCodificado = encodeURIComponent(ufXML);
+                    const cidadeCodificada = encodeURIComponent(xMunXML);
+                    const logradouroCodificado = encodeURIComponent(xLgrXML);
+                    const responseEndereco = await fetch(`https://viacep.com.br/ws/${ufCodificado}/${cidadeCodificada}/${logradouroCodificado}/json/`);
+                    const dataEndereco = await responseEndereco.json();
+                    
+                    if (dataEndereco && dataEndereco.length > 0) {
+                        // Encontramos CEPs para este endereço!
+                        const primeiroResultado = dataEndereco[0];
+                        const enderecoCorreto = `${primeiroResultado.logradouro}${primeiroResultado.bairro ? ', ' + primeiroResultado.bairro : ''}${primeiroResultado.localidade ? ', ' + primeiroResultado.localidade : ''} - ${primeiroResultado.uf}, CEP: ${primeiroResultado.cep}`;
+                        const cepSugerido = primeiroResultado.cep;
+                        
+                        if (cepValido) {
+                            erros.push({
+                                erro: 'CEP Incorreto',
+                                mensagem: `CEP informado (${cep}) não corresponde ao endereço. CEP correto sugerido: ${cepSugerido}. Endereço completo: ${enderecoCorreto}`,
+                                item: null
+                            });
+                        } else {
+                            erros.push({
+                                erro: 'CEP em Branco ou Inválido',
+                                mensagem: `CEP não informado ou inválido. CEP sugerido para o endereço: ${cepSugerido}. Endereço completo: ${enderecoCorreto}`,
+                                item: null
+                            });
+                        }
+                    } else if (cepValido) {
+                        erros.push({
+                            erro: 'Rejeição CEP Incorreto',
+                            mensagem: `Rejeição : CEP ${cep} informado no ${tipo} não existe na base dos Correios.`,
+                            item: null
+                        });
+                    } else {
+                        log(`Não foi possível encontrar CEP para o endereço: ${ufXML}, ${xMunXML}, ${xLgrXML}`, 'warn');
+                    }
+                } else if (cepValido) {
                     erros.push({
                         erro: 'Rejeição CEP Incorreto',
                         mensagem: `Rejeição : CEP ${cep} informado no ${tipo} não existe na base dos Correios.`,
-                        item: null
-                    });
-                    return erros;
-                }
-                
-                // Compara UF
-                const ufXMLLimpo = normalizarTexto(ufXML);
-                const ufAPILimpo = normalizarTexto(data.uf);
-                if (ufXMLLimpo && ufAPILimpo && ufXMLLimpo !== ufAPILimpo) {
-                    erros.push({
-                        erro: 'Divergência de UF',
-                        mensagem: `UF do ${tipo} diverge: XML = ${ufXML}, Correios = ${data.uf}`,
-                        item: null
-                    });
-                }
-                
-                // Compara Município
-                const xMunXMLLimpo = normalizarTexto(xMunXML);
-                const xMunAPILimpo = normalizarTexto(data.localidade);
-                if (xMunXMLLimpo && xMunAPILimpo && xMunXMLLimpo !== xMunAPILimpo) {
-                    erros.push({
-                        erro: 'Divergência de Município',
-                        mensagem: `Município do ${tipo} diverge: XML = ${xMunXML}, Correios = ${data.localidade}`,
                         item: null
                     });
                 }
@@ -2316,13 +2440,9 @@
             const errosTotais = validarTotaisICMSProd(xmlDoc, NS_NFE);
             todosErros.push(...errosTotais);
             
-            // Valida CEP do emitente
-            const errosCEPEmit = await validarCEP(dados.emit.CEP, 'emitente', dados.emit.UF, dados.emit.xMun, dados.emit.xLgr);
-            todosErros.push(...errosCEPEmit);
-            
             // Valida CEP do destinatário (se existir)
             if (dados.dest) {
-                const errosCEPDest = await validarCEP(dados.dest.CEP, 'destinatario', dados.dest.UF, dados.dest.xMun, dados.dest.xLgr);
+                const errosCEPDest = await validarCEP(dados.dest.CEP, 'destinatario', dados.dest.UF, dados.dest.xMun, dados.dest.xLgr, dados.dest.xBairro);
                 todosErros.push(...errosCEPDest);
             }
             
@@ -2428,13 +2548,14 @@
         }
         
         async function processarDados(dados) {
-            const itensProcessados = dados.itens.map(item => ({
-                ...item, validacao: validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
+            const itensProcessadosPromessas = dados.itens.map(async item => ({
+                ...item, validacao: await validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
             }));
+            const itensProcessados = await Promise.all(itensProcessadosPromessas);
             const totaisValidacao = validarTotaisPISCOFINS(dados);
             const novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
             
-            // Para cada item com erro, obter Sugestão localmente
+            // Para cada item com erro, obter sugestão localmente
             for (const item of itensProcessados) {
                 // Processar mensagens de erro/aviso
                 for (const msg of item.validacao.mensagens) {
@@ -2557,57 +2678,84 @@
         function renderizarRelatorioPreview() {
             const previewDiv = document.getElementById('relatorio-preview');
             
-            // Verificar se há erros relacionados a campos em qualquer item
-            const temErroCST = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST'))
-            );
-            const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
-            );
-            const temErroNCM = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('NCM'))
-            );
-            const temErroValor = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('vUnCom') || (msg.campos || []).includes('vProd'))
-            );
-            const temErroCSTPIS = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST_PIS'))
-            );
-            const temErroCSTCOFINS = dadosProcessados.itensProcessados.some(item => 
-                item.validacao.mensagens.some(msg => (msg.campos || []).includes('CST_COFINS'))
-            );
-            
             previewDiv.innerHTML = `
-                <h3 style="margin: 16px 0; color: var(--text);">Itens da Nota</h3>
+                <h3 style="margin: 16px 0; color: var(--text);">Lista</h3>
                 <div class="table-container">
                     <table>
                         <thead>
                             <tr>
                                 <th>Item</th>
                                 <th>Produto</th>
-                                ${temErroCST ? '<th>CST</th>' : ''}
-                                ${temErroCBenef ? '<th>cBenef</th>' : ''}
-                                ${temErroNCM ? '<th>NCM</th>' : ''}
-                                ${temErroValor ? '<th>Valor Unitário</th><th>Valor Total</th>' : ''}
-                                ${temErroCSTPIS ? '<th>CST PIS</th>' : ''}
-                                ${temErroCSTCOFINS ? '<th>CST COFINS</th>' : ''}
+                                <th>CST/CSOSN</th>
+                                <th>cBenef</th>
+                                <th>NCM</th>
+                                <th>CFOP</th>
+                                <th>Valor Unitário</th>
+                                <th>Valor Total</th>
+                                <th>vBC ICMS</th>
+                                <th>pICMS</th>
+                                <th>vICMS</th>
+                                <th>CST PIS</th>
+                                <th>vBC PIS</th>
+                                <th>pPIS</th>
+                                <th>vPIS</th>
+                                <th>CST COFINS</th>
+                                <th>vBC COFINS</th>
+                                <th>pCOFINS</th>
+                                <th>vCOFINS</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${dadosProcessados.itensProcessados.map(item => {
+                                // Collect all error fields for this item
+                                const camposErro = new Set();
+                                // Check validation messages and alerts
+                                item.validacao.mensagens.forEach(msg => {
+                                    (msg.campos || []).forEach(campo => camposErro.add(campo));
+                                });
+                                (item.validacao.alertas || []).forEach(alerta => {
+                                    (alerta.campos || []).forEach(campo => camposErro.add(campo));
+                                });
+                                
                                 const s = item.validacao.status;
                                 const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
                                 const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK' : s === 'warning' ? 'AVISO' : 'ERRO'}</span>`;
+                                
+                                // Helper to style a cell red if field is in error
+                                const cell = (campo, valor) => {
+                                    const estilo = camposErro.has(campo) ? 'style="color: var(--error); font-weight: bold;"' : '';
+                                    return `<td ${estilo}>${valor || '-'}</td>`;
+                                };
+                                
+                                // For CST/CSOSN, check both "CST" and "CSOSN"
+                                const campoCstCsosnErro = camposErro.has('CST') || camposErro.has('CSOSN');
+                                const cellCstCsosn = campoCstCsosnErro ? 'style="color: var(--error); font-weight: bold;"' : '';
+                                
+                                // For valor unitario/total, check fields
+                                const campoVUnComErro = camposErro.has('vUnCom');
+                                const campoVProdErro = camposErro.has('vProd');
+                                
                                 return `<tr class="${classe}">
                                     <td>${item.nItem}</td>
                                     <td>${item.xProd}</td>
-                                    ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
-                                    ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
-                                    ${temErroNCM ? `<td>${item.NCM || '-'}</td>` : ''}
-                                    ${temErroValor ? `<td>${item.vUnCom || '0'}</td><td>${item.vProd || '0'}</td>` : ''}
-                                    ${temErroCSTPIS ? `<td>${item.CST_PIS || '-'}</td>` : ''}
-                                    ${temErroCSTCOFINS ? `<td>${item.CST_COFINS || '-'}</td>` : ''}
+                                    <td ${cellCstCsosn}>${item.CST || item.CSOSN || '-'}</td>
+                                    ${cell('cBenef', item.cBenef)}
+                                    ${cell('NCM', item.NCM)}
+                                    ${cell('CFOP', item.CFOP)}
+                                    <td ${campoVUnComErro ? 'style="color: var(--error); font-weight: bold;"' : ''}>${item.vUnCom || '0'}</td>
+                                    <td ${campoVProdErro ? 'style="color: var(--error); font-weight: bold;"' : ''}>${item.vProd || '0'}</td>
+                                    <td>${item.vBCICMS || '-'}</td>
+                                    <td>${item.pICMS || '-'}</td>
+                                    <td>${item.vICMS || '-'}</td>
+                                    ${cell('CST_PIS', item.CST_PIS)}
+                                    <td>${item.vBCPIS || '-'}</td>
+                                    <td>${item.pPIS || '-'}</td>
+                                    ${cell('vPIS', item.vPIS)}
+                                    ${cell('CST_COFINS', item.CST_COFINS)}
+                                    <td>${item.vBCCOFINS || '-'}</td>
+                                    <td>${item.pCOFINS || '-'}</td>
+                                    ${cell('vCOFINS', item.vCOFINS)}
                                     <td>${badge}</td>
                                 </tr>`;
                             }).join('')}
@@ -2617,6 +2765,7 @@
                 <style>
                     .item-erro { background-color: rgba(239, 68, 68, 0.05); }
                     .item-aviso { background-color: rgba(245, 158, 11, 0.05); }
+                    table { min-width: 2000px; }
                 </style>
             `;
         }
@@ -2624,6 +2773,16 @@
             const di = document.getElementById('doc-info');
             const uf = dadosProcessados.ide.cUF === '35' ? 'SP' : dadosProcessados.ide.cUF || '';
             const data = dadosProcessados.ide.dhEmi ? new Date(dadosProcessados.ide.dhEmi).toLocaleDateString('pt-BR') : '';
+            
+            // Map CRT to Regime Tributário
+            let regimeTributario = 'Desconhecido';
+            const crt = dadosProcessados.emit.CRT;
+            if (crt === '1' || crt === '2') {
+                regimeTributario = 'SIMPLES NACIONAL';
+            } else if (crt === '3') {
+                regimeTributario = 'REGIME NORMAL';
+            }
+            
             di.innerHTML = `
                 ${dadosProcessados.ide.chaveAcesso ? `
                 <div class="diagnostic-field" style="grid-column: 1 / -1;">
@@ -2658,6 +2817,10 @@
                 <div class="diagnostic-field">
                     <span class="diagnostic-field-label">CNPJ</span>
                     <span class="diagnostic-field-value">${dadosProcessados.emit.CNPJ}</span>
+                </div>
+                <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Regime Tributário</span>
+                    <span class="diagnostic-field-value">${regimeTributario}</span>
                 </div>
             `;
         }
@@ -2929,6 +3092,9 @@
             const temErroCBenef = dadosProcessados.itensProcessados.some(item => 
                 item.validacao.mensagens.some(msg => (msg.campos || []).includes('cBenef'))
             );
+            const temErroNCM = dadosProcessados.itensProcessados.some(item => 
+                item.validacao.mensagens.some(msg => (msg.campos || []).includes('NCM'))
+            );
 
             // Verificar se há QUALQUER problema (itens, totais ou novas validações)
             const temProblemas = 
@@ -2993,6 +3159,7 @@
                                     <th>Produto</th>
                                     ${temErroCST ? '<th>CST</th>' : ''}
                                     ${temErroCBenef ? '<th>cBenef</th>' : ''}
+                                    ${temErroNCM ? '<th>NCM</th>' : ''}
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -3008,6 +3175,7 @@
                                         <td>${item.xProd}</td>
                                         ${temErroCST ? `<td>${item.CST || '-'}</td>` : ''}
                                         ${temErroCBenef ? `<td>${item.cBenef || '-'}</td>` : ''}
+                                        ${temErroNCM ? `<td>${item.NCM || '-'}</td>` : ''}
                                         <td>${badge}</td>
                                     </tr>`;
                                 }).join('')}
