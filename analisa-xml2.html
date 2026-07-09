@@ -377,16 +377,37 @@
             <p><H3> NF-e/NFC-e  </H3></p>
         </header>
         <div class="card">
-            <div class="card-title">📁 Carregar XML</div>
-            <div id="upload-area" class="upload-area">
-                <div class="upload-icon">📄</div>
-                <div class="upload-text">Arraste o arquivo XML aqui ou clique para selecionar</div>
-                <input type="file" id="file-input" accept=".xml" style="display:none;">
-                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-                    Selecionar Arquivo
-                </button>
+            <div class="card-title">📄 Analisar XML</div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+                <button class="btn btn-primary" id="btn-tab-arquivo" style="background:var(--primary);color:white;">Arquivo XML</button>
+                <button class="btn" id="btn-tab-conteudo" style="background:var(--border);color:var(--text);">Conteúdo XML</button>
+            </div>
+            
+            <!-- Arquivo XML section -->
+            <div id="section-arquivo">
+                <div id="upload-area" class="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Arraste o arquivo XML aqui ou clique para selecionar</div>
+                    <input type="file" id="file-input" accept=".xml" style="display:none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                        Selecionar Arquivo
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Conteúdo XML section -->
+            <div id="section-conteudo" style="display:none;">
+                <div style="display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;">
+                    <textarea id="paste-area" placeholder="Cole o conteúdo do XML aqui..." style="width:100%;max-width:600px;min-height:150px;padding:12px;border-radius:8px;border:1px dashed var(--border);background:var(--card);color:var(--text);font-family:monospace;"></textarea>
+                    <button class="btn btn-primary" id="btn-analisar-paste">Analisar Conteúdo Colado</button>
+                </div>
             </div>
         </div>
+        
+        <!-- Floating Limpar button -->
+        <button id="btn-limpar" style="position:fixed;bottom:24px;right:24px;padding:14px 24px;font-size:1rem;font-weight:bold;border-radius:50px;border:none;background:var(--error);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:100;">
+            🗑️ Limpar
+        </button>
         <div id="results">
             <div class="card">
                 <div class="card-title"> Dados do Documento</div>
@@ -1193,15 +1214,37 @@
         // ==========================================
         // LEITURA DO XML
         // ==========================================
-        function lerXML(arquivo) {
+        function lerXML(input) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
+                const processarString = (xmlString) => {
                     try {
+                        // Remove the unwanted browser-generated line
+                        let cleaned = xmlString.replace(
+                            /This XML file does not appear to have any style information associated with it\. The document tree is shown below\./gi, 
+                            ''
+                        );
+                        
+                        // Keep only from <NFe ...> onwards
+                        const nfeStart = cleaned.indexOf('<NFe xmlns="http://www.portalfiscal.inf.br/nfe">');
+                        if (nfeStart !== -1) {
+                            cleaned = cleaned.substring(nfeStart).trim();
+                        }
+                        
+                        // Also check for nfeProc (in case it starts with that)
+                        const nfeProcStart = cleaned.indexOf('<nfeProc');
+                        if (nfeProcStart !== -1) {
+                            cleaned = cleaned.substring(nfeProcStart).trim();
+                        }
+                        
+                        // Also check for ProcInutNFe
+                        const inutStart = cleaned.indexOf('<ProcInutNFe');
+                        if (inutStart !== -1) {
+                            cleaned = cleaned.substring(inutStart).trim();
+                        }
+                        
                         const parser = new DOMParser();
-                        let xmlString = e.target.result;
-                        xmlConteudoAtual = xmlString;
-                        xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                        xmlConteudoAtual = cleaned;
+                        xmlDoc = parser.parseFromString(cleaned, 'text/xml');
                         
                         const parserError = xmlDoc.querySelector('parsererror');
                         if (parserError) throw new Error('XML inválido ou corrompido');
@@ -1354,8 +1397,15 @@
                         reject(erro);
                     }
                 };
-                reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-                reader.readAsText(arquivo);
+
+                if (typeof input === 'string') {
+                    processarString(input);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (e) => processarString(e.target.result);
+                    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+                    reader.readAsText(input);
+                }
             });
         }
 
@@ -3250,6 +3300,44 @@
         document.addEventListener('DOMContentLoaded', () => {
             const ua = document.getElementById('upload-area');
             const fi = document.getElementById('file-input');
+            const pasteArea = document.getElementById('paste-area');
+            const btnAnalisarPaste = document.getElementById('btn-analisar-paste');
+            const btnTabArquivo = document.getElementById('btn-tab-arquivo');
+            const btnTabConteudo = document.getElementById('btn-tab-conteudo');
+            const sectionArquivo = document.getElementById('section-arquivo');
+            const sectionConteudo = document.getElementById('section-conteudo');
+            const btnLimpar = document.getElementById('btn-limpar');
+            
+            // Toggle between tabs
+            const switchToArquivo = () => {
+                sectionArquivo.style.display = 'block';
+                sectionConteudo.style.display = 'none';
+                btnTabArquivo.style.background = 'var(--primary)';
+                btnTabArquivo.style.color = 'white';
+                btnTabConteudo.style.background = 'var(--border)';
+                btnTabConteudo.style.color = 'var(--text)';
+            };
+            const switchToConteudo = () => {
+                sectionArquivo.style.display = 'none';
+                sectionConteudo.style.display = 'block';
+                btnTabConteudo.style.background = 'var(--primary)';
+                btnTabConteudo.style.color = 'white';
+                btnTabArquivo.style.background = 'var(--border)';
+                btnTabArquivo.style.color = 'var(--text)';
+            };
+            btnTabArquivo.addEventListener('click', switchToArquivo);
+            btnTabConteudo.addEventListener('click', switchToConteudo);
+            
+            // Limpar button - refresh page
+            btnLimpar.addEventListener('click', () => {
+                window.location.reload();
+            });
+            
+            // Make upload area focusable
+            ua.setAttribute('tabindex', '0');
+            ua.style.outline = 'none';
+            
+            // Drag/drop
             ua.addEventListener('dragover', e => {
                 e.preventDefault();
                 ua.classList.add('dragover');
@@ -3263,7 +3351,7 @@
                 ua.classList.remove('dragover');
                 const arquivo = e.dataTransfer.files[0];
                 if (arquivo && arquivo.name.endsWith('.xml')) {
-                    await processarArquivo(arquivo);
+                    await processarInput(arquivo);
                 } else {
                     alert('Por favor, selecione um arquivo XML válido!');
                 }
@@ -3273,15 +3361,31 @@
             });
             fi.addEventListener('change', async e => {
                 const arquivo = e.target.files[0];
-                if (arquivo) await processarArquivo(arquivo);
+                if (arquivo) await processarInput(arquivo);
+            });
+
+            // Paste area button
+            const processarTextarea = async () => {
+                const text = pasteArea.value;
+                if (text && text.trim().startsWith('<')) {
+                    await processarInput(text);
+                } else {
+                    alert('Por favor, cole um XML válido!');
+                }
+            };
+            btnAnalisarPaste.addEventListener('click', processarTextarea);
+            pasteArea.addEventListener('keydown', async (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    await processarTextarea();
+                }
             });
         });
-        async function processarArquivo(arquivo) {
+        async function processarInput(input) {
             showLoading();
             setLoadingText('Analisando XML...');
             try {
                 analiseIAEmAndamento = false;
-                const dados = await lerXML(arquivo);
+                const dados = await lerXML(input);
                 
                 if (dados.tipo === 'inutNFe') {
                     // Renderiza dados de inutilização
