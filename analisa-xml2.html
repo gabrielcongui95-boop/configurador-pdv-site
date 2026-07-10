@@ -4239,7 +4239,7 @@
         });
         async function processarInput(input) {
             showLoading();
-            setLoadingText('Analisando XML...');
+            setLoadingText('🤖Analisando XML...');
             try {
                 analiseIAEmAndamento = false;
                 const dados = await lerXML(input);
@@ -4261,7 +4261,7 @@
             } catch (erro) {
                 alert(`Erro: ${erro.message}`);
             } finally {
-                setLoadingText('Analisando XML...');
+                setLoadingText('🤖Analisando XML...');
                 hideLoading();
             }
         }
