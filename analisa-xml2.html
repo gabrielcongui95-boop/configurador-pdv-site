@@ -1227,22 +1227,25 @@
                             ''
                         );
                         
-                        // Keep only from <NFe ...> onwards
-                        const nfeStart = cleaned.indexOf('<NFe xmlns="http://www.portalfiscal.inf.br/nfe">');
-                        if (nfeStart !== -1) {
-                            cleaned = cleaned.substring(nfeStart).trim();
-                        }
+                        // Remove backticks and normalize spaces in xmlns attributes
+                        cleaned = cleaned.replace(/`/g, '').replace(/\s+/g, ' ');
                         
-                        // Also check for nfeProc (in case it starts with that)
+                        // Also check for nfeProc first (in case it starts with that)
                         const nfeProcStart = cleaned.indexOf('<nfeProc');
                         if (nfeProcStart !== -1) {
                             cleaned = cleaned.substring(nfeProcStart).trim();
-                        }
-                        
-                        // Also check for ProcInutNFe
-                        const inutStart = cleaned.indexOf('<ProcInutNFe');
-                        if (inutStart !== -1) {
-                            cleaned = cleaned.substring(inutStart).trim();
+                        } else {
+                            // Check for <NFe> (any xmlns)
+                            const nfeStart = cleaned.indexOf('<NFe');
+                            if (nfeStart !== -1) {
+                                cleaned = cleaned.substring(nfeStart).trim();
+                            } else {
+                                // Check for ProcInutNFe
+                                const inutStart = cleaned.indexOf('<ProcInutNFe');
+                                if (inutStart !== -1) {
+                                    cleaned = cleaned.substring(inutStart).trim();
+                                }
+                            }
                         }
                         
                         const parser = new DOMParser();
@@ -1311,7 +1314,13 @@
                         
                         if (!nfeRoot) throw new Error('Arquivo não é uma NF-e/NFC-e válida');
                         
-                        const infNFe = getElemento(nfeRoot, 'infNFe');
+                        // Se o root é nfeProc, pegue o NFe dentro dele
+                        let nfeElement = nfeRoot;
+                        if (nfeElement.tagName.toLowerCase() === 'nfeproc') {
+                            nfeElement = getElemento(nfeElement, 'NFe');
+                        }
+                        
+                        const infNFe = getElemento(nfeElement, 'infNFe');
                         if (!infNFe) throw new Error('Tag <infNFe> não encontrada');
                         
                         const ide = getElemento(infNFe, 'ide');
