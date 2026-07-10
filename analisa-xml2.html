@@ -408,7 +408,35 @@
         </div>
         
         <!-- Floating Nova Análise button -->
-        <button id="btn-limpar" style="position:fixed;bottom:24px;right:24px;padding:14px 24px;font-size:1rem;font-weight:bold;border-radius:50px;border:none;background:var(--error);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:100;display:none;">
+        <style>
+            #btn-limpar {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                padding: 14px 24px;
+                font-size: 1rem;
+                font-weight: bold;
+                border-radius: 50px;
+                border: none;
+                background: var(--error);
+                color: white;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 100;
+                display: none;
+                transition: all 0.3s ease;
+                transform: scale(1);
+            }
+            #btn-limpar:hover {
+                background: #c0392b;
+                transform: scale(1.05);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            }
+            #btn-limpar:active {
+                transform: scale(0.98);
+            }
+        </style>
+        <button id="btn-limpar">
             🔄 Nova Análise
         </button>
         <div id="results" style="display:none;">
@@ -1342,6 +1370,7 @@
                         const total = getElemento(infNFe, 'total');
             const icmsTot = total ? getElemento(total, 'ICMSTot') : null;
             const issqnTot = total ? getElemento(total, 'ISSQNtot') : null;
+            const ibsCbsTot = total ? getElemento(total, 'IBSCBSTot') : null;
             
             // Extract access key
             let chaveAcesso = getTextoElemento(infNFe, 'chNFe');
@@ -1357,6 +1386,22 @@
             const dest = getElemento(infNFe, 'dest');
             const enderDest = dest ? getElemento(dest, 'enderDest') : null;
 
+            // Extract IBSCBSTot values if available
+            let ibscbstotData = null;
+            if (ibsCbsTot) {
+                const gIBS = getElemento(ibsCbsTot, 'gIBS');
+                const gCBS = getElemento(ibsCbsTot, 'gCBS');
+                const gIBSUF = gIBS ? getElemento(gIBS, 'gIBSUF') : null;
+                const gIBSMun = gIBS ? getElemento(gIBS, 'gIBSMun') : null;
+                
+                ibscbstotData = {
+                    vIBS: gIBS ? getTextoElemento(gIBS, 'vIBS') : '0',
+                    vCBS: gCBS ? getTextoElemento(gCBS, 'vCBS') : '0',
+                    vIBSUF: gIBSUF ? getTextoElemento(gIBSUF, 'vIBSUF') : '0',
+                    vIBSMun: gIBSMun ? getTextoElemento(gIBSMun, 'vIBSMun') : '0'
+                };
+            }
+            
             const dados = {
                 ide: {
                     nNF: getTextoElemento(ide, 'nNF'),
@@ -1392,12 +1437,16 @@
                 totals: {
                     icmstot: {
                         vPIS: icmsTot ? getTextoElemento(icmsTot, 'vPIS') : '0',
-                        vCOFINS: icmsTot ? getTextoElemento(icmsTot, 'vCOFINS') : '0'
+                        vCOFINS: icmsTot ? getTextoElemento(icmsTot, 'vCOFINS') : '0',
+                        vIBS: icmsTot ? getTextoElemento(icmsTot, 'vIBS') : '0',
+                        vCBS: icmsTot ? getTextoElemento(icmsTot, 'vCBS') : '0',
+                        vIS: icmsTot ? getTextoElemento(icmsTot, 'vIS') : '0'
                     },
                     issqntot: {
                         vPIS: issqnTot ? getTextoElemento(issqnTot, 'vPIS') : '0',
                         vCOFINS: issqnTot ? getTextoElemento(issqnTot, 'vCOFINS') : '0'
-                    }
+                    },
+                    ibscbstot: ibscbstotData
                 },
                 itens: dets.map(det => processarItem(det))
             };
@@ -1429,6 +1478,7 @@
             const NCM = getTextoElemento(prod, 'NCM');
             const CFOP = getTextoElemento(prod, 'CFOP');
             const cBenef = getTextoElemento(prod, 'cBenef');
+            const cClassTrib = getTextoElemento(prod, 'cClassTrib');
             const vUnCom = getTextoElemento(prod, 'vUnCom');
             const vProd = getTextoElemento(prod, 'vProd');
             
@@ -1437,6 +1487,15 @@
             const imposto = getElemento(det, 'imposto');
             const icmsContainer = imposto ? getElemento(imposto, 'ICMS') : null;
             const issqnContainer = imposto ? getElemento(imposto, 'ISSQN') : null;
+            const ibsContainer = imposto ? getElemento(imposto, 'IBS') : null;
+            const cbsContainer = imposto ? getElemento(imposto, 'CBS') : null;
+            const isContainer = imposto ? getElemento(imposto, 'IS') : null;
+            const gIBSCBS = imposto ? getElemento(imposto, 'gIBSCBS') : null;
+            const gCBS = gIBSCBS ? getElemento(gIBSCBS, 'gCBS') : null;
+            const gIBSUF = gIBSCBS ? getElemento(gIBSCBS, 'gIBSUF') : null;
+            const gIBSMun = gIBSCBS ? getElemento(gIBSCBS, 'gIBSMun') : null;
+            const gIS = gIBSCBS ? getElemento(gIBSCBS, 'gIS') : null;
+            const gDevTrib = gIBSCBS ? getElemento(gIBSCBS, 'gDevTrib') : null;
             let CST = '';
             let CSOSN = '';
             let pRedBC = '';
@@ -1456,6 +1515,68 @@
             let vDedISSQN = '';
             let pDedISSQN = '';
             let xMotDedISSQN = '';
+            
+            // IBS fields
+            let temIBS = false;
+            let cstIBS = '';
+            let vBCIBS = '';
+            let pIBS = '';
+            let vIBS = '';
+            let pRedBCIBS = '';
+            let vRedBCIBS = '';
+            let motRedIBS = '';
+            let cBenefIBS = '';
+            
+            // CBS fields
+            let temCBS = false;
+            let cstCBS = '';
+            let vBCCBS = '';
+            let pCBS = '';
+            let vCBS = '';
+            let pRedBCCBS = '';
+            let vRedBCCBS = '';
+            let motRedCBS = '';
+            let cBenefCBS = '';
+            
+            // IS fields
+            let temIS = false;
+            let cstIS = '';
+            let vBCIS = '';
+            let pIS = '';
+            let vIS = '';
+            let qBCIS = '';
+            let vAliqProd = '';
+
+            // gIBSCBS (Reforma Tributária) fields
+            let temGIBSCBS = false;
+            let indIncIBSCBS = '';
+            let cstRT = ''; // CST from gIBSCBS
+            let vBCIBSCBS = '';
+            // gCBS fields
+            let pCBSRT = '';
+            let vCBSRT = '';
+            let pRedCBSRT = '';
+            let pDifCBSRT = '';
+            let pEfetCBSRT = '';
+            let pCredPresCBSRT = '';
+            let vCredPresCBSRT = '';
+            // gIBSUF fields
+            let pIBSUFRT = '';
+            let vIBSUFRT = '';
+            let pRedIBSUFRT = '';
+            let pDifIBSUFRT = '';
+            let pEfetIBSUFRT = '';
+            // gIBSMun fields
+            let pIBSMunRT = '';
+            let vIBSMunRT = '';
+            let pRedIBSMunRT = '';
+            let pDifIBSMunRT = '';
+            let pEfetIBSMunRT = '';
+            // gIS fields
+            let pISRT = '';
+            let vISRT = '';
+            // gDevTrib
+            let pDevTribRT = '';
             
             
             if (icmsContainer) {
@@ -1507,6 +1628,116 @@
                 xMotDedISSQN = getTextoElemento(issqnContainer, 'xMotDed');
             }
             
+            // Ler IBS
+            if (ibsContainer) {
+                temIBS = true;
+                const ibsTags = ['IBSAliq', 'IBSQtde', 'IBSNT', 'IBSOutr'];
+                for (let tag of ibsTags) {
+                    let elem = getElemento(ibsContainer, tag);
+                    if (elem) {
+                        cstIBS = getTextoElemento(elem, 'CST') || '';
+                        vBCIBS = getTextoElemento(elem, 'vBC') || '';
+                        pIBS = getTextoElemento(elem, 'pIBS') || '';
+                        vIBS = getTextoElemento(elem, 'vIBS') || '0';
+                        pRedBCIBS = getTextoElemento(elem, 'pRedBC') || '';
+                        vRedBCIBS = getTextoElemento(elem, 'vRedBC') || '';
+                        motRedIBS = getTextoElemento(elem, 'motRed') || '';
+                        cBenefIBS = getTextoElemento(elem, 'cBenef') || '';
+                        log(`Item ${nItem}: Encontrado <${tag}> - CST IBS: "${cstIBS}"`);
+                        break;
+                    }
+                }
+            }
+            
+            // Ler CBS
+            if (cbsContainer) {
+                temCBS = true;
+                const cbsTags = ['CBSAliq', 'CBSQtde', 'CBSNT', 'CBSOutr'];
+                for (let tag of cbsTags) {
+                    let elem = getElemento(cbsContainer, tag);
+                    if (elem) {
+                        cstCBS = getTextoElemento(elem, 'CST') || '';
+                        vBCCBS = getTextoElemento(elem, 'vBC') || '';
+                        pCBS = getTextoElemento(elem, 'pCBS') || '';
+                        vCBS = getTextoElemento(elem, 'vCBS') || '0';
+                        pRedBCCBS = getTextoElemento(elem, 'pRedBC') || '';
+                        vRedBCCBS = getTextoElemento(elem, 'vRedBC') || '';
+                        motRedCBS = getTextoElemento(elem, 'motRed') || '';
+                        cBenefCBS = getTextoElemento(elem, 'cBenef') || '';
+                        log(`Item ${nItem}: Encontrado <${tag}> - CST CBS: "${cstCBS}"`);
+                        break;
+                    }
+                }
+            }
+            
+            // Ler IS
+            if (isContainer) {
+                temIS = true;
+                const isTags = ['ISAliq', 'ISQtde', 'ISNT', 'ISOutr'];
+                for (let tag of isTags) {
+                    let elem = getElemento(isContainer, tag);
+                    if (elem) {
+                        cstIS = getTextoElemento(elem, 'CST') || '';
+                        vBCIS = getTextoElemento(elem, 'vBC') || '';
+                        pIS = getTextoElemento(elem, 'pIS') || '';
+                        vIS = getTextoElemento(elem, 'vIS') || '0';
+                        qBCIS = getTextoElemento(elem, 'qBC') || '';
+                        vAliqProd = getTextoElemento(elem, 'vAliqProd') || '';
+                        log(`Item ${nItem}: Encontrado <${tag}> - CST IS: "${cstIS}"`);
+                        break;
+                    }
+                }
+            }
+
+            // Ler gIBSCBS (Reforma Tributária)
+            if (gIBSCBS) {
+                temGIBSCBS = true;
+                indIncIBSCBS = getTextoElemento(gIBSCBS, 'indIncIBSCBS') || '';
+                cstRT = getTextoElemento(gIBSCBS, 'CST') || '';
+                vBCIBSCBS = getTextoElemento(gIBSCBS, 'vBCIBSCBS') || '';
+                log(`Item ${nItem}: Encontrado <gIBSCBS> - CST: "${cstRT}"`);
+
+                // Read gCBS
+                if (gCBS) {
+                    pCBSRT = getTextoElemento(gCBS, 'pCBS') || '';
+                    vCBSRT = getTextoElemento(gCBS, 'vCBS') || '';
+                    pRedCBSRT = getTextoElemento(gCBS, 'pRedCBS') || '';
+                    pDifCBSRT = getTextoElemento(gCBS, 'pDifCBS') || '';
+                    pEfetCBSRT = getTextoElemento(gCBS, 'pEfetCBS') || '';
+                    pCredPresCBSRT = getTextoElemento(gCBS, 'pCredPresCBS') || '';
+                    vCredPresCBSRT = getTextoElemento(gCBS, 'vCredPresCBS') || '';
+                }
+
+                // Read gIBSUF
+                if (gIBSUF) {
+                    pIBSUFRT = getTextoElemento(gIBSUF, 'pIBSUF') || '';
+                    vIBSUFRT = getTextoElemento(gIBSUF, 'vIBSUF') || '';
+                    pRedIBSUFRT = getTextoElemento(gIBSUF, 'pRedIBSUF') || '';
+                    pDifIBSUFRT = getTextoElemento(gIBSUF, 'pDifIBSUF') || '';
+                    pEfetIBSUFRT = getTextoElemento(gIBSUF, 'pEfetIBSUF') || '';
+                }
+
+                // Read gIBSMun
+                if (gIBSMun) {
+                    pIBSMunRT = getTextoElemento(gIBSMun, 'pIBSMun') || '';
+                    vIBSMunRT = getTextoElemento(gIBSMun, 'vIBSMun') || '';
+                    pRedIBSMunRT = getTextoElemento(gIBSMun, 'pRedIBSMun') || '';
+                    pDifIBSMunRT = getTextoElemento(gIBSMun, 'pDifIBSMun') || '';
+                    pEfetIBSMunRT = getTextoElemento(gIBSMun, 'pEfetIBSMun') || '';
+                }
+
+                // Read gIS
+                if (gIS) {
+                    pISRT = getTextoElemento(gIS, 'pIS') || '';
+                    vISRT = getTextoElemento(gIS, 'vIS') || '';
+                }
+
+                // Read gDevTrib
+                if (gDevTrib) {
+                    pDevTribRT = getTextoElemento(gDevTrib, 'pDevTrib') || '';
+                }
+            }
+
             // Ler PIS e COFINS (incluindo PISOutr e COFINSOutr)
             if (imposto) {
                 const pisContainer = getElemento(imposto, 'PIS');
@@ -1546,10 +1777,18 @@
             const xmlTrecho = imposto ? new XMLSerializer().serializeToString(imposto) : '';
             
             return { 
-                nItem, xProd, cProd, NCM, CFOP, cBenef, CST, CSOSN, pRedBC, 
+                nItem, xProd, cProd, NCM, CFOP, cBenef, cClassTrib, CST, CSOSN, pRedBC, 
                 vPIS, CST_PIS, pPIS, vBCPIS, vCOFINS, CST_COFINS, pCOFINS, vBCCOFINS,
                 temICMS, vBCICMS, pICMS, vICMS, temISSQN, xmlTrecho,
-                vUnCom, vProd, vDedISSQN, pDedISSQN, xMotDedISSQN
+                vUnCom, vProd, vDedISSQN, pDedISSQN, xMotDedISSQN,
+                temIBS, cstIBS, vBCIBS, pIBS, vIBS, pRedBCIBS, vRedBCIBS, motRedIBS, cBenefIBS,
+                temCBS, cstCBS, vBCCBS, pCBS, vCBS, pRedBCCBS, vRedBCCBS, motRedCBS, cBenefCBS,
+                temIS, cstIS, vBCIS, pIS, vIS, qBCIS, vAliqProd,
+                temGIBSCBS, indIncIBSCBS, cstRT, vBCIBSCBS,
+                pCBSRT, vCBSRT, pRedCBSRT, pDifCBSRT, pEfetCBSRT, pCredPresCBSRT, vCredPresCBSRT,
+                pIBSUFRT, vIBSUFRT, pRedIBSUFRT, pDifIBSUFRT, pEfetIBSUFRT,
+                pIBSMunRT, vIBSMunRT, pRedIBSMunRT, pDifIBSMunRT, pEfetIBSMunRT,
+                pISRT, vISRT, pDevTribRT
             };
         }
         // ==========================================
@@ -1932,6 +2171,206 @@
                     orientacao: 'Verificar o CST COFINS correto.',
                     campos: ['CST_COFINS']
                 });
+            }
+            
+            // Validações da Reforma Tributária
+            const mensagensReforma = validarReformaTributaria(item);
+            mensagens.push(...mensagensReforma);
+            
+            return mensagens;
+        }
+
+        function validarReformaTributaria(item) {
+            const mensagens = [];
+
+            // Validações de gIBSCBS (Reforma Tributária)
+            if (item.temGIBSCBS) {
+                // Valida CST RT
+                const cstRTValidos = ['000', '010', '020', '030', '040', '041', '050', '051', '060', '070', '090'];
+                if (item.cstRT && !cstRTValidos.includes(item.cstRT)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'ERRO_CST_RT',
+                        desc: `CST Reforma Tributária inválido: ${item.cstRT}`,
+                        motivo: 'CST RT não está na lista de códigos válidos',
+                        correcao: 'Altere o CST RT para um código válido (000, 010, 020, 030, 040, 041, 050, 051, 060, 070, 090)',
+                        campos: ['cstRT']
+                    });
+                }
+
+                // Valida cálculo CBS (gCBS)
+                if (item.vBCIBSCBS && item.pCBSRT && item.vCBSRT) {
+                    const vBCIBSCBSNum = parseFloat(item.vBCIBSCBS);
+                    const pCBSRTNum = parseFloat(item.pCBSRT) / 100;
+                    const vCBSRTCalculado = Math.round(vBCIBSCBSNum * pCBSRTNum * 100) / 100;
+                    const vCBSRTNum = parseFloat(item.vCBSRT);
+                    if (Math.abs(vCBSRTNum - vCBSRTCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_CBS_RT',
+                            desc: `Valor CBS informado (${item.vCBSRT}) não corresponde ao cálculo (${vCBSRTCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do CBS para corresponder à base × alíquota',
+                            campos: ['vBCIBSCBS', 'pCBSRT', 'vCBSRT']
+                        });
+                    }
+                }
+
+                // Valida cálculo IBSUF (gIBSUF)
+                if (item.vBCIBSCBS && item.pIBSUFRT && item.vIBSUFRT) {
+                    const vBCIBSCBSNum = parseFloat(item.vBCIBSCBS);
+                    const pIBSUFRTNum = parseFloat(item.pIBSUFRT) / 100;
+                    const vIBSUFRTCalculado = Math.round(vBCIBSCBSNum * pIBSUFRTNum * 100) / 100;
+                    const vIBSUFRTNum = parseFloat(item.vIBSUFRT);
+                    if (Math.abs(vIBSUFRTNum - vIBSUFRTCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_IBSUF_RT',
+                            desc: `Valor IBS UF informado (${item.vIBSUFRT}) não corresponde ao cálculo (${vIBSUFRTCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do IBS UF para corresponder à base × alíquota',
+                            campos: ['vBCIBSCBS', 'pIBSUFRT', 'vIBSUFRT']
+                        });
+                    }
+                }
+
+                // Valida cálculo IBSMun (gIBSMun)
+                if (item.vBCIBSCBS && item.pIBSMunRT && item.vIBSMunRT) {
+                    const vBCIBSCBSNum = parseFloat(item.vBCIBSCBS);
+                    const pIBSMunRTNum = parseFloat(item.pIBSMunRT) / 100;
+                    const vIBSMunRTCalculado = Math.round(vBCIBSCBSNum * pIBSMunRTNum * 100) / 100;
+                    const vIBSMunRTNum = parseFloat(item.vIBSMunRT);
+                    if (Math.abs(vIBSMunRTNum - vIBSMunRTCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_IBSMUN_RT',
+                            desc: `Valor IBS Município informado (${item.vIBSMunRT}) não corresponde ao cálculo (${vIBSMunRTCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do IBS Município para corresponder à base × alíquota',
+                            campos: ['vBCIBSCBS', 'pIBSMunRT', 'vIBSMunRT']
+                        });
+                    }
+                }
+
+                // Valida cálculo IS (gIS)
+                if (item.vBCIBSCBS && item.pISRT && item.vISRT) {
+                    const vBCIBSCBSNum = parseFloat(item.vBCIBSCBS);
+                    const pISRTNum = parseFloat(item.pISRT) / 100;
+                    const vISRTCalculado = Math.round(vBCIBSCBSNum * pISRTNum * 100) / 100;
+                    const vISRTNum = parseFloat(item.vISRT);
+                    if (Math.abs(vISRTNum - vISRTCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_IS_RT',
+                            desc: `Valor IS informado (${item.vISRT}) não corresponde ao cálculo (${vISRTCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do IS para corresponder à base × alíquota',
+                            campos: ['vBCIBSCBS', 'pISRT', 'vISRT']
+                        });
+                    }
+                }
+            }
+            
+            // Validações de IBS (estrutura antiga)
+            if (item.temIBS) {
+                // Valida CST IBS
+                const cstIBSValidos = ['00', '10', '20', '30', '40', '41', '50', '51', '60', '70', '90'];
+                if (item.cstIBS && !cstIBSValidos.includes(item.cstIBS)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'ERRO_CST_IBS',
+                        desc: `CST IBS inválido: ${item.cstIBS}`,
+                        motivo: 'CST IBS não está na lista de códigos válidos',
+                        correcao: 'Altere o CST IBS para um código válido (00, 10, 20, 30, 40, 41, 50, 51, 60, 70, 90)',
+                        campos: ['cstIBS']
+                    });
+                }
+                
+                // Valida cálculo IBS
+                if (item.vBCIBS && item.pIBS && item.vIBS) {
+                    const vBCIBSNum = parseFloat(item.vBCIBS);
+                    const pIBSNum = parseFloat(item.pIBS) / 100;
+                    const vIBSCalculado = Math.round(vBCIBSNum * pIBSNum * 100) / 100;
+                    const vIBSNum = parseFloat(item.vIBS);
+                    if (Math.abs(vIBSNum - vIBSCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_IBS',
+                            desc: `Valor IBS informado (${item.vIBS}) não corresponde ao cálculo (${vIBSCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do IBS para corresponder à base × alíquota',
+                            campos: ['vBCIBS', 'pIBS', 'vIBS']
+                        });
+                    }
+                }
+            }
+            
+            // Validações de CBS (estrutura antiga)
+            if (item.temCBS) {
+                // Valida CST CBS
+                const cstCBSValidos = ['00', '10', '20', '30', '40', '41', '50', '51', '60', '70', '90'];
+                if (item.cstCBS && !cstCBSValidos.includes(item.cstCBS)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'ERRO_CST_CBS',
+                        desc: `CST CBS inválido: ${item.cstCBS}`,
+                        motivo: 'CST CBS não está na lista de códigos válidos',
+                        correcao: 'Altere o CST CBS para um código válido (00, 10, 20, 30, 40, 41, 50, 51, 60, 70, 90)',
+                        campos: ['cstCBS']
+                    });
+                }
+                
+                // Valida cálculo CBS
+                if (item.vBCCBS && item.pCBS && item.vCBS) {
+                    const vBCCBSNum = parseFloat(item.vBCCBS);
+                    const pCBSNum = parseFloat(item.pCBS) / 100;
+                    const vCBSCalculado = Math.round(vBCCBSNum * pCBSNum * 100) / 100;
+                    const vCBSNum = parseFloat(item.vCBS);
+                    if (Math.abs(vCBSNum - vCBSCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_CBS',
+                            desc: `Valor CBS informado (${item.vCBS}) não corresponde ao cálculo (${vCBSCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do CBS para corresponder à base × alíquota',
+                            campos: ['vBCCBS', 'pCBS', 'vCBS']
+                        });
+                    }
+                }
+            }
+            
+            // Validações de IS (estrutura antiga)
+            if (item.temIS) {
+                // Valida CST IS
+                const cstISValidos = ['00', '10', '20', '30', '40', '41', '50', '51', '60', '70', '90'];
+                if (item.cstIS && !cstISValidos.includes(item.cstIS)) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'ERRO_CST_IS',
+                        desc: `CST IS inválido: ${item.cstIS}`,
+                        motivo: 'CST IS não está na lista de códigos válidos',
+                        correcao: 'Altere o CST IS para um código válido (00, 10, 20, 30, 40, 41, 50, 51, 60, 70, 90)',
+                        campos: ['cstIS']
+                    });
+                }
+                
+                // Valida cálculo IS
+                if (item.vBCIS && item.pIS && item.vIS) {
+                    const vBCISNum = parseFloat(item.vBCIS);
+                    const pISNum = parseFloat(item.pIS) / 100;
+                    const vISCalculado = Math.round(vBCISNum * pISNum * 100) / 100;
+                    const vISNum = parseFloat(item.vIS);
+                    if (Math.abs(vISNum - vISCalculado) > 0.01) {
+                        mensagens.push({
+                            tipo: 'error',
+                            erro: 'ERRO_CALCULO_IS',
+                            desc: `Valor IS informado (${item.vIS}) não corresponde ao cálculo (${vISCalculado.toFixed(2)})`,
+                            motivo: 'Base de cálculo * alíquota ≠ valor do imposto',
+                            correcao: 'Corrija o valor do IS para corresponder à base × alíquota',
+                            campos: ['vBCIS', 'pIS', 'vIS']
+                        });
+                    }
+                }
             }
             
             return mensagens;
@@ -2520,11 +2959,17 @@
             let total_cofins_icms = 0;
             let total_pis_issqn = 0;
             let total_cofins_issqn = 0;
+            let total_vIBSUFRT = 0;
+            let total_vIBSMunRT = 0;
+            let total_vCBSRT = 0;
             
             // Somar valores dos itens
             dados.itens.forEach(item => {
                 const vPIS = parseFloat(item.vPIS) || 0;
                 const vCOFINS = parseFloat(item.vCOFINS) || 0;
+                const vIBSUFRT = parseFloat(item.vIBSUFRT) || 0;
+                const vIBSMunRT = parseFloat(item.vIBSMunRT) || 0;
+                const vCBSRT = parseFloat(item.vCBSRT) || 0;
                 
                 if (item.temICMS) {
                     total_pis_icms += vPIS;
@@ -2534,6 +2979,9 @@
                     total_pis_issqn += vPIS;
                     total_cofins_issqn += vCOFINS;
                 }
+                total_vIBSUFRT += vIBSUFRT;
+                total_vIBSMunRT += vIBSMunRT;
+                total_vCBSRT += vCBSRT;
             });
             
             // Arredondar para 2 casas decimais
@@ -2541,8 +2989,12 @@
             total_cofins_icms = Math.round(total_cofins_icms * 100) / 100;
             total_pis_issqn = Math.round(total_pis_issqn * 100) / 100;
             total_cofins_issqn = Math.round(total_cofins_issqn * 100) / 100;
+            total_vIBSUFRT = Math.round(total_vIBSUFRT * 100) / 100;
+            total_vIBSMunRT = Math.round(total_vIBSMunRT * 100) / 100;
+            total_vCBSRT = Math.round(total_vCBSRT * 100) / 100;
+            const total_vIBSRT = Math.round((total_vIBSUFRT + total_vIBSMunRT) * 100) / 100;
             
-            // Comparar com ICMSTot
+            // Comparar com ICMSTot (apenas para PIS/COFINS)
             const vPIS_icms_tot = parseFloat(dados.totals.icmstot.vPIS) || 0;
             const vCOFINS_icms_tot = parseFloat(dados.totals.icmstot.vCOFINS) || 0;
             
@@ -2570,6 +3022,76 @@
                     rejeicao: '603',
                     campos: ['vCOFINS (ICMSTot)']
                 });
+            }
+            
+            // Validação de IBS/CBS usando IBSCBSTot
+            if (dados.totals.ibscbstot) {
+                const vIBS_ibscbs_tot = parseFloat(dados.totals.ibscbstot.vIBS) || 0;
+                const vCBS_ibscbs_tot = parseFloat(dados.totals.ibscbstot.vCBS) || 0;
+                const vIBSUF_ibscbs_tot = parseFloat(dados.totals.ibscbstot.vIBSUF) || 0;
+                const vIBSMun_ibscbs_tot = parseFloat(dados.totals.ibscbstot.vIBSMun) || 0;
+                
+                if (Math.abs(total_vIBSRT - vIBS_ibscbs_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total IBS divergente',
+                        desc: `Total do IBS nos itens (vIBSUFRT + vIBSMunRT): R$ ${total_vIBSRT.toFixed(2)} vs Total declarado em IBSCBSTot/gIBS/vIBS: R$ ${vIBS_ibscbs_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de IBS dos itens (vIBSUFRT + vIBSMunRT) não confere com o total em IBSCBSTot',
+                        correcao: 'Ajustar o valor vIBS em IBSCBSTot/gIBS para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de vIBSUFRT e vIBSMunRT em cada item e o total declarado em IBSCBSTot',
+                        campos: ['vIBS (IBSCBSTot)']
+                    });
+                }
+                
+                if (Math.abs(total_vCBSRT - vCBS_ibscbs_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total CBS divergente',
+                        desc: `Total do CBS nos itens (vCBSRT): R$ ${total_vCBSRT.toFixed(2)} vs Total declarado em IBSCBSTot/gCBS/vCBS: R$ ${vCBS_ibscbs_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de CBS dos itens (vCBSRT) não confere com o total em IBSCBSTot',
+                        correcao: 'Ajustar o valor vCBS em IBSCBSTot/gCBS para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de vCBSRT em cada item e o total declarado em IBSCBSTot',
+                        campos: ['vCBS (IBSCBSTot)']
+                    });
+                }
+                
+                if (Math.abs(total_vIBSUFRT - vIBSUF_ibscbs_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total IBSUF divergente',
+                        desc: `Total do IBSUF nos itens (vIBSUFRT): R$ ${total_vIBSUFRT.toFixed(2)} vs Total declarado em IBSCBSTot/gIBS/gIBSUF/vIBSUF: R$ ${vIBSUF_ibscbs_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de vIBSUFRT dos itens não confere com o total em IBSCBSTot',
+                        correcao: 'Ajustar o valor vIBSUF em IBSCBSTot/gIBS/gIBSUF para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de vIBSUFRT em cada item e o total declarado em IBSCBSTot',
+                        campos: ['vIBSUF (IBSCBSTot)']
+                    });
+                }
+                
+                if (Math.abs(total_vIBSMunRT - vIBSMun_ibscbs_tot) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Total IBSMun divergente',
+                        desc: `Total do IBSMun nos itens (vIBSMunRT): R$ ${total_vIBSMunRT.toFixed(2)} vs Total declarado em IBSCBSTot/gIBS/gIBSMun/vIBSMun: R$ ${vIBSMun_ibscbs_tot.toFixed(2)}`,
+                        motivo: 'Soma dos valores de vIBSMunRT dos itens não confere com o total em IBSCBSTot',
+                        correcao: 'Ajustar o valor vIBSMun em IBSCBSTot/gIBS/gIBSMun para corresponder à soma dos itens',
+                        orientacao: 'Verificar os valores de vIBSMunRT em cada item e o total declarado em IBSCBSTot',
+                        campos: ['vIBSMun (IBSCBSTot)']
+                    });
+                }
+            } else {
+                // Verificar se há itens com Reforma Tributária para informar ausência de IBSCBSTot
+                const temReformaTributaria = dados.itens.some(item => item.temGIBSCBS);
+                if (temReformaTributaria) {
+                    mensagens.push({
+                        tipo: 'warning',
+                        erro: 'Grupo IBSCBSTot ausente',
+                        desc: 'Foram encontrados itens com dados de Reforma Tributária (gIBSCBS), mas o grupo IBSCBSTot não foi encontrado no total do documento',
+                        motivo: 'IBSCBSTot é obrigatório quando há itens com Reforma Tributária',
+                        correcao: 'Adicionar o grupo IBSCBSTot no total do documento com os valores corretos',
+                        orientacao: 'Verificar a estrutura do XML e adicionar o grupo IBSCBSTot dentro do <total>',
+                        campos: ['IBSCBSTot']
+                    });
+                }
             }
             
             // Comparar com ISSQNtot (se houver itens com ISSQN)
@@ -2750,6 +3272,7 @@
                                 <th>Produto</th>
                                 <th>CST/CSOSN</th>
                                 <th>cBenef</th>
+                                <th>cClassTrib</th>
                                 <th>NCM</th>
                                 <th>CFOP</th>
                                 <th>Valor Unitário</th>
@@ -2765,6 +3288,29 @@
                                 <th>vBC COFINS</th>
                                 <th>pCOFINS</th>
                                 <th>vCOFINS</th>
+                                <th>indIncIBSCBS</th>
+                                <th>CST RT</th>
+                                <th>vBC IBSCBS</th>
+                                <th>pCBS RT</th>
+                                <th>vCBS RT</th>
+                                <th>pRedCBS RT</th>
+                                <th>pDifCBS RT</th>
+                                <th>pEfetCBS RT</th>
+                                <th>pCredPresCBS RT</th>
+                                <th>vCredPresCBS RT</th>
+                                <th>pIBSUF RT</th>
+                                <th>vIBSUF RT</th>
+                                <th>pRedIBSUF RT</th>
+                                <th>pDifIBSUF RT</th>
+                                <th>pEfetIBSUF RT</th>
+                                <th>pIBSMun RT</th>
+                                <th>vIBSMun RT</th>
+                                <th>pRedIBSMun RT</th>
+                                <th>pDifIBSMun RT</th>
+                                <th>pEfetIBSMun RT</th>
+                                <th>pIS RT</th>
+                                <th>vIS RT</th>
+                                <th>pDevTrib RT</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -2803,6 +3349,7 @@
                                     <td>${item.xProd}</td>
                                     <td ${cellCstCsosn}>${item.CST || item.CSOSN || '-'}</td>
                                     ${cell('cBenef', item.cBenef)}
+                                    ${cell('cClassTrib', item.cClassTrib)}
                                     ${cell('NCM', item.NCM)}
                                     ${cell('CFOP', item.CFOP)}
                                     <td ${campoVUnComErro ? 'style="color: var(--error); font-weight: bold;"' : ''}>${item.vUnCom || '0'}</td>
@@ -2818,6 +3365,29 @@
                                     <td>${item.vBCCOFINS || '-'}</td>
                                     <td>${item.pCOFINS || '-'}</td>
                                     ${cell('vCOFINS', item.vCOFINS)}
+                                    ${cell('indIncIBSCBS', item.indIncIBSCBS)}
+                                    ${cell('cstRT', item.cstRT)}
+                                    ${cell('vBCIBSCBS', item.vBCIBSCBS)}
+                                    ${cell('pCBSRT', item.pCBSRT)}
+                                    ${cell('vCBSRT', item.vCBSRT)}
+                                    ${cell('pRedCBSRT', item.pRedCBSRT)}
+                                    ${cell('pDifCBSRT', item.pDifCBSRT)}
+                                    ${cell('pEfetCBSRT', item.pEfetCBSRT)}
+                                    ${cell('pCredPresCBSRT', item.pCredPresCBSRT)}
+                                    ${cell('vCredPresCBSRT', item.vCredPresCBSRT)}
+                                    ${cell('pIBSUFRT', item.pIBSUFRT)}
+                                    ${cell('vIBSUFRT', item.vIBSUFRT)}
+                                    ${cell('pRedIBSUFRT', item.pRedIBSUFRT)}
+                                    ${cell('pDifIBSUFRT', item.pDifIBSUFRT)}
+                                    ${cell('pEfetIBSUFRT', item.pEfetIBSUFRT)}
+                                    ${cell('pIBSMunRT', item.pIBSMunRT)}
+                                    ${cell('vIBSMunRT', item.vIBSMunRT)}
+                                    ${cell('pRedIBSMunRT', item.pRedIBSMunRT)}
+                                    ${cell('pDifIBSMunRT', item.pDifIBSMunRT)}
+                                    ${cell('pEfetIBSMunRT', item.pEfetIBSMunRT)}
+                                    ${cell('pISRT', item.pISRT)}
+                                    ${cell('vISRT', item.vISRT)}
+                                    ${cell('pDevTribRT', item.pDevTribRT)}
                                     <td>${badge}</td>
                                 </tr>`;
                             }).join('')}
@@ -2827,7 +3397,7 @@
                 <style>
                     .item-erro { background-color: rgba(239, 68, 68, 0.05); }
                     .item-aviso { background-color: rgba(245, 158, 11, 0.05); }
-                    table { min-width: 2000px; }
+                    table { min-width: 6000px; }
                 </style>
             `;
         }
@@ -2939,13 +3509,27 @@
             // Renderizar itens com problemas (agrupados por item)
             itensComProblema.forEach(item => {
                 const mensagensItem = item.validacao.mensagens.filter(m => m.tipo !== 'success');
-                if (mensagensItem.length === 0) return;
+                const alertasItem = item.validacao.alertas || [];
+                if (mensagensItem.length === 0 && alertasItem.length === 0) return;
                 
                 // Coletar todos os campos problemáticos para este item
                 const camposProblematicos = new Set();
                 mensagensItem.forEach(msg => {
                     (msg.campos || []).forEach(campo => camposProblematicos.add(campo));
                 });
+                alertasItem.forEach(alerta => {
+                    (alerta.campos || []).forEach(campo => camposProblematicos.add(campo));
+                });
+
+                // Deduplicar mensagens pelo erro/rejeição
+                const mensagensUnicas = new Map();
+                mensagensItem.forEach(msg => {
+                    const chave = `${msg.erro}${msg.rejeicao || ''}${(msg.campos || []).join(',')}`;
+                    if (!mensagensUnicas.has(chave)) {
+                        mensagensUnicas.set(chave, msg);
+                    }
+                });
+                const mensagensDedup = Array.from(mensagensUnicas.values());
                 
                 html += `
                     <div class="diagnostic-item error">
@@ -2961,32 +3545,48 @@
                                 <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CST || '-'}</span>
                             </div>
                             ` : ''}
+                            ${camposProblematicos.has('CSOSN') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CSOSN</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('CSOSN') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CSOSN || '-'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CSOSN || '-'}</span>
                             </div>
+                            ` : ''}
+                            ${camposProblematicos.has('CFOP') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CFOP</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('CFOP') ? 'color: var(--error); font-weight: 700;' : ''}">${item.CFOP || '-'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.CFOP || '-'}</span>
                             </div>
+                            ` : ''}
                             ${camposProblematicos.has('cBenef') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">cBenef</span>
                                 <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cBenef || '-'}</span>
                             </div>
                             ` : ''}
+                            ${camposProblematicos.has('cClassTrib') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">cClassTrib</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cClassTrib || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pRedBC') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">pRedBC</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('pRedBC') ? 'color: var(--error); font-weight: 700;' : ''}">${item.pRedBC || '-'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pRedBC || '-'}</span>
                             </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vPIS') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">vPIS</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('vPIS') ? 'color: var(--error); font-weight: 700;' : ''}">${item.vPIS || '0'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vPIS || '0'}</span>
                             </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vCOFINS') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">vCOFINS</span>
-                                <span class="diagnostic-field-value" style="${camposProblematicos.has('vCOFINS') ? 'color: var(--error); font-weight: 700;' : ''}">${item.vCOFINS || '0'}</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vCOFINS || '0'}</span>
                             </div>
+                            ` : ''}
                             ${camposProblematicos.has('NCM') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">NCM</span>
@@ -3005,6 +3605,233 @@
                                 <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vProd || '0'}</span>
                             </div>
                             ` : ''}
+                            ${['cstIBS', 'vBCIBS', 'pIBS', 'vIBS'].some(f => camposProblematicos.has(f)) ? `
+                            ${camposProblematicos.has('cstIBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST IBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cstIBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vBCIBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vBC IBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vBCIBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pIBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pIBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pIBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vIBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vIBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vIBS || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ` : ''}
+                            ${['cstCBS', 'vBCCBS', 'pCBS', 'vCBS'].some(f => camposProblematicos.has(f)) ? `
+                            ${camposProblematicos.has('cstCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST CBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cstCBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vBCCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vBC CBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vBCCBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pCBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pCBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vCBS || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ` : ''}
+                            ${['cstIS', 'vBCIS', 'pIS', 'vIS'].some(f => camposProblematicos.has(f)) ? `
+                            ${camposProblematicos.has('cstIS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST IS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cstIS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vBCIS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vBC IS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vBCIS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pIS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pIS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pIS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vIS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vIS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vIS || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ` : ''}
+                            ${[
+                                'indIncIBSCBS', 'cstRT', 'vBCIBSCBS', 
+                                'pCBSRT', 'vCBSRT', 'pRedCBSRT', 
+                                'pDifCBSRT', 'pEfetCBSRT', 'pCredPresCBSRT', 
+                                'vCredPresCBSRT', 'pIBSUFRT', 'vIBSUFRT', 
+                                'pRedIBSUFRT', 'pDifIBSUFRT', 'pEfetIBSUFRT', 
+                                'pIBSMunRT', 'vIBSMunRT', 'pRedIBSMunRT', 
+                                'pDifIBSMunRT', 'pEfetIBSMunRT', 'pISRT', 
+                                'vISRT', 'pDevTribRT'
+                            ].some(f => camposProblematicos.has(f)) ? `
+                            ${camposProblematicos.has('indIncIBSCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">indIncIBSCBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.indIncIBSCBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('cstRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">CST RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.cstRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vBCIBSCBS') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vBC IBSCBS</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vBCIBSCBS || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pCBSRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vCBSRT || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pRedCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pRedCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pRedCBSRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pDifCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pDifCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pDifCBSRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pEfetCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pEfetCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pEfetCBSRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pCredPresCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pCredPresCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pCredPresCBSRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vCredPresCBSRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vCredPresCBS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vCredPresCBSRT || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pIBSUFRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pIBSUF RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pIBSUFRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vIBSUFRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vIBSUF RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vIBSUFRT || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pRedIBSUFRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pRedIBSUF RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pRedIBSUFRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pDifIBSUFRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pDifIBSUF RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pDifIBSUFRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pEfetIBSUFRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pEfetIBSUF RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pEfetIBSUFRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pIBSMunRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pIBSMun RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pIBSMunRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vIBSMunRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vIBSMun RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vIBSMunRT || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pRedIBSMunRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pRedIBSMun RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pRedIBSMunRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pDifIBSMunRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pDifIBSMun RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pDifIBSMunRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pEfetIBSMunRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pEfetIBSMun RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pEfetIBSMunRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pISRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pIS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pISRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('vISRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">vIS RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.vISRT || '0'}</span>
+                            </div>
+                            ` : ''}
+                            ${camposProblematicos.has('pDevTribRT') ? `
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">pDevTrib RT</span>
+                                <span class="diagnostic-field-value" style="color: var(--error); font-weight: 700;">${item.pDevTribRT || '-'}</span>
+                            </div>
+                            ` : ''}
+                            ` : ''}
                             ${camposProblematicos.has('CST_PIS') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CST PIS</span>
@@ -3019,8 +3846,9 @@
                             ` : ''}
                         </div>
                         <div style="margin-top: 16px;">
+                            ${mensagensDedup.length > 0 ? `
                             <h4 style="margin-bottom: 8px; color: var(--text);">Problemas Encontrados:</h4>
-                            ${mensagensItem.map(msg => `
+                            ${mensagensDedup.map(msg => `
                                 <div style="padding: 12px; background: var(--bg); border-left: 4px solid ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 8px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                         <strong style="color: ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}">${msg.erro}</strong>
@@ -3041,10 +3869,11 @@
                                     </div>
                                 </div>
                             `).join('')}
+                            ` : ''}
                             ${item.validacao.alertas && item.validacao.alertas.length > 0 ? `
                                 <h4 style="margin-top:16px; margin-bottom:8px; color: var(--warning);">⚠️ Alertas de Auditoria:</h4>
                                 ${item.validacao.alertas.map(alerta => `
-                                    <div style="padding: 12px; background: #fffbeb; border-left: 4px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom:8px;">
+                                    <div style="padding: 12px; background: var(--bg); border-left: 4px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom:8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                             <strong style="color: var(--warning)">${alerta.erro}</strong>
                                             <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA</span>
