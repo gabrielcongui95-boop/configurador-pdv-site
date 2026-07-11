@@ -370,12 +370,12 @@
 <body>
     <div id="loading" class="loading">
         <div class="spinner"></div>
-        <div class="loading-text">Analisando XML...</div>
+        <div class="loading-text">🔍 Analisando XML...</div>
     </div>
     <div class="container">
         <header>
-            <h1>📄 Analisa XML </h1>
-            <p><H3> NF-e/NFC-e  </H3></p>
+            <h1>🔍 Analisa XML </h1>
+            <p><H3> NF-e/NFC-e 🧾  </H3></p>
         </header>
         <div id="upload-container">
             <div class="card">
@@ -401,7 +401,7 @@
                 <div id="section-conteudo" style="display:none;">
                     <div style="display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;">
                         <textarea id="paste-area" placeholder="Cole o conteúdo do XML aqui..." style="width:100%;max-width:600px;min-height:150px;padding:12px;border-radius:8px;border:1px dashed var(--border);background:var(--card);color:var(--text);font-family:monospace;"></textarea>
-                        <button class="btn btn-primary" id="btn-analisar-paste">Analisar Conteúdo Colado</button>
+                        <button class="btn btn-primary" id="btn-analisar-paste">Analisar 🔎 </button>
                     </div>
                 </div>
             </div>
@@ -445,15 +445,15 @@
                 <div id="doc-info" class="diagnostic-grid"></div>
             </div>
             <div class="card">
-                <div class="card-title">🔧 Diagnóstico Completo</div>
+                <div class="card-title">📋 Diagnóstico Completo</div>
                 <div id="diagnostics"></div>
             </div>
             <div id="ai-action-card" class="card ai-action-card">
-                <div class="card-title">📋 itens da nota</div>
+                <div class="card-title">📝 itens da nota</div>
                 <div id="relatorio-preview"></div>
             </div>
             <div class="card" style="display:flex;justify-content:flex-end;gap:12px;">
-                <button class="btn btn-primary" onclick="toggleDebug()">📋 Mostrar Debug</button>
+                <button class="btn btn-primary" onclick="toggleDebug()">💻 Mostrar Debug</button>
                 <button id="btn-baixar-relatorio" class="btn btn-success" onclick="exportarRelatorio()" disabled>📄 Baixar Relatório</button>
             </div>
             <div id="debug" class="debug-section"></div>
@@ -2075,7 +2075,7 @@
             if (status === 'success' && mensagens.length === 0 && alertas.length === 0) {
                 mensagens.push({
                     tipo: 'success',
-                    erro: 'OK',
+                    erro: 'OK ✅',
                     desc: 'Item validado com sucesso!',
                     motivo: '',
                     correcao: '',
@@ -3328,7 +3328,7 @@
                                 
                                 const s = item.validacao.status;
                                 const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
-                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK' : s === 'warning' ? 'AVISO' : 'ERRO'}</span>`;
+                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK ✅' : s === 'warning' ? 'AVISO' : 'ERRO ❌'}</span>`;
                                 
                                 // Helper to style a cell red if field is in error
                                 const cell = (campo, valor) => {
@@ -3494,7 +3494,7 @@
                                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                                         <strong style="color:var(--error)">${msg.erro}</strong>
                                         <span class="badge badge-error" style="font-size:0.8rem;">
-                                            ERRO
+                                            ERRO ❌
                                         </span>
                                     </div>
                                     <div style="margin-bottom:4px;"><strong>Mensagem:</strong> ${msg.mensagem}</div>
@@ -3853,7 +3853,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                         <strong style="color: ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}">${msg.erro}</strong>
                                         <span class="badge badge-${msg.tipo}" style="font-size: 0.8rem;">
-                                            ${msg.tipo === 'error' ? 'ERRO' : 'AVISO'}
+                                            ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO'}
                                             ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                                         </span>
                                     </div>
@@ -3905,7 +3905,7 @@
                                 Totais do Documento
                             </div>
                             <span class="badge badge-${msg.tipo}">
-                                ${msg.tipo === 'error' ? 'ERRO' : 'AVISO'}
+                                ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO'}
                                 ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                             </span>
                         </div>
@@ -3952,7 +3952,7 @@
                                 Problema Geral
                             </div>
                             <span class="badge badge-error">
-                                ERRO
+                                ERRO ❌
                             </span>
                         </div>
                         <div style="margin-top: 16px;">
@@ -4000,6 +4000,7 @@
                 <head>
                     <meta charset="UTF-8">
                     <title>Relatório  NF-e</title>
+                    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
                     <style>
                         *{font-family:Arial,sans-serif;}
                         body{background:#f0f4f8;padding:40px;}
@@ -4027,7 +4028,7 @@
                 </head>
                 <body>
                     <div class="container">
-                        <h1>Relatório da NF-e</h1>
+                        <h1>📄 Relatório da NF-e</h1>
                         <p class="subtitulo">Emitido em: ${now}</p>
                         <div class="grid">
                             <div class="campo"><span class="campo-label">Número da Nota</span><span>${dadosProcessados.ide.nNF}</span></div>
@@ -4038,7 +4039,7 @@
                         <h2>Resumo</h2>
                         <div class="grid">
                             <div class="campo"><span class="campo-label">Total de Itens</span><span>${dadosProcessados.stats.totalItens}</span></div>
-                            <div class="campo"><span class="campo-label">Itens OK</span><span>${dadosProcessados.stats.ok}</span></div>
+                            <div class="campo"><span class="campo-label">Itens OK ✅</span><span>${dadosProcessados.stats.ok}</span></div>
                             <div class="campo"><span class="campo-label">Itens com Aviso</span><span>${dadosProcessados.stats.aviso}</span></div>
                             <div class="campo"><span class="campo-label">Itens com Erro</span><span>${dadosProcessados.stats.erro}</span></div>
                         </div>
@@ -4058,9 +4059,9 @@
                                 ${dadosProcessados.itensProcessados.map(item => {
                                     const s = item.validacao.status;
                                     const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
-                                    const badge = s === 'success' ? '<span class="badge badge-success">OK</span>' : 
+                                    const badge = s === 'success' ? '<span class="badge badge-success">OK ✅</span>' : 
                                                   s === 'warning' ? '<span class="badge badge-warning">AVISO</span>' : 
-                                                  '<span class="badge badge-error">ERRO</span>';
+                                                  '<span class="badge badge-error">ERRO ❌</span>';
                                     return `<tr class="${classe}">
                                         <td>${item.nItem}</td>
                                         <td>${item.xProd}</td>
@@ -4239,7 +4240,7 @@
         });
         async function processarInput(input) {
             showLoading();
-            setLoadingText('🤖Analisando XML...');
+            setLoadingText('🔍 Analisando XML...');
             try {
                 analiseIAEmAndamento = false;
                 const dados = await lerXML(input);
@@ -4259,9 +4260,9 @@
                 document.getElementById('results').style.display = 'block';
                 document.getElementById('btn-limpar').style.display = 'block';
             } catch (erro) {
-                alert(`Erro: ${erro.message}`);
+                alert(`Erro ❌: ${erro.message}`);
             } finally {
-                setLoadingText('🤖Analisando XML...');
+                setLoadingText('🔍Analisando XML...');
                 hideLoading();
             }
         }
