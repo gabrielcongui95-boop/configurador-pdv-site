@@ -3328,7 +3328,7 @@
                                 
                                 const s = item.validacao.status;
                                 const classe = s === 'success' ? '' : s === 'warning' ? 'item-aviso' : 'item-erro';
-                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK ✅' : s === 'warning' ? 'AVISO' : 'ERRO ❌'}</span>`;
+                                const badge = `<span class="badge badge-${s}">${s === 'success' ? 'OK ✅' : s === 'warning' ? 'AVISO ⚠️' : 'ERRO ❌'}</span>`;
                                 
                                 // Helper to style a cell red if field is in error
                                 const cell = (campo, valor) => {
@@ -3853,7 +3853,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                         <strong style="color: ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}">${msg.erro}</strong>
                                         <span class="badge badge-${msg.tipo}" style="font-size: 0.8rem;">
-                                            ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO'}
+                                            ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO ⚠️'}
                                             ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                                         </span>
                                     </div>
@@ -3905,7 +3905,7 @@
                                 Totais do Documento
                             </div>
                             <span class="badge badge-${msg.tipo}">
-                                ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO'}
+                                ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO ⚠️'}
                                 ${msg.rejeicao ? ' (Rejeição ' + msg.rejeicao + ')' : ''}
                             </span>
                         </div>
