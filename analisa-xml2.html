@@ -499,6 +499,10 @@
                 
                 "CST 00 (Tributado Integralmente)": () => `Erro no item '${xProd}' (Código: ${cProd}). Acesse as configurações do produto e, na 'Situação Tributária do cadastro de alíquotas', mude a opção para '01' (TRIBUTADO INTEGRALMENTE) e informe a alíquota correta do imposto.`,
                 
+                "Total PIS divergente": () => `Erro identificado na nota. A inconsistência no valor do PIS originou-se no item '${xProd}' (Código: ${cProd}). Acesse o cadastro deste produto no sistema, verifique a aba de parametrização de alíquotas fiscais e altere o valor do imposto ou da alíquota de PIS para sanar a divergência em centavos.`,
+                
+                "Total COFINS divergente": () => `Erro identificado na nota. A inconsistência no valor da COFINS originou-se no item '${xProd}' (Código: ${cProd}). Acesse o cadastro deste produto no sistema, verifique a aba de parametrização de alíquotas fiscais e altere o valor do imposto ou da alíquota de COFINS para sanar a divergência em centavos.`,
+                
                 "CST 020 (Tributado com Redução)": () => `Divergência na redução de base do item '${xProd}' (Código: ${cProd}). No sistema, acesse a 'Situação Tributária do cadastro de alíquotas', configure como '01' e certifique-se de preencher o percentual correto no campo '% Base Red.'.`,
                 
                 "CST 041 (Não Tributado)": () => `Inconsistência no item '${xProd}' (Código: ${cProd}). Acesse o cadastro e verifique se a 'Situação Tributária do cadastro de alíquotas' está configurada corretamente com a sigla 'N' (NÃO TRIBUTADO).`,
@@ -537,7 +541,7 @@
                 
                 "Divergência de Município": () => `O município informado não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para o município correto de acordo com o CEP.`,
                 
-                "Divergência de Logradouro": () => `O logradouro (rua/avenida) informado não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para o logradouro correto de acordo com o CEP.`,
+                "CEP ou Endreço Incorreto": () => `O logradouro (rua/avenida) informado não corresponde ao CEP. Acesse o cadastro do cliente/empresa e corrija para o logradouro correto de acordo com o CEP.`,
                 
                 "CEP Incorreto": () => `O CEP informado não corresponde ao endereço. Acesse o cadastro do cliente e atualize o CEP para o sugerido pelo validador.`,
                 
@@ -580,15 +584,15 @@
             '15': { desc: 'ST (2)', aceitaCBenef: false, aliq: '01' },
             '20': { desc: 'Redução de Base', aceitaCBenef: true, aliq: '01', precisaPREDBC: true, cBenefValidos: ['SP099090','SP099009','SP020390'] },
             '30': { desc: 'Isenção/ST', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['SP099090','SP099009'] },
-            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['SP099090','SP099009','SP099999'] },
-            '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['SP099090','SP099009'] },
+            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['SP099090','SP099009','SP099999','SP019090'] },
+            '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['SP099090','SP099009','SP019090'] },
             '50': { desc: 'Suspensão', aceitaCBenef: true, aliq: 'S', cBenefValidos: ['SP099090','SP099009'] },
             '51': { desc: 'Diferimento', aceitaCBenef: true, aliq: 'D', cBenefValidos: ['SP099090','SP099009'] },
             '53': { desc: 'Monofásica Combustíveis', aceitaCBenef: true, aliq: 'M', cBenefValidos: ['SP099090','SP099009'] },
             '60': { desc: 'ICMS ST', aceitaCBenef: false, aliq: 'F' },
             '61': { desc: 'ICMS ST (2)', aceitaCBenef: false, aliq: 'F' },
             '70': { desc: 'Redução + ST', aceitaCBenef: true, aliq: '01', cBenefValidos: ['SP099090','SP099009','SP020390'] },
-            '90': { desc: 'Outros', aceitaCBenef: true, aliq: 'V', cBenefValidos: ['SP099090','SP099000','SP099009','SP099999'] }
+            '90': { desc: 'Outros', aceitaCBenef: true, aliq: 'V', cBenefValidos: ['SP099090','SP099000','SP099009','SP099999','SP040100'] }
         };
 
         // Regras específicas dos códigos cBenef
@@ -617,6 +621,16 @@
                 desc: 'Redução de Base de Cálculo - PRODUTOS ALIMENTÍCIOS',
                 cstsValidos: ['20','70'],
                 exigencia: ''
+            },
+            'SP019090': {
+                desc: 'Isenção ICMS - Operações de serviços não tributadas pelo ICMS',
+                cstsValidos: ['40','41'],
+                exigencia: ''
+            },
+            'SP040100': {
+                desc: 'Regime especial de tributação do ICMS para fornecimento de alimentação (bares e restaurantes)',
+                cstsValidos: ['90'],
+                exigencia: 'Obrigatório para CFOP de venda/prestação de alimentação (ex: 5102) em SP'
             }
         };
 
@@ -1452,6 +1466,7 @@
             };
                         
                         log('Leitura do XML concluída com sucesso!');
+                        
                         resolve(dados);
                     } catch (erro) {
                         log(erro.message, 'error');
@@ -1481,6 +1496,10 @@
             const cClassTrib = getTextoElemento(prod, 'cClassTrib');
             const vUnCom = getTextoElemento(prod, 'vUnCom');
             const vProd = getTextoElemento(prod, 'vProd');
+            const vDesc = getTextoElemento(prod, 'vDesc') || '0';
+            const vFrete = getTextoElemento(prod, 'vFrete') || '0';
+            const vSeg = getTextoElemento(prod, 'vSeg') || '0';
+            const vOutro = getTextoElemento(prod, 'vOutro') || '0';
             
             log(`Item ${nItem}: "${xProd}" - cBenef: "${cBenef}"`);
             
@@ -1780,7 +1799,7 @@
                 nItem, xProd, cProd, NCM, CFOP, cBenef, cClassTrib, CST, CSOSN, pRedBC, 
                 vPIS, CST_PIS, pPIS, vBCPIS, vCOFINS, CST_COFINS, pCOFINS, vBCCOFINS,
                 temICMS, vBCICMS, pICMS, vICMS, temISSQN, xmlTrecho,
-                vUnCom, vProd, vDedISSQN, pDedISSQN, xMotDedISSQN,
+                vUnCom, vProd, vDesc, vFrete, vSeg, vOutro, vDedISSQN, pDedISSQN, xMotDedISSQN,
                 temIBS, cstIBS, vBCIBS, pIBS, vIBS, pRedBCIBS, vRedBCIBS, motRedIBS, cBenefIBS,
                 temCBS, cstCBS, vBCCBS, pCBS, vCBS, pRedBCCBS, vRedBCCBS, motRedCBS, cBenefCBS,
                 temIS, cstIS, vBCIS, pIS, vIS, qBCIS, vAliqProd,
@@ -1893,171 +1912,255 @@
                     });
                 }
                 
-                // 2. Obter lista de cBenef válidos para este item (regra.cBenefValidos + geral)
-                const cBenefValidosGlobais = Object.keys(CBENEF_REGRAS);
-                const cBenefValidosItem = regra.cBenefValidos || [];
-                const cBenefValidosTodos = [...new Set([...cBenefValidosGlobais, ...cBenefValidosItem, 'SEMOBRIGATORIEDADE'])];
-                const cstsDesobrigados = ['00', '02', '10', '15', '60', '61'];
-                const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
-                
-                // Aplicar 3 cenários fiscais
-                if (exigeCBenef) {
-                    // CENÁRIO A: Rejeição 928 - cBenef obrigatório, mas vazio ou inválido
-                    const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
-                    if (!cBenefValido) {
-                        status = 'error';
-                        mensagens.push({
-                            tipo: 'error',
-                            erro: 'REJEICAO_928',
-                            desc: `Rejeição 928: CST ${cstNormalizado} (${regra.desc}) exige cBenef válido`,
-                            motivo: 'Faltou informar código de benefício fiscal ou código inválido',
-                            correcao: 'Informe o cBenef válido para este CST',
-                            orientacao: 'Consultar Tabela cBenef SEFAZ',
-                            rejeicao: '928',
-                            campos: ['cBenef']
-                        });
-                    } else {
-                        // Se cBenef é válido, valida as regras específicas do código
-                        if (cBenef === 'SP099090') {
-                            // Regra SP099090: Decisão judicial
-                            if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'cBenef não permitido para este CST',
-                                    desc: `O cBenef SP099090 não é permitido para CST ${cstNormalizado}`,
-                                    motivo: 'Código de benefício não compatível com o CST',
-                                    correcao: 'Alterar o cBenef para um código válido para este CST',
-                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                    rejeicao: '',
-                                    campos: ['CST', 'cBenef']
-                                });
-                            } else {
-                                const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
-                                if (!textoComplementar) {
-                                    status = 'error';
-                                    mensagens.push({
-                                        tipo: 'error',
-                                        erro: 'Processo judicial não informado',
-                                        desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
-                                        motivo: 'Faltou informar o processo judicial',
-                                        correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
-                                        orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
-                                        rejeicao: '',
-                                        campos: ['infAdFisco', 'infCpl']
-                                    });
-                                }
-                            }
-                        } else if (cBenef === 'SP099000') {
-                            if (cstNormalizado !== '90') {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'cBenef não permitido para este CST',
-                                    desc: `O cBenef SP099000 só é permitido para CST 90`,
-                                    motivo: 'Código de benefício não compatível com o CST',
-                                    correcao: 'Alterar o cBenef para um código válido para este CST',
-                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                    rejeicao: '',
-                                    campos: ['CST', 'cBenef']
-                                });
-                            }
-                        } else if (cBenef === 'SP099009') {
-                            if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'cBenef não permitido para este CST',
-                                    desc: `O cBenef SP099009 não é permitido para CST ${cstNormalizado}`,
-                                    motivo: 'Código de benefício não compatível com o CST',
-                                    correcao: 'Alterar o cBenef para um código válido para este CST',
-                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                    rejeicao: '',
-                                    campos: ['CST', 'cBenef']
-                                });
-                            }
-                        } else if (cBenef === 'SP099999') {
-                            if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'cBenef não permitido para este CST',
-                                    desc: `O cBenef SP099999 só é permitido para CST 40 e 90`,
-                                    motivo: 'Código de benefício não compatível com o CST',
-                                    correcao: 'Alterar o cBenef para um código válido para este CST',
-                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                    rejeicao: '',
-                                    campos: ['CST', 'cBenef']
-                                });
-                            } else {
-                                const textoComplementar = infAdic.infCpl.trim();
-                                if (!textoComplementar) {
-                                    status = 'error';
-                                    mensagens.push({
-                                        tipo: 'error',
-                                        erro: 'Fundamentação legal não informada',
-                                        desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
-                                        motivo: 'Faltou informar a fundamentação legal',
-                                        correcao: 'Incluir a fundamentação legal em infCpl',
-                                        orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
-                                        rejeicao: '',
-                                        campos: ['infCpl']
-                                    });
-                                }
-                            }
-                        } else if (cBenef === 'SP020390') {
-                            if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
-                                status = 'error';
-                                mensagens.push({
-                                    tipo: 'error',
-                                    erro: 'cBenef não permitido para este CST',
-                                    desc: `O cBenef SP020390 só é permitido para CST 20 e 70`,
-                                    motivo: 'Código de benefício não compatível com o CST',
-                                    correcao: 'Alterar o cBenef para um código válido para este CST',
-                                    orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
-                                    rejeicao: '',
-                                    campos: ['CST', 'cBenef']
-                                });
-                            }
-                        }
-                        
-                        // Valida pRedBC para CST 20
-                        if (regra.precisaPREDBC && !item.pRedBC) {
+                // VALIDAÇÃO ESPECIAL: SP + CST 90
+                const isSP = cUF === '35';
+                const isCST90 = cstNormalizado === '90';
+                const isCFOPAlimentacao = ['5102', '5101', '5103', '5104', '5115', '5910'].includes(item.CFOP);
+                const cBenefValidosCST90 = CST_REGRAS['90'].cBenefValidos || []; // SP099090, SP099000, SP099009, SP099999, SP040100
+                if (isSP && isCST90) {
+                    if (isCFOPAlimentacao) {
+                        // Caso 1: SP, CST90, CFOP alimentação → cBenef DEVE ser SP040100
+                        if (cBenef !== 'SP040100') {
                             status = 'error';
                             mensagens.push({
                                 tipo: 'error',
-                                erro: 'pRedBC obrigatório',
-                                desc: 'CST 20 exige percentual de redução da base de cálculo',
-                                motivo: 'Faltou informar o pRedBC',
-                                correcao: 'Preencher o campo % Base Red. no cadastro do produto',
-                                orientacao: 'Solicitar ao cliente que verifique o percentual',
+                                erro: 'cBenef obrigatório para CST 90 em SP (alimentação)',
+                                desc: `CST 90 com CFOP ${item.CFOP} (alimentação) em SP exige cBenef SP040100`,
+                                motivo: 'Regime especial de tributação para fornecimento de alimentação em SP',
+                                correcao: 'Informe o cBenef SP040100 no cadastro do produto',
+                                orientacao: 'Consultar a contabilidade sobre o regime especial de alimentação',
                                 rejeicao: '',
-                                campos: ['pRedBC']
-                            });
-                        }
-                    }
-                } else {
-                    // Não exige cBenef
-                    if (cBenef && cBenef !== 'SEM CBENEF') {
-                        // Verifica se o código é válido
-                        if (cBenefValidosTodos.includes(cBenef)) {
-                            // CENÁRIO B: Flexibilidade - código válido, não faz nada
-                            log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
-                        } else {
-                            // CENÁRIO C: Alerta SPED - código inválido
-                            alertas.push({
-                                tipo: 'warning',
-                                erro: 'ALERTA_SPED_CBENEF',
-                                desc: 'Código de benefício informado inválido para este CST',
-                                motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
-                                correcao: 'Remover o cBenef do cadastro do produto',
-                                orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
                                 campos: ['cBenef']
                             });
                         }
+                    } else {
+                        // Caso 2: SP, CST90, CFOP NÃO alimentação → permite cBenef válido para CST90, sem exigir
+                        if (cBenef && cBenef !== 'SEM CBENEF') {
+                            if (!cBenefValidosCST90.includes(cBenef)) {
+                                // cBenef inválido para CST90
+                                alertas.push({
+                                    tipo: 'warning',
+                                    erro: 'ALERTA_SPED_CBENEF',
+                                    desc: 'Código de benefício informado inválido para este CST',
+                                    motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
+                                    correcao: 'Remover o cBenef do cadastro do produto',
+                                    orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
+                                    campos: ['cBenef']
+                                });
+                            } else {
+                                // cBenef válido para CST90: valida regras específicas do código
+                                if (cBenef === 'SP099090') {
+                                    // Regra SP099090: Decisão judicial
+                                    const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
+                                    if (!textoComplementar) {
+                                        status = 'error';
+                                        mensagens.push({
+                                            tipo: 'error',
+                                            erro: 'Processo judicial não informado',
+                                            desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
+                                            motivo: 'Faltou informar o processo judicial',
+                                            correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
+                                            orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
+                                            rejeicao: '',
+                                            campos: ['infAdFisco', 'infCpl']
+                                        });
+                                    }
+                                } else if (cBenef === 'SP099999') {
+                                    // Regra SP099999: Fundamentação legal
+                                    const textoComplementar = infAdic.infCpl.trim();
+                                    if (!textoComplementar) {
+                                        status = 'error';
+                                        mensagens.push({
+                                            tipo: 'error',
+                                            erro: 'Fundamentação legal não informada',
+                                            desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
+                                            motivo: 'Faltou informar a fundamentação legal',
+                                            correcao: 'Incluir a fundamentação legal em infCpl',
+                                            orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
+                                            rejeicao: '',
+                                            campos: ['infCpl']
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (['40', '41'].includes(cstNormalizado) && cBenef === 'SP019090') {
+                    // Caso especial: CST 40/41 com cBenef SP019090 é permitido
+                    log(`Item ${item.nItem}: CST ${cstNormalizado} com cBenef SP019090 permitido`);
+                    // Validação extra: verifica se NCM é 00000000 e CFOP é 5949 (opcional, para reforçar)
+                    if (item.NCM === '00000000' && item.CFOP === '5949') {
+                        log(`Item ${item.nItem}: NCM 00000000 e CFOP 5949 com cBenef SP019090 válido`);
+                
+                    }
+                } else {
+                    // Caso normal: não SP ou não CST90, não é CST40/41 com SP019090
+                    // 2. Obter lista de cBenef válidos para este item (regra.cBenefValidos + geral)
+                    const cBenefValidosGlobais = Object.keys(CBENEF_REGRAS);
+                    const cBenefValidosItem = regra.cBenefValidos || [];
+                    const cBenefValidosTodos = [...new Set([...cBenefValidosGlobais, ...cBenefValidosItem, 'SEMOBRIGATORIEDADE'])];
+                    const cstsDesobrigados = ['00', '02', '10', '15', '60', '61'];
+                    const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
+                
+                    // Aplicar 3 cenários fiscais
+                    if (exigeCBenef) {
+                        // CENÁRIO A: Rejeição 928 - cBenef obrigatório, mas vazio ou inválido
+                        const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
+                        if (!cBenefValido) {
+                            status = 'error';
+                            mensagens.push({
+                                tipo: 'error',
+                                erro: 'REJEICAO_928',
+                                desc: `Rejeição 928: CST ${cstNormalizado} (${regra.desc}) exige cBenef válido`,
+                                motivo: 'Faltou informar código de benefício fiscal ou código inválido',
+                                correcao: 'Informe o cBenef válido para este CST',
+                                orientacao: 'Consultar Tabela cBenef SEFAZ',
+                                rejeicao: '928',
+                                campos: ['cBenef']
+                            });
+                        } else {
+                            // Se cBenef é válido, valida as regras específicas do código
+                            if (cBenef === 'SP099090') {
+                                // Regra SP099090: Decisão judicial
+                                if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'cBenef não permitido para este CST',
+                                        desc: `O cBenef SP099090 não é permitido para CST ${cstNormalizado}`,
+                                        motivo: 'Código de benefício não compatível com o CST',
+                                        correcao: 'Alterar o cBenef para um código válido para este CST',
+                                        orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                        rejeicao: '',
+                                        campos: ['CST', 'cBenef']
+                                    });
+                                } else {
+                                    const textoComplementar = `${infAdic.infAdFisco} ${infAdic.infCpl}`.trim();
+                                    if (!textoComplementar) {
+                                        status = 'error';
+                                        mensagens.push({
+                                            tipo: 'error',
+                                            erro: 'Processo judicial não informado',
+                                            desc: 'O cBenef SP099090 exige o número do processo judicial nas informações complementares',
+                                            motivo: 'Faltou informar o processo judicial',
+                                            correcao: 'Incluir o número do processo judicial em infAdFisco ou infCpl',
+                                            orientacao: 'Solicitar ao cliente que adicione o número do processo nas informações complementares',
+                                            rejeicao: '',
+                                            campos: ['infAdFisco', 'infCpl']
+                                        });
+                                    }
+                                }
+                            } else if (cBenef === 'SP099000') {
+                                if (cstNormalizado !== '90') {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'cBenef não permitido para este CST',
+                                        desc: `O cBenef SP099000 só é permitido para CST 90`,
+                                        motivo: 'Código de benefício não compatível com o CST',
+                                        correcao: 'Alterar o cBenef para um código válido para este CST',
+                                        orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                        rejeicao: '',
+                                        campos: ['CST', 'cBenef']
+                                    });
+                                }
+                            } else if (cBenef === 'SP099009') {
+                                if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'cBenef não permitido para este CST',
+                                        desc: `O cBenef SP099009 não é permitido para CST ${cstNormalizado}`,
+                                        motivo: 'Código de benefício não compatível com o CST',
+                                        correcao: 'Alterar o cBenef para um código válido para este CST',
+                                        orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                        rejeicao: '',
+                                        campos: ['CST', 'cBenef']
+                                    });
+                                }
+                            } else if (cBenef === 'SP099999') {
+                                if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'cBenef não permitido para este CST',
+                                        desc: `O cBenef SP099999 só é permitido para CST 40 e 90`,
+                                        motivo: 'Código de benefício não compatível com o CST',
+                                        correcao: 'Alterar o cBenef para um código válido para este CST',
+                                        orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                        rejeicao: '',
+                                        campos: ['CST', 'cBenef']
+                                    });
+                                } else {
+                                    const textoComplementar = infAdic.infCpl.trim();
+                                    if (!textoComplementar) {
+                                        status = 'error';
+                                        mensagens.push({
+                                            tipo: 'error',
+                                            erro: 'Fundamentação legal não informada',
+                                            desc: 'O cBenef SP099999 exige fundamentação legal nas informações complementares (infCpl)',
+                                            motivo: 'Faltou informar a fundamentação legal',
+                                            correcao: 'Incluir a fundamentação legal em infCpl',
+                                            orientacao: 'Solicitar ao cliente que adicione a fundamentação legal nas informações complementares',
+                                            rejeicao: '',
+                                            campos: ['infCpl']
+                                        });
+                                    }
+                                }
+                            } else if (cBenef === 'SP020390') {
+                                if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
+                                    status = 'error';
+                                    mensagens.push({
+                                        tipo: 'error',
+                                        erro: 'cBenef não permitido para este CST',
+                                        desc: `O cBenef SP020390 só é permitido para CST 20 e 70`,
+                                        motivo: 'Código de benefício não compatível com o CST',
+                                        correcao: 'Alterar o cBenef para um código válido para este CST',
+                                        orientacao: 'Consultar a Tabela cBenef da UF na SEFAZ',
+                                        rejeicao: '',
+                                        campos: ['CST', 'cBenef']
+                                    });
+                                }
+                            }
+                            
+                            // Valida pRedBC para CST 20
+                            if (regra.precisaPREDBC && !item.pRedBC) {
+                                status = 'error';
+                                mensagens.push({
+                                    tipo: 'error',
+                                    erro: 'pRedBC obrigatório',
+                                    desc: 'CST 20 exige percentual de redução da base de cálculo',
+                                    motivo: 'Faltou informar o pRedBC',
+                                    correcao: 'Preencher o campo % Base Red. no cadastro do produto',
+                                    orientacao: 'Solicitar ao cliente que verifique o percentual',
+                                    rejeicao: '',
+                                    campos: ['pRedBC']
+                                });
+                            }
+                        }
+                    } else {
+                        // Não exige cBenef
+                        if (cBenef && cBenef !== 'SEM CBENEF') {
+                            // Verifica se o código é válido
+                            if (cBenefValidosTodos.includes(cBenef)) {
+                                // CENÁRIO B: Flexibilidade - código válido, não faz nada
+                                log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
+                            } else {
+                                // CENÁRIO C: Alerta SPED - código inválido
+                                alertas.push({
+                                    tipo: 'warning',
+                                    erro: 'ALERTA_SPED_CBENEF',
+                                    desc: 'Código de benefício informado inválido para este CST',
+                                    motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
+                                    correcao: 'Remover o cBenef do cadastro do produto',
+                                    orientacao: 'Limpar campo cBenef para evitar riscos de auditoria',
+                                    campos: ['cBenef']
+                                });
+                            }
+                        }
                     }
                 }
-            }
+        }
             
             // Validação das novas regras (4-8)
             const novasMensagens = validarNovasRegras(item);
@@ -2171,6 +2274,53 @@
                     orientacao: 'Verificar o CST COFINS correto.',
                     campos: ['CST_COFINS']
                 });
+            }
+            
+            // VALIDAÇÃO DE PIS (Rejeição 602)
+            const cstPisTributavel = ['01', '02'];
+            if (item.CST_PIS && cstPisTributavel.includes(item.CST_PIS)) {
+                // 1. Calcular base de cálculo esperada: vProd - vDesc + vFrete + vSeg + vOutro
+                const vProdNum = parseFloat(item.vProd) || 0;
+                const vDescNum = parseFloat(item.vDesc) || 0;
+                const vFreteNum = parseFloat(item.vFrete) || 0;
+                const vSegNum = parseFloat(item.vSeg) || 0;
+                const vOutroNum = parseFloat(item.vOutro) || 0;
+                
+                const vBCEsperado = vProdNum - vDescNum + vFreteNum + vSegNum + vOutroNum;
+                const vBCInformado = parseFloat(item.vBCPIS) || 0;
+                
+                // 2. Validar base de cálculo
+                if (Math.abs(vBCEsperado - vBCInformado) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Base de cálculo PIS divergente',
+                        desc: `Base de cálculo PIS esperada: ${vBCEsperado.toFixed(2)}, informada: ${vBCInformado.toFixed(2)}`,
+                        motivo: 'Base de cálculo PIS não corresponde a vProd - vDesc + vFrete + vSeg + vOutro',
+                        correcao: 'Ajustar a base de cálculo do PIS no cadastro do produto',
+                        orientacao: 'Verificar o cálculo da base de cálculo do PIS',
+                        rejeicao: '',
+                        campos: ['vBCPIS', 'vProd', 'vDesc', 'vFrete', 'vSeg', 'vOutro']
+                    });
+                }
+                
+                // 3. Calcular valor do PIS esperado
+                const pPISNum = parseFloat(item.pPIS) || 0;
+                const vPISEsperado = Math.round((vBCInformado * (pPISNum / 100)) * 100) / 100;
+                const vPISInformado = parseFloat(item.vPIS) || 0;
+                
+                // 4. Validar valor do PIS
+                if (Math.abs(vPISInformado - vPISEsperado) > 0.01) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: 'Valor do PIS divergente',
+                        desc: `Valor do PIS esperado: ${vPISEsperado.toFixed(2)}, informado: ${vPISInformado.toFixed(2)}`,
+                        motivo: 'Valor do PIS não corresponde a base de cálculo * alíquota',
+                        correcao: 'Ajustar o valor do PIS no cadastro do produto',
+                        orientacao: 'Verificar o cálculo do valor do PIS',
+                        rejeicao: '',
+                        campos: ['vPIS', 'vBCPIS', 'pPIS']
+                    });
+                }
             }
             
             // Validações da Reforma Tributária
@@ -2800,6 +2950,206 @@
         }
         
         /**
+         * Arredonda um valor para 2 casas decimais com precisão alta, evitando erros de ponto flutuante
+         * @param {number} valor - Valor a ser arredondado
+         * @returns {number} Valor arredondado para 2 casas decimais
+         */
+        function arredondarParaDuasCasas(valor) {
+            return Math.round(valor * 100) / 100;
+        }
+
+        /**
+         * Converte um valor decimal para centavos (inteiro) para evitar erros de ponto flutuante
+         * @param {number} valor - Valor decimal a ser convertido
+         * @returns {number} Valor em centavos (inteiro, arredondado para centavo mais próximo)
+         */
+        function paraCentavos(valor) {
+            return Math.round(parseFloat(valor) * 100);
+        }
+
+        /**
+         * Converte centavos para valor decimal
+         * @param {number} centavos - Valor em centavos (inteiro)
+         * @returns {number} Valor decimal
+         */
+        function paraDecimal(centavos) {
+            return centavos / 100;
+        }
+
+        /**
+         * Calcula o valor do imposto (PIS/COFINS) usando centavos para evitar erros de ponto flutuante
+         * @param {number} vBC - Base de cálculo do imposto
+         * @param {number} pImposto - Aliquota do imposto (%)
+         * @returns {number} Valor do imposto em centavos (inteiro)
+         */
+        function calcularImpostoCentavos(vBC, pImposto) {
+            const vBCCentavos = paraCentavos(vBC);
+            // Multiplicação exata usando centavos para evitar erros de ponto flutuante
+            const valorCalculadoCentavos = Math.round(vBCCentavos * pImposto / 100);
+            return valorCalculadoCentavos;
+        }
+
+        /**
+         * Calcula o valor do imposto (PIS/COFINS) com alta precisão, validando base e valor
+         * @param {number} vBC - Base de cálculo do imposto
+         * @param {number} pImposto - Aliquota do imposto (%)
+         * @param {number} vImposto - Valor do imposto informado no XML
+         * @param {string} tipo - 'PIS' ou 'COFINS'
+         * @param {number} nItem - Número do item
+         * @returns {Array} Lista de mensagens de erro/aviso
+         */
+        function validarArredondamentoImposto(vBC, pImposto, vImposto, tipo, nItem) {
+            const mensagens = [];
+            const vBCNum = parseFloat(vBC) || 0;
+            const pImpostoNum = parseFloat(pImposto) || 0;
+            const vImpostoNum = parseFloat(vImposto) || 0;
+            
+            if (vBCNum > 0 && pImpostoNum > 0) {
+                const vImpostoCalculado = arredondarParaDuasCasas(vBCNum * (pImpostoNum / 100));
+                if (Math.abs(vImpostoCalculado - vImpostoNum) > 0.00001) {
+                    mensagens.push({
+                        tipo: 'error',
+                        erro: `Divergência de Arredondamento de ${tipo}`,
+                        desc: `Item ${nItem}: Valor de ${tipo} calculado é R$ ${vImpostoCalculado.toFixed(2)}, mas foi informado R$ ${vImpostoNum.toFixed(2)}`,
+                        motivo: `Cálculo: ${vBCNum.toFixed(2)} * ${pImpostoNum.toFixed(2)}% = ${vImpostoCalculado.toFixed(2)}`,
+                        correcao: `Ajustar o valor de ${tipo} para R$ ${vImpostoCalculado.toFixed(2)}`,
+                        orientacao: `Verificar o cálculo da base de cálculo e da alíquota de ${tipo}`,
+                        campos: [tipo === 'PIS' ? 'vPIS' : 'vCOFINS']
+                    });
+                }
+            }
+            
+            return mensagens;
+        }
+
+        /**
+         * Validação estrita de totais de PIS/COFINS (Regra de Corte Principal)
+         * @param {Object} dados - Dados processados do XML
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarTotaisFiscaisEstritos(dados) {
+            const erros = [];
+            
+            try {
+                let totalPISCalculadoCentavos = 0;
+                let totalCOFINSCalculadoCentavos = 0;
+                const cstTributavel = ['01', '02']; // CST tributado por alíquota
+
+                dados.itens.forEach(item => {
+                    // Validação PIS
+                    if (cstTributavel.includes(item.CST_PIS)) {
+                        const vBCPIS = parseFloat(item.vBCPIS) || 0;
+                        const pPIS = parseFloat(item.pPIS) || 0;
+                        const vPISInformado = parseFloat(item.vPIS) || 0;
+                        const vPISCalculadoCentavos = calcularImpostoCentavos(vBCPIS, pPIS);
+                        const vPISCalculado = paraDecimal(vPISCalculadoCentavos);
+                        const vPISInformadoCentavos = paraCentavos(vPISInformado);
+                        
+                        if (vPISCalculadoCentavos !== vPISInformadoCentavos) {
+                            erros.push({
+                                tipo: 'error',
+                                erro: 'Divergência de Arredondamento de PIS (Rejeição 602 Provável)',
+                                desc: `Item ${item.nItem}: PIS calculado é R$ ${vPISCalculado.toFixed(2)}, mas foi informado R$ ${vPISInformado.toFixed(2)}`,
+                                motivo: `Cálculo exato: vBCPIS (R$ ${vBCPIS.toFixed(2)}) * (${pPIS.toFixed(2)}%) = R$ ${vPISCalculado.toFixed(2)}`,
+                                correcao: `Ajustar vPIS para R$ ${vPISCalculado.toFixed(2)}`,
+                                orientacao: 'Essa diferença causará Rejeição 602 na SEFAZ',
+                                campos: ['vPIS']
+                            });
+                        }
+                        totalPISCalculadoCentavos += vPISCalculadoCentavos;
+                    }
+                    
+                    // Validação COFINS
+                    if (cstTributavel.includes(item.CST_COFINS)) {
+                        const vBCCOFINS = parseFloat(item.vBCCOFINS) || 0;
+                        const pCOFINS = parseFloat(item.pCOFINS) || 0;
+                        const vCOFINSInformado = parseFloat(item.vCOFINS) || 0;
+                        const vCOFINSCalculadoCentavos = calcularImpostoCentavos(vBCCOFINS, pCOFINS);
+                        const vCOFINSCalculado = paraDecimal(vCOFINSCalculadoCentavos);
+                        const vCOFINSInformadoCentavos = paraCentavos(vCOFINSInformado);
+                        
+                        if (vCOFINSCalculadoCentavos !== vCOFINSInformadoCentavos) {
+                            erros.push({
+                                tipo: 'error',
+                                erro: 'Divergência de Arredondamento de COFINS ',
+                                desc: `Item ${item.nItem}: COFINS calculado é R$ ${vCOFINSCalculado.toFixed(2)}, mas foi informado R$ ${vCOFINSInformado.toFixed(2)}`,
+                                motivo: `Cálculo exato: vBCCOFINS (R$ ${vBCCOFINS.toFixed(2)}) * (${pCOFINS.toFixed(2)}%) = R$ ${vCOFINSCalculado.toFixed(2)}`,
+                                correcao: `Ajustar vCOFINS para R$ ${vCOFINSCalculado.toFixed(2)}`,
+                                orientacao: 'Essa diferença causará Rejeição 603 na SEFAZ',
+                                campos: ['vCOFINS']
+                            });
+                        }
+                        totalCOFINSCalculadoCentavos += vCOFINSCalculadoCentavos;
+                    }
+                });
+
+                // Arredonda os totais calculados (somatório dos centavos)
+                const totalPISCalculado = paraDecimal(totalPISCalculadoCentavos);
+                const totalCOFINSCalculado = paraDecimal(totalCOFINSCalculadoCentavos);
+
+                // Compara com total declarado em ICMSTot
+                const totalPISDeclarado = parseFloat(dados.totals.icmstot.vPIS) || 0;
+                const totalCOFINSDeclarado = parseFloat(dados.totals.icmstot.vCOFINS) || 0;
+                const totalPISDeclaradoCentavos = paraCentavos(totalPISDeclarado);
+                const totalCOFINSDeclaradoCentavos = paraCentavos(totalCOFINSDeclarado);
+                
+                if (totalPISCalculadoCentavos !== totalPISDeclaradoCentavos) {
+                    // Busca o primeiro item que causou a divergência para detalhar na mensagem
+                    const itemCulpadoPIS = dados.itens.find(item => {
+                        const vPISCalculadoCentavos = calcularImpostoCentavos(parseFloat(item.vBCPIS) || 0, parseFloat(item.pPIS) || 0);
+                        return cstTributavel.includes(item.CST_PIS) && vPISCalculadoCentavos !== paraCentavos(parseFloat(item.vPIS) || 0);
+                    }) || dados.itens[0];
+
+                    const vPISInformadoItem = parseFloat(itemCulpadoPIS.vPIS) || 0;
+                    const vPISCalculadoItem = paraDecimal(calcularImpostoCentavos(parseFloat(itemCulpadoPIS.vBCPIS) || 0, parseFloat(itemCulpadoPIS.pPIS) || 0));
+
+                    erros.push({
+                        tipo: 'error',
+                        erro: 'Rejeição 602 - Total de PIS divergente',
+                        desc: `Total de PIS calculado (R$ ${totalPISCalculado.toFixed(2)}) difere do declarado (R$ ${totalPISDeclarado.toFixed(2)})`,
+                        motivo: `O Item ${itemCulpadoPIS.nItem} (${itemCulpadoPIS.xProd}) possui divergência. Declarado no item: R$ ${vPISInformadoItem.toFixed(2)}, mas o correto matemático pela alíquota seria: R$ ${vPISCalculadoItem.toFixed(2)}.`,
+                        correcao: `Ajustar a alíquota de PIS do Item ${itemCulpadoPIS.nItem} para refletir o cálculo correto.`,
+                        sugestao: `Alterar vPIS do item ${itemCulpadoPIS.nItem} para R$ ${vPISCalculadoItem.toFixed(2)} e o total em ICMSTot para R$ ${totalPISCalculado.toFixed(2)}`,
+                        rejeicao: '602'
+                    });
+                }
+                
+                if (totalCOFINSCalculadoCentavos !== totalCOFINSDeclaradoCentavos) {
+                    // Busca o primeiro item que causou a divergência para detalhar na mensagem
+                    const itemCulpadoCOFINS = dados.itens.find(item => {
+                        const vCOFINSCalculadoCentavos = calcularImpostoCentavos(parseFloat(item.vBCCOFINS) || 0, parseFloat(item.pCOFINS) || 0);
+                        return cstTributavel.includes(item.CST_COFINS) && vCOFINSCalculadoCentavos !== paraCentavos(parseFloat(item.vCOFINS) || 0);
+                    }) || dados.itens[0];
+
+                    const vCOFINSInformadoItem = parseFloat(itemCulpadoCOFINS.vCOFINS) || 0;
+                    const vCOFINSCalculadoItem = paraDecimal(calcularImpostoCentavos(parseFloat(itemCulpadoCOFINS.vBCCOFINS) || 0, parseFloat(itemCulpadoCOFINS.pCOFINS) || 0));
+
+                    erros.push({
+                        tipo: 'error',
+                        erro: 'Rejeição 603 - Total de COFINS divergente',
+                        desc: `Total de COFINS calculado (R$ ${totalCOFINSCalculado.toFixed(2)}) difere do declarado (R$ ${totalCOFINSDeclarado.toFixed(2)})`,
+                        motivo: `O Item ${itemCulpadoCOFINS.nItem} (${itemCulpadoCOFINS.xProd}) possui divergência. Declarado no item: R$ ${vCOFINSInformadoItem.toFixed(2)}, mas o correto matemático pela alíquota seria: R$ ${vCOFINSCalculadoItem.toFixed(2)}.`,
+                        correcao: `Ajustar a alíquota de COFINS do Item ${itemCulpadoCOFINS.nItem} para refletir o cálculo correto.`,
+                        sugestao: `Alterar vCOFINS do item ${itemCulpadoCOFINS.nItem} para R$ ${vCOFINSCalculadoItem.toFixed(2)} e o total em ICMSTot para R$ ${totalCOFINSCalculado.toFixed(2)}`,
+                        rejeicao: '603'
+                    });
+                }
+            } catch (erro) {
+                log(`Erro na validação estrita de totais fiscais: ${erro.message}`, 'error');
+                erros.push({
+                    tipo: 'error',
+                    erro: 'Erro na validação de totais fiscais',
+                    desc: `Ocorreu um erro durante a validação estrita de totais: ${erro.message}`,
+                    motivo: 'Erro interno na validação de totais',
+                    correcao: 'Verificar se o XML está correto',
+                    orientacao: 'Tente analisar o arquivo novamente',
+                    campos: []
+                });
+            }
+            return erros;
+        }
+        
+        /**
          * Sanitiza e valida CEP, consulta ViaCEP e compara dados
          * @param {string} cep - CEP a ser validado
          * @param {string} tipo - 'emitente' ou 'destinatario'
@@ -2852,7 +3202,7 @@
                         const xLgrAPILimpo = normalizarTexto(dataCEP.logradouro);
                         if (xLgrXMLLimpo && xLgrAPILimpo && xLgrXMLLimpo !== xLgrAPILimpo) {
                             erros.push({
-                                erro: 'Divergência de Logradouro',
+                                erro: 'Divergência entre CEP e Endereço',
                                 mensagem: `Logradouro do ${tipo} diverge: XML = ${xLgrXML}, Correios = ${dataCEP.logradouro}. Endereço correto: ${enderecoCorreto}`,
                                 item: null
                             });
@@ -2955,8 +3305,8 @@
         // ==========================================
         function validarTotaisPISCOFINS(dados) {
             const mensagens = [];
-            let total_pis_icms = 0;
-            let total_cofins_icms = 0;
+            let total_pis_icms_calculado = 0;
+            let total_cofins_icms_calculado = 0;
             let total_pis_issqn = 0;
             let total_cofins_issqn = 0;
             let total_vIBSUFRT = 0;
@@ -2964,6 +3314,8 @@
             let total_vCBSRT = 0;
             
             // Somar valores dos itens
+            const cstPisTributavel = ['01', '02'];
+            const cstCofinsTributavel = ['01', '02'];
             dados.itens.forEach(item => {
                 const vPIS = parseFloat(item.vPIS) || 0;
                 const vCOFINS = parseFloat(item.vCOFINS) || 0;
@@ -2972,9 +3324,29 @@
                 const vCBSRT = parseFloat(item.vCBSRT) || 0;
                 
                 if (item.temICMS) {
-                    total_pis_icms += vPIS;
-                    total_cofins_icms += vCOFINS;
+                    // Somar apenas PIS tributável (CST 01/02) e validar arredondamento
+                    if (item.CST_PIS && cstPisTributavel.includes(item.CST_PIS)) {
+                        const errosPIS = validarArredondamentoImposto(item.vBCPIS, item.pPIS, item.vPIS, 'PIS', item.nItem);
+                        mensagens.push(...errosPIS);
+                        
+                        const vBCPISNum = parseFloat(item.vBCPIS) || 0;
+                        const pPISNum = parseFloat(item.pPIS) || 0;
+                        const vPISCalculado = arredondarParaDuasCasas(vBCPISNum * (pPISNum / 100));
+                        total_pis_icms_calculado += vPISCalculado;
+                    }
+                    
+                    // Somar apenas COFINS tributável (CST 01/02) e validar arredondamento
+                    if (item.CST_COFINS && cstCofinsTributavel.includes(item.CST_COFINS)) {
+                        const errosCOFINS = validarArredondamentoImposto(item.vBCCOFINS, item.pCOFINS, item.vCOFINS, 'COFINS', item.nItem);
+                        mensagens.push(...errosCOFINS);
+                        
+                        const vBCCOFINSNum = parseFloat(item.vBCCOFINS) || 0;
+                        const pCOFINSNum = parseFloat(item.pCOFINS) || 0;
+                        const vCOFINSCalculado = arredondarParaDuasCasas(vBCCOFINSNum * (pCOFINSNum / 100));
+                        total_cofins_icms_calculado += vCOFINSCalculado;
+                    }
                 }
+                
                 if (item.temISSQN) {
                     total_pis_issqn += vPIS;
                     total_cofins_issqn += vCOFINS;
@@ -2985,40 +3357,40 @@
             });
             
             // Arredondar para 2 casas decimais
-            total_pis_icms = Math.round(total_pis_icms * 100) / 100;
-            total_cofins_icms = Math.round(total_cofins_icms * 100) / 100;
-            total_pis_issqn = Math.round(total_pis_issqn * 100) / 100;
-            total_cofins_issqn = Math.round(total_cofins_issqn * 100) / 100;
-            total_vIBSUFRT = Math.round(total_vIBSUFRT * 100) / 100;
-            total_vIBSMunRT = Math.round(total_vIBSMunRT * 100) / 100;
-            total_vCBSRT = Math.round(total_vCBSRT * 100) / 100;
-            const total_vIBSRT = Math.round((total_vIBSUFRT + total_vIBSMunRT) * 100) / 100;
+            total_pis_icms_calculado = arredondarParaDuasCasas(total_pis_icms_calculado);
+            total_cofins_icms_calculado = arredondarParaDuasCasas(total_cofins_icms_calculado);
+            total_pis_issqn = arredondarParaDuasCasas(total_pis_issqn);
+            total_cofins_issqn = arredondarParaDuasCasas(total_cofins_issqn);
+            total_vIBSUFRT = arredondarParaDuasCasas(total_vIBSUFRT);
+            total_vIBSMunRT = arredondarParaDuasCasas(total_vIBSMunRT);
+            total_vCBSRT = arredondarParaDuasCasas(total_vCBSRT);
+            const total_vIBSRT = arredondarParaDuasCasas(total_vIBSUFRT + total_vIBSMunRT);
             
-            // Comparar com ICMSTot (apenas para PIS/COFINS)
+            // Comparar com ICMSTot (usando os valores calculados para cada item, não os informados!)
             const vPIS_icms_tot = parseFloat(dados.totals.icmstot.vPIS) || 0;
             const vCOFINS_icms_tot = parseFloat(dados.totals.icmstot.vCOFINS) || 0;
             
-            if (Math.abs(total_pis_icms - vPIS_icms_tot) > 0.01) {
+            if (Math.abs(total_pis_icms_calculado - vPIS_icms_tot) > 0.01) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total PIS divergente',
-                    desc: `Total do PIS nos itens (ICMS): R$ ${total_pis_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}`,
-                    motivo: 'Soma dos valores de PIS dos itens com ICMS não confere com o total em ICMSTot',
-                    correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos itens',
-                    orientacao: 'Verificar os valores de PIS em cada item e o total declarado',
+                    desc: `Total do PIS calculado nos itens (ICMS): R$ ${total_pis_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}`,
+                    motivo: 'Soma dos valores calculados de PIS dos itens com ICMS não confere com o total em ICMSTot',
+                    correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos valores calculados',
+                    orientacao: 'Verificar os valores calculados de PIS em cada item e o total declarado',
                     rejeicao: '602',
                     campos: ['vPIS (ICMSTot)']
                 });
             }
             
-            if (Math.abs(total_cofins_icms - vCOFINS_icms_tot) > 0.01) {
+            if (Math.abs(total_cofins_icms_calculado - vCOFINS_icms_tot) > 0.01) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total COFINS divergente',
-                    desc: `Total do COFINS nos itens (ICMS): R$ ${total_cofins_icms.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}`,
-                    motivo: 'Soma dos valores de COFINS dos itens com ICMS não confere com o total em ICMSTot',
-                    correcao: 'Ajustar o % PIS e COFINS  para corresponder à soma dos itens',
-                    orientacao: 'CST PIS e CST COFINS 06 e 07, que provavelmente não devem ter % de Pis ou Cofins',
+                    desc: `Total do COFINS calculado nos itens (ICMS): R$ ${total_cofins_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}`,
+                    motivo: 'Soma dos valores calculados de COFINS dos itens com ICMS não confere com o total em ICMSTot',
+                    correcao: 'Ajustar o valor vCOFINS em ICMSTot para corresponder à soma dos valores calculados',
+                    orientacao: 'Verificar os valores calculados de COFINS em cada item e o total declarado',
                     rejeicao: '603',
                     campos: ['vCOFINS (ICMSTot)']
                 });
@@ -3132,12 +3504,32 @@
         }
         
         async function processarDados(dados) {
-            const itensProcessadosPromessas = dados.itens.map(async item => ({
-                ...item, validacao: await validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
-            }));
-            const itensProcessados = await Promise.all(itensProcessadosPromessas);
-            const totaisValidacao = validarTotaisPISCOFINS(dados);
-            const novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
+            // 1. Validação ESTRITA (Regra de Corte Principal) de totais de PIS/COFINS
+            const totaisFiscaisEstritosErros = validarTotaisFiscaisEstritos(dados);
+            let itensProcessados = [];
+            let totaisValidacao = [];
+            let novasValidacoes = [];
+            
+            // 2. Se a validação estrita não tiver erros, executar as demais validações;
+            //    se tiver erros, podemos optar por pular as validações menores para economizar processamento
+            if (totaisFiscaisEstritosErros.length === 0) {
+                const itensProcessadosPromessas = dados.itens.map(async item => ({
+                    ...item, validacao: await validarItem(item, dados.ide.cUF, dados.infAdic, dados.ide.mod, dados.emit.CRT)
+                }));
+                itensProcessados = await Promise.all(itensProcessadosPromessas);
+                totaisValidacao = validarTotaisPISCOFINS(dados);
+                novasValidacoes = await executarNovasValidacoes(xmlDoc, NS_NFE, dados);
+            } else {
+                // Se houver erros de validação estrita, criamos itens "vazios" com a informação de erro
+                itensProcessados = dados.itens.map(item => ({
+                    ...item,
+                    validacao: {
+                        status: 'error',
+                        mensagens: [],
+                        alertas: []
+                    }
+                }));
+            }
             
             // Para cada item com erro, obter sugestão localmente
             for (const item of itensProcessados) {
@@ -3190,13 +3582,20 @@
                 else if (i.validacao.status === 'warning') aviso++;
                 else erro++;
             });
+            
+            // Adiciona os erros de validação estrita ao contador e à lista de erros totais
+            if (totaisFiscaisEstritosErros.length > 0) {
+                erro += totaisFiscaisEstritosErros.length;
+            }
             if (totaisValidacao.length > 0) erro++;
             if (novasValidacoes.length > 0) erro += novasValidacoes.length;
+            
             return {
                 ...dados,
                 itensProcessados,
                 totaisValidacao,
                 novasValidacoes,
+                totaisFiscaisEstritosErros,
                 stats: { totalItens, ok, aviso, erro, totalCBenef, totalCSOSN, totalCST }
             };
         }
@@ -3462,9 +3861,10 @@
                 i => i.validacao.mensagens.some(m => m.tipo !== 'success') || (i.validacao.alertas && i.validacao.alertas.length > 0)
             );
             const totaisComProblema = dadosProcessados.totaisValidacao || [];
+            const totaisFiscaisEstritosComProblema = dadosProcessados.totaisFiscaisEstritosErros || [];
             const novasValidacoes = dadosProcessados.novasValidacoes || [];
             
-            if (itensComProblema.length === 0 && totaisComProblema.length === 0 && novasValidacoes.length === 0) {
+            if (itensComProblema.length === 0 && totaisComProblema.length === 0 && novasValidacoes.length === 0 && totaisFiscaisEstritosComProblema.length === 0) {
                 d.innerHTML = `
                     <div style="text-align:center;padding:60px;">
                         <div style="font-size:4rem;">✅</div>
@@ -3477,6 +3877,34 @@
             }
             
             let html = '';
+            
+            // Renderizar VALIDAÇÃO ESTRITA (Regra de Corte Principal) - Primeiro, pois é a mais importante
+            if (totaisFiscaisEstritosComProblema.length > 0) {
+                html += `
+                    <div class="diagnostic-item error">
+                        <div class="diagnostic-header">
+                            <div class="diagnostic-title">
+                                ERRO: Validação Estrita de Total PIS/COFINS (Rejeição SEFAZ Provável)
+                            </div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <h4 style="margin-bottom:8px;color:var(--text);">Problemas Encontrados:</h4>
+                            ${totaisFiscaisEstritosComProblema.map(msg => `
+                                <div style="padding:12px;background:var(--bg);border-left:4px solid var(--error);border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                        <strong style="color:var(--error)">${msg.erro}</strong>
+                                        ${msg.rejeicao ? `<span class="badge badge-error" style="font-size:0.8rem;">REJEIÇÃO ${msg.rejeicao}</span>` : `<span class="badge badge-error" style="font-size:0.8rem;">ERRO</span>`}
+                                    </div>
+                                    <div style="margin-bottom:4px;"><strong>Mensagem:</strong> ${msg.desc}</div>
+                                    ${msg.motivo ? `<div style="margin-bottom:4px;"><strong>Motivo:</strong> ${msg.motivo}</div>` : ''}
+                                    ${msg.correcao ? `<div style="margin-bottom:4px;"><strong>Correção:</strong> ${msg.correcao}</div>` : ''}
+                                    ${msg.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
             
             // Renderizar novas validações
             if (novasValidacoes.length > 0) {
