@@ -572,7 +572,7 @@
             }
 
             // Fallback genérico para rejeições não mapeadas
-            return `Identifiquei uma inconsistência no produto '${xProd}' (Código: ${cProd}) relacionada à regra: '${nomeRejeicao}'. Por favor, acesse o painel de parametrização fiscal deste item no sistema de retaguarda para revisar o cadastro.`;
+            return `Dados incorretos endereço ou item '${xProd}' (Código: ${cProd}) Problema localizado: <h4>'${nomeRejeicao}'.</h4> Por favor, acesse o cadastro para corrigir. `;
         }
         let dadosProcessados = null;
         let logsDebug = [];
@@ -1440,6 +1440,7 @@
                 dest: dest ? {
                     CEP: enderDest ? getTextoElemento(enderDest, 'CEP') : '',
                     UF: enderDest ? getTextoElemento(enderDest, 'UF') : '',
+                    fone: enderDest ? getTextoElemento(enderDest, 'fone') : '',
                     xMun: enderDest ? getTextoElemento(enderDest, 'xMun') : '',
                     xLgr: enderDest ? getTextoElemento(enderDest, 'xLgr') : '',
                     xBairro: enderDest ? getTextoElemento(enderDest, 'xBairro') : ''
@@ -1842,7 +1843,7 @@
                         desc: `NCM ${item.NCM} inválido ou não existe na base oficial`,
                         motivo: 'Código NCM inválido ou desatualizado',
                         correcao: 'Consultar a contabilidade da loja ou a lista oficial de NCMs no site do IBGE',
-                        orientacao: 'Verificar o NCM correto para o produto',
+                        orientacao: 'Pode ser verificado se há um item semelhando cadastrado na loja para utilizar o NCM para este item',
                         rejeicao: '',
                         campos: ['NCM']
                     });
@@ -2886,14 +2887,38 @@
             
             if (foneLimpo.length < 8) {
                 erros.push({
-                    erro: 'Telefone Inválido',
-                    mensagem: 'Erro: Telefone do emitente inválido. Deve conter pelo menos 8 dígitos.',
+                    erro: 'Telefone da LOJA Inválido',
+                    mensagem: 'Erro: Telefone da loja incorreto, ou faltando dígitos, verifique no cadastro no ERP.',
                     item: null
                 });
             }
             
             return erros;
         }
+
+        /**
+         * Valida o telefone do emitente
+         * @param {string} fone - Telefone do emitente
+         * @returns {Array} Lista de erros encontrados
+         */
+        function validarTelefoneDestinatario(fone) {
+            const erros = [];
+            if (!fone) return erros;
+            
+            // Remove caracteres não numéricos
+            const foneLimpo = fone.replace(/\D/g, '');
+            
+            if (foneLimpo.length < 8) {
+                erros.push({
+                    erro: 'Telefone do CLIENTE Inválido',
+                    mensagem: 'Erro: Telefone do cliente inválido ou faltando dígitos. Verifique no cadastro ou JSON.',
+                    item: null
+                });
+            }
+            
+            return erros;
+        }
+
 
         /**
          * Valida o NCM usando a Brasil API (mais confiável)
@@ -3129,7 +3154,7 @@
                         erro: 'Rejeição 603 - Total de COFINS divergente',
                         desc: `Total de COFINS calculado (R$ ${totalCOFINSCalculado.toFixed(2)}) difere do declarado (R$ ${totalCOFINSDeclarado.toFixed(2)})`,
                         motivo: `O Item ${itemCulpadoCOFINS.nItem} (${itemCulpadoCOFINS.xProd}) possui divergência. Declarado no item: R$ ${vCOFINSInformadoItem.toFixed(2)}, mas o correto matemático pela alíquota seria: R$ ${vCOFINSCalculadoItem.toFixed(2)}.`,
-                        correcao: `Ajustar a alíquota de COFINS do Item ${itemCulpadoCOFINS.nItem} para refletir o cálculo correto.`,
+                        correcao: `Validar a alíquota de PIS e COFINS do Item ${itemCulpadoCOFINS.nItem} para refletir o cálculo correto.`,
                         sugestao: `Alterar vCOFINS do item ${itemCulpadoCOFINS.nItem} para R$ ${vCOFINSCalculadoItem.toFixed(2)} e o total em ICMSTot para R$ ${totalCOFINSCalculado.toFixed(2)}`,
                         rejeicao: '603'
                     });
@@ -3181,7 +3206,7 @@
                         if (ufXMLLimpo && ufAPILimpo && ufXMLLimpo !== ufAPILimpo) {
                             erros.push({
                                 erro: 'Divergência de UF',
-                                mensagem: `UF do ${tipo} diverge: XML = ${ufXML}, Correios = ${dataCEP.uf}. Endereço correto: ${enderecoCorreto}`,
+                                mensagem: `UF do ${tipo} incorreto, Endereço correto: <h4>${enderecoCorreto}</h4>`,
                                 item: null
                             });
                         }
@@ -3192,7 +3217,7 @@
                         if (xMunXMLLimpo && xMunAPILimpo && xMunXMLLimpo !== xMunAPILimpo) {
                             erros.push({
                                 erro: 'Divergência de Município',
-                                mensagem: `Município do ${tipo} diverge: XML = ${xMunXML}, Correios = ${dataCEP.localidade}. Endereço correto: ${enderecoCorreto}`,
+                                mensagem: `Município do ${tipo} incorreto, Endereço correto: <h4>${enderecoCorreto}</h4>`,
                                 item: null
                             });
                         }
@@ -3203,7 +3228,7 @@
                         if (xLgrXMLLimpo && xLgrAPILimpo && xLgrXMLLimpo !== xLgrAPILimpo) {
                             erros.push({
                                 erro: 'Divergência entre CEP e Endereço',
-                                mensagem: `Logradouro do ${tipo} diverge: XML = ${xLgrXML}, Correios = ${dataCEP.logradouro}. Endereço correto: ${enderecoCorreto}`,
+                                mensagem: `Endereço do ${tipo} incorreto, Endereço correto: <h4>${enderecoCorreto}</h4>`,
                                 item: null
                             });
                         }
@@ -3275,9 +3300,17 @@
         async function executarNovasValidacoes(xmlDoc, NS_NFE, dados) {
             const todosErros = [];
             
-            // Valida telefone do emitente
-            const errosTelefone = validarTelefoneEmitente(dados.emit.fone);
-            todosErros.push(...errosTelefone);
+        const errosEmitente = validarTelefoneEmitente(dados.emit.fone);
+        todosErros.push(...errosEmitente);
+
+        // 2. Valida o telefone do Destinatário APENAS se a tag/objeto <dest> existir
+        if (dados.dest) {
+        const errosDestinatario = validarTelefoneDestinatario(dados.dest.fone);
+        todosErros.push(...errosDestinatario);
+            }
+          
+
+            
             
             // Valida chave de acesso (usando a já extraída em dados.ide.chaveAcesso)
             if (dados.ide.chaveAcesso) {
