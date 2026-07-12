@@ -917,6 +917,7 @@
                 if (entrada.motivoLocal) grupo.motivosLocais.push(entrada.motivoLocal);
                 if (entrada.correcaoLocal) grupo.correcoesLocais.push(entrada.correcaoLocal);
                 if (entrada.orientacaoLocal) grupo.orientacoesLocais.push(entrada.orientacaoLocal);
+                if (entrada.observacaoLocal) grupo.orientacoesLocais.push(entrada.observacaoLocal);
                 grupo.camposEnvolvidos.push(...(entrada.camposEnvolvidos || []));
                 grupo.ocorrencias.push(entrada.ocorrencia);
             };
@@ -953,6 +954,7 @@
                         motivoLocal: alerta.motivo || '',
                         correcaoLocal: alerta.correcao || '',
                         orientacaoLocal: alerta.orientacao || '',
+                        observacaoLocal: msg.observacao || '',
                         camposEnvolvidos: alerta.campos || [],
                         ocorrencia: {
                             item: item.nItem || '',
@@ -974,6 +976,7 @@
                     motivoLocal: msg.motivo || '',
                     correcaoLocal: msg.correcao || '',
                     orientacaoLocal: msg.orientacao || '',
+                    observacaoLocal: msg.observacao || '',
                     camposEnvolvidos: msg.campos || [],
                     ocorrencia: {
                         item: 'TOTAL',
@@ -994,6 +997,7 @@
                     motivoLocal: msg.motivo || '',
                     correcaoLocal: msg.correcao || '',
                     orientacaoLocal: msg.orientacao || '',
+                    observacaoLocal: msg.observacao || '',
                     camposEnvolvidos: msg.campos || [],
                     ocorrencia: {
                         item: msg.item?.nItem || 'GERAL',
@@ -1026,6 +1030,7 @@
                     modelo: dados.ide?.mod || '',
                     chaveAcesso: dados.ide?.chaveAcesso || '',
                     emitente: dados.emit?.xNome || '',
+                    emitente: dados.emit?.xFant || '',
                     cnpjEmitente: dados.emit?.CNPJ || '',
                     totalItens: dados.stats?.totalItens || 0,
                     itensComErro: dados.stats?.erro || 0,
@@ -3102,6 +3107,7 @@
                                 correcao: `Ajustar vCOFINS para R$ ${vCOFINSCalculado.toFixed(2)}`,
                                 orientacao: 'Essa diferença causará Rejeição 603 na SEFAZ',
                                 campos: ['vCOFINS']
+                                
                             });
                         }
                         totalCOFINSCalculadoCentavos += vCOFINSCalculadoCentavos;
@@ -3132,9 +3138,10 @@
                         tipo: 'error',
                         erro: 'Rejeição 602 - Total de PIS divergente',
                         desc: `Total de PIS calculado (R$ ${totalPISCalculado.toFixed(2)}) difere do declarado (R$ ${totalPISDeclarado.toFixed(2)})`,
-                        motivo: `O Item ${itemCulpadoPIS.nItem} (${itemCulpadoPIS.xProd}) possui divergência. Declarado no item: R$ ${vPISInformadoItem.toFixed(2)}, mas o correto matemático pela alíquota seria: R$ ${vPISCalculadoItem.toFixed(2)}.`,
-                        correcao: `Ajustar a alíquota de PIS do Item ${itemCulpadoPIS.nItem} para refletir o cálculo correto.`,
-                        sugestao: `Alterar vPIS do item ${itemCulpadoPIS.nItem} para R$ ${vPISCalculadoItem.toFixed(2)} e o total em ICMSTot para R$ ${totalPISCalculado.toFixed(2)}`,
+                        motivo: `O cadastro de um ou mais itens da nota estão com cadastro incorreto ou incompleto.`,
+                        correcao: `Ajustar a alíquota de PIS e COFINS do Item para refletir o cálculo correto.`,
+                        orientacao: `Verificar a %PIS, junto CST Pis e informar ao cliente para que verifique com a contabilidade.`,
+                        observacao: `Em casos específicos, verificar com a liderança a possíbilidade de preencher de acordo com um item semelhante.`,
                         rejeicao: '602'
                     });
                 }
@@ -3153,9 +3160,10 @@
                         tipo: 'error',
                         erro: 'Rejeição 603 - Total de COFINS divergente',
                         desc: `Total de COFINS calculado (R$ ${totalCOFINSCalculado.toFixed(2)}) difere do declarado (R$ ${totalCOFINSDeclarado.toFixed(2)})`,
-                        motivo: `O Item ${itemCulpadoCOFINS.nItem} (${itemCulpadoCOFINS.xProd}) possui divergência. Declarado no item: R$ ${vCOFINSInformadoItem.toFixed(2)}, mas o correto matemático pela alíquota seria: R$ ${vCOFINSCalculadoItem.toFixed(2)}.`,
-                        correcao: `Validar a alíquota de PIS e COFINS do Item ${itemCulpadoCOFINS.nItem} para refletir o cálculo correto.`,
-                        sugestao: `Alterar vCOFINS do item ${itemCulpadoCOFINS.nItem} para R$ ${vCOFINSCalculadoItem.toFixed(2)} e o total em ICMSTot para R$ ${totalCOFINSCalculado.toFixed(2)}`,
+                        motivo: `O cadastro de um ou mais itens da nota estão com cadastro incorreto ou incompleto.`,
+                        correcao: `Ajustar a alíquota de PIS e COFINS do Item para refletir o cálculo correto.`,
+                        orientacao: `Verificar a %COFINS, junto CST Cofins e informar ao cliente para que verifique com a contabilidade.`,
+                        observacao: `Em casos específicos, verificar com a liderança a possíbilidade de preencher de acordo com um item semelhante.`,
                         rejeicao: '603'
                     });
                 }
@@ -3879,6 +3887,10 @@
                     <span class="diagnostic-field-value">${dadosProcessados.emit.xNome}</span>
                 </div>
                 <div class="diagnostic-field">
+                    <span class="diagnostic-field-label">Nome Fantasia</span>
+                    <span class="diagnostic-field-value">${dadosProcessados.emit.xFant}</span>
+                </div>
+                <div class="diagnostic-field">
                     <span class="diagnostic-field-label">CNPJ</span>
                     <span class="diagnostic-field-value">${dadosProcessados.emit.CNPJ}</span>
                 </div>
@@ -3932,6 +3944,7 @@
                                     ${msg.motivo ? `<div style="margin-bottom:4px;"><strong>Motivo:</strong> ${msg.motivo}</div>` : ''}
                                     ${msg.correcao ? `<div style="margin-bottom:4px;"><strong>Correção:</strong> ${msg.correcao}</div>` : ''}
                                     ${msg.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                                    ${msg.observacao ? `<div style="margin-bottom:6px;"><strong>Observação:</strong> ${msg.observacao}</div>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -3945,7 +3958,7 @@
                     <div class="diagnostic-item error">
                         <div class="diagnostic-header">
                             <div class="diagnostic-title">
-                                Erros Estruturais e Matemáticos
+                                Erros Estruturais
                             </div>
                         </div>
                         <div style="margin-top:16px;">
@@ -4342,7 +4355,6 @@
                                         <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc}</div>
                                         <div style="margin-bottom:4px;"><strong>Motivo:</strong> ${alerta.motivo}</div>
                                         ${alerta.correcao ? `<div style="margin-bottom:4px;"><strong>Como Corrigir:</strong> ${alerta.correcao}</div>` : ''}
-                                        ${alerta.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${alerta.orientacao}</div>` : ''}
                                         <div style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);">
                                             <strong style="color: var(--primary);">🤖 Sugestão:</strong>
                                             <div style="margin-top:4px;">
@@ -4393,6 +4405,7 @@
                             <div style="margin-bottom: 4px;"><strong>Motivo:</strong> ${msg.motivo}</div>
                             <div style="margin-bottom: 4px;"><strong>Como Corrigir:</strong> ${msg.correcao}</div>
                             ${msg.orientacao ? `<div style="margin-bottom: 4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
+                            ${alerta.observacao ? `<div style="margin-bottom:6px;"><strong>Observação:</strong> ${alerta.observacao}</div>` : ''}
                             ${msg.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
                                 <strong style="color: var(--primary);">🤖 Sugestão:</strong>
                                 <div style="margin-top: 4px;">
@@ -4410,14 +4423,11 @@
                     <div class="diagnostic-item error">
                         <div class="diagnostic-header">
                             <div class="diagnostic-title">
-                                Problema Geral
+                             Possível Correção:   
                             </div>
-                            <span class="badge badge-error">
-                                ERRO ❌
-                            </span>
                         </div>
                         <div style="margin-top: 16px;">
-                            <div style="margin-bottom: 4px;"><strong>Descrição:</strong> ${erro.mensagem}</div>
+                            
                             ${erro.solucaoContabil ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
                                 <strong style="color: var(--primary);">🤖 Sugestão:</strong>
                                 <div style="margin-top: 4px;">
@@ -4496,13 +4506,15 @@
                             <div class="campo"><span class="campo-label">Série</span><span>${dadosProcessados.ide.serie}</span></div>
                             <div class="campo"><span class="campo-label">Modelo</span><span>${dadosProcessados.ide.mod}</span></div>
                             <div class="campo"><span class="campo-label">Emitente</span><span>${dadosProcessados.emit.xNome}</span></div>
+                            <div class="campo"><span class="campo-label">Emitente</span><span>${dadosProcessados.emit.xFant}</span></div>
+
                         </div>
                         <h2>Resumo</h2>
                         <div class="grid">
                             <div class="campo"><span class="campo-label">Total de Itens 📑</span><span>${dadosProcessados.stats.totalItens}</span></div>
                             <div class="campo"><span class="campo-label">Itens OK ✅</span><span>${dadosProcessados.stats.ok}</span></div>
                             <div class="campo"><span class="campo-label">Itens com Aviso ⚠️</span><span>${dadosProcessados.stats.aviso}</span></div>
-                            <div class="campo"><span class="campo-label">Itens com Erro ❌</span><span>${dadosProcessados.stats.erro}</span></div>
+                            <div class="campo"><span class="campo-label">Problemas Localizados ❌</span><span>${dadosProcessados.stats.erro}</span></div>
                         </div>
                         <h2>Itens da Nota</h2>
                         <table>
@@ -4538,7 +4550,7 @@
                         
                         <!-- Renderizar erros das novas validações (telefone, CEP, chave de acesso, etc.) -->
                         ${dadosProcessados.novasValidacoes.length > 0 ? `
-                            <h3 style="margin-bottom:10px;">Erros Estruturais e Matemáticos</h3>
+                            <h3 style="margin-bottom:10px;">Erros Estruturais</h3>
                             ${dadosProcessados.novasValidacoes.map(erro => `
                                 <div class="diagnostico error">
                                     <h3>${erro.erro}</h3>
