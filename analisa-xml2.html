@@ -487,7 +487,7 @@
             const dicionarioSugestoes = {
                 "REJEICAO_928": () => `Rejeição 928 no item '${xProd}' (Código: ${cProd}). A 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO), o que obriga o preenchimento do benefício. Acesse o cadastro do produto e informe o código cBenef correto e ativo para este item antes de emitir novamente.`,
                 
-                "ALERTA_SPED_CBENEF": () => `Aviso no item '${xProd}' (Código: ${cProd}): Há um código de benefício informado que não existe na tabela oficial da SEFAZ. Como a 'Situação Tributária do cadastro de alíquotas' deste item não exige esse campo, acesse o cadastro e limpe/apague o campo cBenef para evitar multas em auditorias futuras do SPED.`,
+                "ALERTA CBENEF": () => `Aviso no item '${xProd}' (Código: ${cProd}): Informar ao cliente para validar junto a contabilidade de acordo com o CST. `,
                 
                 "CFOP incompatível com CST (NFC-e)": () => `Incompatibilidade fiscal detectada no item '${xProd}' (Código: ${cProd}). O CFOP de venda utilizado não é permitido para o CST configurado neste produto em operações de Cupom Eletrônico (NFC-e). Acesse o Cadastro do Produto, vá na aba Fiscal e ajuste o CFOP para 5.102 ou altere o CST para um condizente com a operação.`,
                 
@@ -1946,7 +1946,7 @@
                                 // cBenef inválido para CST90
                                 alertas.push({
                                     tipo: 'warning',
-                                    erro: 'ALERTA_SPED_CBENEF',
+                                    erro: 'ALERTA CBENEF',
                                     desc: 'Código de benefício informado inválido para este CST',
                                     motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
                                     correcao: 'Remover o cBenef do cadastro do produto',
@@ -2157,7 +2157,7 @@
                                 // CENÁRIO C: Alerta SPED - código inválido
                                 alertas.push({
                                     tipo: 'warning',
-                                    erro: 'ALERTA_SPED_CBENEF',
+                                    erro: 'ALERTA CBENEF',
                                     desc: 'Código de benefício informado inválido para este CST',
                                     motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
                                     correcao: 'Remover o cBenef do cadastro do produto',
@@ -2771,7 +2771,7 @@
                 
                 if (cEAN && cEAN.trim() !== '' && !validarGTIN(cEAN)) {
                     erros.push({
-                        erro: 'Rejeição 611',
+                        erro: 'Rejeição 611 (Código GTIN (cEAN))',
                         mensagem: `Código GTIN (cEAN) inválido para o item ${nItem}: ${cEAN}`,
                         item: nItem
                     });
@@ -2779,7 +2779,7 @@
                 
                 if (cEANTrib && cEANTrib.trim() !== '' && !validarGTIN(cEANTrib)) {
                     erros.push({
-                        erro: 'Rejeição 612',
+                        erro: 'Rejeição 612 (Código GTIN tributário (cEANTrib))',
                         mensagem: `Código GTIN tributário (cEANTrib) inválido para o item ${nItem}: ${cEANTrib}`,
                         item: nItem
                     });
@@ -3501,9 +3501,9 @@
                         tipo: 'warning',
                         erro: 'Grupo IBSCBSTot ausente',
                         desc: 'Foram encontrados itens com dados de Reforma Tributária (gIBSCBS), mas o grupo IBSCBSTot não foi encontrado no total do documento',
-                        motivo: 'IBSCBSTot é obrigatório quando há itens com Reforma Tributária',
-                        correcao: 'Adicionar o grupo IBSCBSTot no total do documento com os valores corretos',
-                        orientacao: 'Verificar a estrutura do XML e adicionar o grupo IBSCBSTot dentro do <total>',
+                        motivo: 'O produto foi configurado com alíquotas nos campos de IBS/CBS, obrigando a SEFAZ a exigir os totais desse imposto na nota.',
+                        correcao: 'Identifique o item incorreto no validador. No sistema, zere os campos de IBS/CBS deste produto (ou ajuste para a tributação correta do regime atual)',
+                        orientacao: 'Localize o item com erro e, no cadastro de produtos ou diretamente no banco de dados, verifique as colunas de Reforma Tributária (como PorcentagemCBS, PorcentagemIBSEstadual e CSTReformaTributaria). Corrija os valores junto à contabilidade do cliente.',
                         campos: ['IBSCBSTot']
                     });
                 }
@@ -4347,12 +4347,12 @@
                             `).join('')}
                             ` : ''}
                             ${item.validacao.alertas && item.validacao.alertas.length > 0 ? `
-                                <h4 style="margin-top:16px; margin-bottom:8px; color: var(--warning);">⚠️ Alertas de Auditoria:</h4>
+                                <h4 style="margin-top:16px; margin-bottom:8px; color: var(--warning);">⚠️ Atenção:</h4>
                                 ${item.validacao.alertas.map(alerta => `
                                     <div style="padding: 12px; background: var(--bg); border-left: 4px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom:8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                             <strong style="color: var(--warning)">${alerta.erro}</strong>
-                                            <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA</span>
+                                            <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA ⚠️</span>
                                         </div>
                                         <div style="margin-bottom:4px;"><strong>Descrição:</strong> ${alerta.desc}</div>
                                         <div style="margin-bottom:4px;"><strong>Motivo:</strong> ${alerta.motivo}</div>
