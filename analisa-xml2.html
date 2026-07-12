@@ -1997,7 +1997,9 @@
                     // Validação extra: verifica se NCM é 00000000 e CFOP é 5949 (opcional, para reforçar)
                     if (item.NCM === '00000000' && item.CFOP === '5949') {
                         log(`Item ${item.nItem}: NCM 00000000 e CFOP 5949 com cBenef SP019090 válido`);
-                
+                    
+                        
+                        
                     }
                 } else {
                     // Caso normal: não SP ou não CST90, não é CST40/41 com SP019090
@@ -3929,7 +3931,7 @@
                     <div class="diagnostic-item error">
                         <div class="diagnostic-header">
                             <div class="diagnostic-title">
-                                ERRO: Validação Estrita de Total PIS/COFINS (Rejeição SEFAZ Provável)
+                                ERRO:Total PIS/COFINS difere da soma do total de itens sujeitos a ICMS (Rejeição SEFAZ)
                             </div>
                         </div>
                         <div style="margin-top:16px;">
