@@ -481,62 +481,16 @@
         const NS_NFE = 'http://www.portalfiscal.inf.br/nfe';
         
         // === CONFIGURAÇÕES DO CLOUDFLARE WORKER ===
-       const WORKER_URL = "https://frosty-dew-1218.gabriel-congui95.workers.dev"; // ATUALIZE AQUI!
-const API_SECRETT = "IntegrationIA2026"; // Mesma chave que você configurou no Worker como Secret Variable
-
-// === CONFIGURAÇÕES DO GOOGLE CUSTOM SEARCH ===
-// A chave agora inicia vazia e será preenchida pelo Worker!
-let GOOGLE_API_KEY = ""; 
-const GOOGLE_CX = "a5abde12b72034283"; // O CX pode continuar aqui, pois não é secreto.
-
-const IA_CONFIG = {
-    provider: 'gemini',
-    models: ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
-    endpointBase: 'https://generativelanguage.googleapis.com/v1beta/models',
-    timeoutMs: 45000,
-    apiKeys: [] // Será preenchido automaticamente pelo Worker
-};
-
-// === FUNÇÃO PARA CARREGAR CHAVES DO CLOUDFLARE WORKER ===
-async function carregarChavesIA() {
-    try {
-        const response = await fetch(WORKER_URL, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${API_SECRETT}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error("Falha ao carregar credenciais do Worker.");
-        }
-
-        const credenciais = await response.json();
-
-        // 1. Alimenta as chaves de IA do Gemini no objeto de configuração
-        IA_CONFIG.apiKeys = [
-            credenciais.gemini_1,
-            credenciais.gemini_2,
-            credenciais.gemini_3
-        ].filter(Boolean); // Filtra chaves vazias caso alguma falhe
-
-        // 2. Alimenta a sua chave do Google Search com segurança de forma dinâmica!
-        if (credenciais.google_search_1) {
-            GOOGLE_API_KEY = credenciais.google_search_1;
-            console.log("Serviço de busca SEFAZ inicializado com sucesso.");
-        } else {
-            console.warn("Chave 'google_search_1' não foi encontrada no retorno do Worker.");
-        }
-
-    } catch (error) {
-        console.error("Erro ao inicializar credenciais:", error);
-    }
-}
-
-// Chame a função carregarChavesIA() no onload do seu sistema para popular as variáveis
-window.onload = async () => {
-    await carregarChavesIA();
-};
+        const WORKER_URL = "https://frosty-dew-1218.gabriel-congui95.workers.dev"; // ATUALIZE AQUI!
+        const API_SECRETT = "IntegrationIA2026"; // Mesma chave que você configurou no Worker como Secret Variable
+        
+        const IA_CONFIG = {
+            provider: 'gemini',
+            models: ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+            endpointBase: 'https://generativelanguage.googleapis.com/v1beta/models',
+            timeoutMs: 45000,
+            apiKeys: [] // Será preenchido automaticamente pelo Worker
+        };
         
         // === FUNÇÃO PARA CARREGAR CHAVES DO CLOUDFLARE WORKER KV ===
         async function carregarChavesIA() {
@@ -3802,57 +3756,6 @@ window.onload = async () => {
             document.getElementById('results').style.display = 'block';
             document.getElementById('btn-baixar-relatorio').disabled = false;
         }
-        async function buscarSolucaoSefaz(uf, crt, codRejeicao, motivoRejeicao, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            // Mapear UF do código (ex: 35 -> SP)
-            const siglasUF = {
-                '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
-                '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL',
-                '28':'SE','29':'BA','31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR',
-                '42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF'
-            };
-            const ufSigla = siglasUF[uf] || uf;
-            
-            // Determinar regime tributário
-            const regimeTributario = crt === '3' ? 'NORMAL' : 'SIMPLES NACIONAL';
-            
-            // Montar query de busca
-            const query = `Estado de ${ufSigla} em regime tributário ${regimeTributario} Rejeição ${codRejeicao}: ${motivoRejeicao}`;
-            
-            try {
-                container.innerHTML = `<div style="padding: 16px; text-align: center;"><span class="inline-spinner"></span> Buscando soluções...</div>`;
-                
-                const response = await fetch(`https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Erro na busca: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (!data.items || data.items.length === 0) {
-                    container.innerHTML = `<div style="padding: 16px; color: var(--text-light);">Nenhum resultado encontrado para essa rejeição.</div>`;
-                    return;
-                }
-                
-                // Renderizar os 3 primeiros resultados
-                const html = data.items.slice(0, 3).map(item => `
-                    <div style="padding: 12px; background: var(--bg); border-radius: var(--radius); margin-bottom: 8px;">
-                        <a href="${item.link}" target="_blank" style="color: var(--primary); font-weight: 700; text-decoration: none;">${escapeHtml(item.title)}</a>
-                        <div style="margin-top: 4px; color: var(--text-light); font-size: 0.9rem;">${escapeHtml(item.snippet)}</div>
-                    </div>
-                `).join('');
-                
-                container.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Erro na busca:', error);
-                container.innerHTML = `<div style="padding: 16px; color: var(--error);">Erro ao buscar soluções: ${escapeHtml(error.message)}</div>`;
-            }
-        }
-
         function renderizarAnaliseIA() {
             const card = document.getElementById('ai-analysis-card');
             const container = document.getElementById('ai-analysis');
@@ -4120,11 +4023,9 @@ window.onload = async () => {
                         </div>
                         <div style="margin-top:16px;">
                             <h4 style="margin-bottom:8px;color:var(--text);">Problemas Encontrados:</h4>
-                            ${totaisFiscaisEstritosComProblema.map((msg, idx) => {
-                                const containerId = `search-estrito-${idx}`;
-                                return `
+                            ${totaisFiscaisEstritosComProblema.map(msg => `
                                 <div style="padding:12px;background:var(--bg);border-left:4px solid var(--error);border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px;">
-                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                                         <strong style="color:var(--error)">${msg.erro}</strong>
                                         ${msg.rejeicao ? `<span class="badge badge-error" style="font-size:0.8rem;">REJEIÇÃO ${msg.rejeicao}</span>` : `<span class="badge badge-error" style="font-size:0.8rem;">ERRO</span>`}
                                     </div>
@@ -4133,14 +4034,8 @@ window.onload = async () => {
                                     ${msg.correcao ? `<div style="margin-bottom:4px;"><strong>Correção:</strong> ${msg.correcao}</div>` : ''}
                                     ${msg.orientacao ? `<div style="margin-bottom:4px;"><strong>Orientação:</strong> ${msg.orientacao}</div>` : ''}
                                     ${msg.observacao ? `<div style="margin-bottom:6px;"><strong>Observação:</strong> ${msg.observacao}</div>` : ''}
-                                    <div style="margin-top: 12px;">
-                                        <button class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 16px;" onclick="buscarSolucaoSefaz('${dadosProcessados.ide.cUF}', '${dadosProcessados.emit.CRT}', '${msg.rejeicao || ''}', '${escapeHtml(msg.desc)}', '${containerId}')">
-                                            🔍 Buscar Solução na Web
-                                        </button>
-                                        <div id="${containerId}" style="margin-top: 8px;"></div>
-                                    </div>
                                 </div>
-                            `}).join('')}
+                            `).join('')}
                         </div>
                     </div>
                 `;
@@ -4516,11 +4411,9 @@ window.onload = async () => {
                         <div style="margin-top: 16px;">
                             ${mensagensDedup.length > 0 ? `
                             <h4 style="margin-bottom: 8px; color: var(--text);">Problemas Encontrados:</h4>
-                            ${mensagensDedup.map((msg, idx) => {
-                                const containerId = `search-result-${item.nItem}-${idx}`;
-                                return `
+                            ${mensagensDedup.map(msg => `
                                 <div style="padding: 12px; background: var(--bg); border-left: 4px solid ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 8px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                         <strong style="color: ${msg.tipo === 'error' ? 'var(--error)' : 'var(--warning)'}">${msg.erro}</strong>
                                         <span class="badge badge-${msg.tipo}" style="font-size: 0.8rem;">
                                             ${msg.tipo === 'error' ? 'ERRO ❌' : 'AVISO ⚠️'}
@@ -4537,22 +4430,14 @@ window.onload = async () => {
                                             <span style="color: var(--text);">${msg.solucaoContabil}</span>
                                         </div>
                                     </div>
-                                    <div style="margin-top: 12px;">
-                                        <button class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 16px;" onclick="buscarSolucaoSefaz('${dadosProcessados.ide.cUF}', '${dadosProcessados.emit.CRT}', '${msg.rejeicao || ''}', '${escapeHtml(msg.desc)}', '${containerId}')">
-                                            🔍 Buscar Solução na Web
-                                        </button>
-                                        <div id="${containerId}" style="margin-top: 8px;"></div>
-                                    </div>
                                 </div>
-                            `}).join('')}
+                            `).join('')}
                             ` : ''}
                             ${item.validacao.alertas && item.validacao.alertas.length > 0 ? `
                                 <h4 style="margin-top:16px; margin-bottom:8px; color: var(--warning);">⚠️ Atenção:</h4>
-                                ${item.validacao.alertas.map((alerta, idx) => {
-                                    const containerId = `search-alert-${item.nItem}-${idx}`;
-                                    return `
+                                ${item.validacao.alertas.map(alerta => `
                                     <div style="padding: 12px; background: var(--bg); border-left: 4px solid var(--warning); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom:8px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                             <strong style="color: var(--warning)">${alerta.erro}</strong>
                                             <span class="badge badge-warning" style="font-size:0.8rem;">ALERTA ⚠️</span>
                                         </div>
@@ -4565,14 +4450,8 @@ window.onload = async () => {
                                                 <span style="color: var(--text);">${alerta.solucaoContabil}</span>
                                             </div>
                                         </div>
-                                        <div style="margin-top: 12px;">
-                                            <button class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 16px;" onclick="buscarSolucaoSefaz('${dadosProcessados.ide.cUF}', '${dadosProcessados.emit.CRT}', '${alerta.rejeicao || ''}', '${escapeHtml(alerta.desc)}', '${containerId}')">
-                                                🔍 Buscar Solução na Web
-                                            </button>
-                                            <div id="${containerId}" style="margin-top: 8px;"></div>
-                                        </div>
                                     </div>
-                                `}).join('')}
+                                `).join('')}
                             ` : ''}
                         </div>
                     </div>
@@ -4580,8 +4459,7 @@ window.onload = async () => {
             });
             
             // Renderizar problemas nos totais (PIS/COFINS)
-            totaisComProblema.forEach((msg, idx) => {
-                const containerId = `search-total-${idx}`;
+            totaisComProblema.forEach(msg => {
                 html += `
                     <div class="diagnostic-item ${msg.tipo}">
                         <div class="diagnostic-header">
@@ -4622,12 +4500,6 @@ window.onload = async () => {
                                     <span style="color: var(--text);">${msg.solucaoContabil}</span>
                                 </div>
                             </div>` : ''}
-                            <div style="margin-top: 12px;">
-                                <button class="btn btn-primary" style="font-size: 0.85rem; padding: 8px 16px;" onclick="buscarSolucaoSefaz('${dadosProcessados.ide.cUF}', '${dadosProcessados.emit.CRT}', '${msg.rejeicao || ''}', '${escapeHtml(msg.desc)}', '${containerId}')">
-                                    🔍 Buscar Solução na Web
-                                </button>
-                                <div id="${containerId}" style="margin-top: 8px;"></div>
-                            </div>
                         </div>
                     </div>
                 `;
