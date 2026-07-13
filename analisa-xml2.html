@@ -1842,11 +1842,14 @@
                 const resultadoNCM = await validarNCM(item.NCM);
                 if (!resultadoNCM.valido) {
                     status = 'error';
+                    const mensagemNCM = resultadoNCM.tipo === 'inexistente' 
+                        ? `NCM ${item.NCM} não existe na base oficial` 
+                        : `NCM ${item.NCM} inválido ou não existe na base oficial`;
                     mensagens.push({
                         tipo: 'error',
-                        erro: 'NCM Inválido',
-                        desc: `NCM ${item.NCM} inválido ou não existe na base oficial`,
-                        motivo: 'Código NCM inválido ou desatualizado',
+                        erro: resultadoNCM.tipo === 'inexistente' ? 'NCM Inexistente' : 'NCM Inválido',
+                        desc: mensagemNCM,
+                        motivo: resultadoNCM.tipo === 'inexistente' ? 'Código NCM não encontrado na base oficial do IBGE' : 'Código NCM inválido ou desatualizado',
                         correcao: 'Consultar a contabilidade da loja ou a lista oficial de NCMs no site do IBGE',
                         orientacao: 'Pode ser verificado se há um item semelhando cadastrado na loja para utilizar o NCM para este item',
                         rejeicao: '',
@@ -2934,7 +2937,7 @@
          */
         async function validarNCM(ncm) {
             if (!ncm) {
-                return { valido: false };
+                return { valido: false, tipo: 'invalido' };
             }
 
             // Sanitiza o NCM (remove caracteres não numéricos)
@@ -2942,15 +2945,21 @@
 
             // Valida comprimento (NCM deve ter 8 dígitos)
             if (ncmLimpo.length !== 8) {
-                return { valido: false };
+                return { valido: false, tipo: 'invalido' };
             }
 
             try {
                 // Consulta a Brasil API para verificar se o NCM existe
                 const response = await fetch(`https://brasilapi.com.br/api/ncm/v1/${ncmLimpo}`);
                 
+                if (response.status === 404) {
+                    // NCM não existe na base oficial
+                    return { valido: false, tipo: 'inexistente' };
+                }
+                
                 if (!response.ok) {
-                    return { valido: false };
+                    // Outros erros da API
+                    return { valido: false, tipo: 'invalido' };
                 }
 
                 const data = await response.json();
@@ -2963,7 +2972,7 @@
                     };
                 }
 
-                return { valido: false };
+                return { valido: false, tipo: 'invalido' };
             } catch (error) {
                 // Se houver erro na requisição (ex: sem conexão), não exibe falso alerta
                 log(`Erro ao validar NCM ${ncmLimpo}: ${error.message}`, 'warn');
