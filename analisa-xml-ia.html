@@ -595,17 +595,29 @@
                 "Total PIS divergente": () => `Total de PIS divergente. Verifique os valores de PIS em cada item e o total declarado.`,
                 
                 "Total COFINS divergente": () => `Total de COFINS divergente. Verifique os valores de COFINS em cada item e o total declarado.`,
+                
                 "ERRO_NCM_TAMANHO": () => `Erro no item "${xProd}" (Código: ${cProd}): O código NCM informado está incompleto ou incorreto. O NCM precisa ter exatamente 8 números. Acesse o cadastro do produto e consulte a tabela fiscal para atualizar o código correto.`,
+                
                 "ERRO_VALOR_ZERADO": () => `Erro no item "${xProd}" (Código: ${cProd}): O sistema identificou que este produto está com o preço unitário ou o valor total zerado. Acesse a tela de vendas ou o cadastro do item e informe um valor maior que zero para permitir o faturamento.`,
+                
                 "ERRO_CSOSN_500_CFOP": () => `Erro no item "${xProd}" (Código: ${cProd}): Como o produto está configurado como CSOSN 500 (ICMS Cobrado Anteriormente por ST - Equivalente à nossa sigla "F"), ele exige um CFOP de Substituição Tributária. Acesse o cadastro e altere o CFOP deste item para 5.405.`,
+                
                 "ERRO_DETALHE_ISS": () => `Erro no item "${xProd}" (Código: ${cProd}): Configurado com a Situação Tributária "V" (ISSQN - SERVIÇO). Há uma redução informada, mas faltam os detalhes da dedução da base de cálculo do ISS. Acesse o cadastro de serviços e complete os campos de parametrização da redução de ISS.`,
+                
                 "ERRO_CST_PIS_COFINS": () => `Erro no item "${xProd}" (Código: ${cProd}): O CST de PIS ou COFINS informado é inválido. Acesse as configurações fiscais do produto no sistema e certifique-se de selecionar um código válido (como 49 para Operações de Saída ou 07/08 para produtos Monofásicos/Isentos).`,
+                
                 "CST_INCOMPATIVEL_SIMPLES": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CST em Simples Nacional. Acesse o cadastro do produto e altere para usar CSOSN.`,
+                
                 "CFOP_INCOMPATIVEL_COM_CSOSN_500": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CSOSN 500. Acesse o cadastro do produto e altere o CFOP para 5405 ou o CSOSN para outro valor.`,
+                
                 "CFOP_OBRIGATORIO_5405": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CSOSN 500 exige CFOP 5405. Acesse o cadastro do produto e altere o CFOP para 5405.`,
+                
                 "CSOSN_INCOMPATIVEL_REGIME_NORMAL": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): O sistema detectou uso de CSOSN em Regime Normal. Acesse o cadastro do produto e altere para usar CST.`,
+                
                 "CST_OBRIGATORIO_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5405 exige CST 60. Acesse o cadastro do produto e altere o CST para 60.`,
+                
                 "CFOP_INCOMPATIVEL_COM_CST_60": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): CFOP 5102 não pode ser usado com CST 60. Acesse o cadastro do produto e altere o CFOP ou o CST.`,
+                
                 "CBENEF_OBRIGATORIO": () => `Incompatibilidade no item "${xProd}" (Código: ${cProd}): cBenef é obrigatório para este item nesta UF. Acesse o cadastro do produto e informe o cBenef válido.`
             };
 
@@ -1091,7 +1103,6 @@
                 'Quando mencionar campos para alterar, SEMPRE use os NOMES DOS CAMPOS DO CADASTRO fornecidos abaixo, jamais referencie tags do XML diretamente:',
                 'Sempre busque NCM condizente com nome do item com falha relacionada a NCM:',
                 'Para falhas como TELEFONE  e Endereço incorreto, não faça nenhuma busca',
-                'Sempre busque um Código de Beneficio Fiscal (cBenef) que corresposa ao CST do item rejeitado',
                 'CAMPOS DO CADASTRO - REGIME SIMPLES NACIONAL:',
                 '- ICMS',
                 '- SituacaoTRIBUTARIA',
@@ -2420,7 +2431,7 @@
                         correcao: 'Ajustar o valor do PIS no cadastro do produto',
                         orientacao: 'Verificar o cálculo do valor do PIS',
                         rejeicao: '',
-                        campos: ['vPIS', 'vBCPIS', 'pPIS']
+                        campos: ['vPIS', 'vBCPIS', 'pPis']
                     });
                 }
             }
