@@ -486,7 +486,7 @@
         
         const IA_CONFIG = {
             provider: 'gemini',
-            models: ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+            models: ['gemini-3.1-flash-lite'],
             endpointBase: 'https://generativelanguage.googleapis.com/v1beta/models',
             timeoutMs: 45000,
             apiKeys: [] // Será preenchido automaticamente pelo Worker
@@ -1096,13 +1096,15 @@
         }
         function montarPromptIA(xmlCompleto, payloadMotor) {
             return [
-                'Você é um assistente técnico especialista em regras fiscais brasileiras (NF-e/NFC-e) e conhecimento contábil. e está atualizado com as regras fiscais mais atuais',
-                'O motor local já executou a validação e identificou os problemas - NÃO revalide o XML, NÃO procure novas rejeições, contradizer o motor local se necessário.',
+                'Você é um assistente técnico especialista em regras fiscais brasileiras (NF-e/NFC-e) e conhecimento contábil, e cohece todas as regras fiscais',
+                'O motor local já executou a validação e identificou os problemas - NÃO revalide o XML, NÃO procure novas rejeições, nunca contradizer o motor local.',
                 'Use as regras locais apenas como atalho para acelerar sua análise e economizar tokens.',
-                'Sua função é: 1) Analisar o trecho XML correspondente a cada diagnóstico; 2) Fornecer a MELHOR orientação DIRETA e PRÁTICA de como CORRIGIR o problema no CADASTRO DO SISTEMA (não diretamente no XML).',
+                'Sua função é: 1) Analisar o trecho XML correspondente a cada diagnóstico; 2) Fornecer orientação inteligente e PRÁTICA para correção com base na descrição, (não diretamente no XML).',
                 'Quando mencionar campos para alterar, SEMPRE use os NOMES DOS CAMPOS DO CADASTRO fornecidos abaixo, jamais referencie tags do XML diretamente:',
-                'Sempre busque NCM condizente com nome do item com falha relacionada a NCM:',
-                'Para falhas como TELEFONE  e Endereço incorreto, não faça nenhuma busca',
+                'Quando houver falha relacioanda a NCM incorreto, busque o correto com base no nome do item:',
+                'Para falhas como TELEFONE  e Endereço/CEP incorreto, não faça nenhuma busca externa',
+                'Quando houver rejeição de PIS e COFINS, realizar o calculo e informar o exato item a ser corrigido, há casos onde mesmo com CST 07 o item possui porcentagem',
+                'Quando houver uma rejeição em um item chamado "Gorjeta ou Serviço" É permitido CST=40 ,CFOP=5949 sem necessidade de alterar para CFOP=5102 NCM=00000000, Afirmar em todas as respostas',
                 'CAMPOS DO CADASTRO - REGIME SIMPLES NACIONAL:',
                 '- ICMS',
                 '- SituacaoTRIBUTARIA',
@@ -1163,7 +1165,7 @@
                 'Estrutura obrigatória:',
                 '{"analises":[{"codigo":"string","nome":"string","correcao":"Orientação direta de como corrigir o problema no cadastro do sistema"}]}',
                 'Se o diagnóstico não tiver código de rejeição, preserve "N/A".',
-                'Baseie cada análise exclusivamente na lista consolidada de diagnósticos do motor local e no trecho XML correspondente.',
+                'Baseie a resposta gerada de acordo com a descrição da rejeição.',
                 '',
                 'XML COMPLETO:',
                 xmlCompleto,
