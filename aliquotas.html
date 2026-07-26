@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dicionário de Alíquotas & Campos Fiscais</title>
+    <link class="favicon" rel="icon" type="image/x-icon" href="XML.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --text-light: #94a3b8;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border: #334155;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.3),0 2px 4px -2px rgba(0,0,0,0.2);
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 20px;
+            position: relative;
+        }
+        header h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .btn {
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+        .btn-calc {
+            background: var(--success);
+            color: #ffffff;
+        }
+        .btn-calc:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+        .search-box {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 24px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box:focus {
+            border-color: var(--primary);
+        }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Estilos do Guia de Cálculo */
+        .calc-guide-card {
+            border: 2px solid var(--success);
+            background: #111d2e;
+            display: none;
+        }
+        .calc-guide-card.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .calc-scenario {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .state-selector-container {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .state-selector-container label {
+            font-weight: 700;
+            color: var(--text);
+        }
+        .state-select {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+        .state-select:focus {
+            border-color: var(--success);
+        }
+        .calc-section-title {
+            color: var(--primary);
+            font-size: 1.15rem;
+            margin: 18px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .calc-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .calc-box .label {
+            font-weight: 700;
+            color: var(--text);
+            display: block;
+            margin-bottom: 4px;
+        }
+        .calc-box .formula {
+            font-family: monospace;
+            color: var(--warning);
+            font-size: 0.95rem;
+        }
+        .calc-box .result {
+            color: var(--success);
+            font-weight: 700;
+        }
+        
+        /* Estilos do Accordion */
+        .accordion-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .accordion-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .accordion-item:hover {
+            border-color: var(--primary);
+        }
+        .accordion-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+        .accordion-header .tag-name {
+            color: var(--primary);
+            font-family: monospace;
+            background: rgba(59, 130, 246, 0.12);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .accordion-header .icon {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            transition: transform 0.3s ease;
+        }
+        .accordion-item.active .accordion-header .icon {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 20px;
+            background: rgba(15, 23, 42, 0.5);
+            color: var(--text-light);
+            font-size: 0.98rem;
+            line-height: 1.6;
+            border-top: 0px solid transparent;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 300px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="nav-bar">
+            <a href="analisa-xml-ia.html" class="btn btn-secondary">
+                ⬅ Voltar ao Validador
+            </a>
+            <button class="btn btn-calc" onclick="toggleGuiaCalculo()">
+                🧮 Saiba como calcular o valor
+            </button>
+        </div>
+
+        <header>
+            <h1>📚 Guia de Alíquotas e Campos Fiscais</h1>
+            <p>Clique nos campos para entender o significado ou no botão acima para aprender a calcular os impostos.</p>
+        </header>
+
+        <!-- CARD EXPANSÍVEL: GUIA DE CÁLCULO E SIMULADOR -->
+        <div id="guiaCalculoCard" class="card calc-guide-card">
+            <div class="card-title" style="color: var(--success); justify-content: space-between;">
+                <span>🧮 Guia Prático & Simulador de Impostos</span>
+                <button onclick="toggleGuiaCalculo()" style="background:none; border:none; color:var(--text-light); cursor:pointer; font-size:1.2rem;">✖</button>
+            </div>
+
+            <div class="calc-scenario">
+                <h3 style="color: var(--text); margin-bottom: 6px;">🏬 Simulador de Dados do Item</h3>
+                <p style="color: var(--text-light);">Informe abaixo o valor de venda do item e o regime para recalcular as porcentagens automaticamente:</p>
+                
+                <!-- CAMPOS DE ENTRADA DO SIMULADOR -->
+                <div class="state-selector-container" style="gap: 16px; margin-top: 12px;">
+                    <div>
+                        <label for="valorItemInput">💵 Valor de Venda do Item (R$):</label><br>
+                        <input type="number" id="valorItemInput" class="state-select" value="100.00" min="0" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 150px;">
+                    </div>
+
+                    <div>
+                        <label for="regimePisCofinsSelect">📋 Regime PIS/COFINS:</label><br>
+                        <select id="regimePisCofinsSelect" class="state-select" onchange="atualizarCalculoEstado()" style="margin-top: 4px;">
+                            <option value="presumido" selected>Lucro Presumido (Cumulativo: PIS 0,65% / COFINS 3,00%)</option>
+                            <option value="real">Lucro Real (Não Cumulativo: PIS 1,65% / COFINS 7,60%)</option>
+                            <option value="monofasico">Monofásico / Alíquota Zero (PIS 0,00% / COFINS 0,00% - CST 04)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="ufSelect">📍 Estado de Origem (ICMS):</label><br>
+                        <select id="ufSelect" class="state-select" onchange="atualizarCalculoEstado()" style="margin-top: 4px;">
+                            <option value="AC" data-icms="19">Acre (AC) - 19%</option>
+                            <option value="AL" data-icms="19">Alagoas (AL) - 19%</option>
+                            <option value="AM" data-icms="20">Amazonas (AM) - 20%</option>
+                            <option value="AP" data-icms="18">Amapá (AP) - 18%</option>
+                            <option value="BA" data-icms="20.5">Bahia (BA) - 20,5%</option>
+                            <option value="CE" data-icms="20">Ceará (CE) - 20%</option>
+                            <option value="DF" data-icms="20">Distrito Federal (DF) - 20%</option>
+                            <option value="ES" data-icms="17">Espírito Santo (ES) - 17%</option>
+                            <option value="GO" data-icms="19">Goiás (GO) - 19%</option>
+                            <option value="MA" data-icms="22">Maranhão (MA) - 22%</option>
+                            <option value="MG" data-icms="18">Minas Gerais (MG) - 18%</option>
+                            <option value="MS" data-icms="17">Mato Grosso do Sul (MS) - 17%</option>
+                            <option value="MT" data-icms="17">Mato Grosso (MT) - 17%</option>
+                            <option value="PA" data-icms="19">Pará (PA) - 19%</option>
+                            <option value="PB" data-icms="20">Paraíba (PB) - 20%</option>
+                            <option value="PE" data-icms="20.5">Pernambuco (PE) - 20,5%</option>
+                            <option value="PI" data-icms="21">Piauí (PI) - 21%</option>
+                            <option value="PR" data-icms="19.5">Paraná (PR) - 19,5%</option>
+                            <option value="RJ" data-icms="22">Rio de Janeiro (RJ) - 22%</option>
+                            <option value="RN" data-icms="20">Rio Grande do Norte (RN) - 20%</option>
+                            <option value="RO" data-icms="19.5">Rondônia (RO) - 19,5%</option>
+                            <option value="RR" data-icms="20">Roraima (RR) - 20%</option>
+                            <option value="RS" data-icms="17">Rio Grande do Sul (RS) - 17%</option>
+                            <option value="SC" data-icms="17">Santa Catarina (SC) - 17%</option>
+                            <option value="SE" data-icms="19">Sergipe (SE) - 19%</option>
+                            <option value="SP" data-icms="18" selected>São Paulo (SP) - 18%</option>
+                            <option value="TO" data-icms="20">Tocantins (TO) - 20%</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top: 14px; font-weight: 600; color: var(--text); background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
+                    <strong>• Item Simulado:</strong> Combo 🍔+🍟+🍻<br>
+                    <strong>• Preço de Venda (Base de Cálculo):</strong> <span id="displayPrecoBaseSimulado" style="color: var(--success);">R$ 100,00</span>
+                </div>
+            </div>
+
+            <!-- 1. Impostos Atuais -->
+            <div class="calc-section-title">1. Impostos Atuais (Empresas do Regime Normal / Lucro Presumido)</div>
+            <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
+                Neste regime, a empresa calcula cada imposto separadamente sobre o valor total do produto.
+            </p>
+
+            <div class="calc-box">
+                <span class="label">🔴 ICMS (Imposto Estadual — <span id="ufNomeDisplay">São Paulo</span>)</span>
+                <div>• Alíquota do Estado: <b id="icmsAliqDisplay">18,00%</b></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="icmsFormulaDisplay">18,00%</span></div>
+                <div class="result">• Imposto cobrado: <span id="icmsValorDisplay">R$ 18,00</span></div>
+            </div>
+
+            <div class="calc-box">
+                <span class="label">🔵 PIS (Contribuição Federal)</span>
+                <div>• Alíquota Aplicada: <b id="pisAliqDisplay">0,65%</b> <span id="pisRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="pisFormulaDisplay">0,65%</span></div>
+                <div class="result">• Imposto cobrado: <span id="pisValorDisplay">R$ 0,65</span></div>
+                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light); border-top: 1px dashed var(--border); padding-top: 8px;">
+                    📌 <b>Quando se aplica cada porcentagem de PIS?</b><br>
+                    • <b>0,65% (Lucro Presumido / Cumulativo):</b> Alíquota padrão para a maioria dos restaurantes, bares e prestadores de serviços.<br>
+                    • <b>1,65% (Lucro Real / Não Cumulativo):</b> Alíquota padrão para indústrias e grandes empresas, permitindo abatimento de créditos.<br>
+                    • <b>0,00% (Monofásico / CST 04):</b> Alíquota zero no varejo para bebidas frias (cervejas, refrigerantes, águas), pois o PIS foi pago antecipadamente na fábrica.
+                </div>
+            </div>
+
+            <div class="calc-box">
+                <span class="label">🔵 COFINS (Contribuição Federal)</span>
+                <div>• Alíquota Aplicada: <b id="cofinsAliqDisplay">3,00%</b> <span id="cofinsRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="cofinsFormulaDisplay">3,00%</span></div>
+                <div class="result">• Imposto cobrado: <span id="cofinsValorDisplay">R$ 3,00</span></div>
+                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light); border-top: 1px dashed var(--border); padding-top: 8px;">
+                    📌 <b>Quando se aplica cada porcentagem de COFINS?</b><br>
+                    • <b>3,00% (Lucro Presumido / Cumulativo):</b> Alíquota padrão para restaurantes, bares e comércio no Lucro Presumido.<br>
+                    • <b>7,60% (Lucro Real / Não Cumulativo):</b> Alíquota padrão para empresas tributadas no Lucro Real.<br>
+                    • <b>0,00% (Monofásico / CST 04):</b> Alíquota zero para vendas varejistas de produtos monofásicos.
+                </div>
+            </div>
+
+            <!-- 2. Simples Nacional -->
+            <div class="calc-section-title">2. Como funciona no Simples Nacional</div>
+            <div class="calc-box">
+                <p style="color: var(--text-light); margin-bottom: 8px;">
+                    No Simples Nacional, a empresa não calcula ICMS, PIS e COFINS separadamente por item. O sistema calcula uma única porcentagem unificada (na guia DAS) que varia conforme o faturamento total da empresa.
+                </p>
+
+                <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--primary); padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 0.9rem; color: var(--text);">
+                    <b>🏷️ Identificação dos Campos Fiscais no XML/NFe do Simples Nacional:</b><br>
+                    • <b>ICMS:</b> É identificado pelo campo <b><code>CSOSN</code> (Código de Situação da Operação no Simples Nacional)</b>, como CSOSN 101, 102, 500, etc. (substituindo a tag tradicional de <code>CST</code> de ICMS).<br>
+                    • <b>PIS / COFINS:</b> São informados nas tags <b><code>CstPIS</code></b> e <b><code>CstCOFINS</code></b> (geralmente CST 49 para vendas normais do Simples ou CST 04 para itens monofásicos segregados do DAS).<br>
+                    • <b>Guia de Arrecadação:</b> Todos os impostos são recolhidos de forma unificada através da guia <b>DAS (Documento de Arrecadação do Simples Nacional)</b>.
+                </div>
+
+                <div>• Alíquota Única de Exemplo (Anexo I/III inicial): <b>6,00%</b></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 6,00%</div>
+                <div class="result">• Imposto Total a Pagar no DAS: <span id="dasValorDisplay">R$ 6,00</span></div>
+                <small style="color: var(--text-light); display:block; margin-top:4px;">
+                    <i>(Dentro desses <span id="dasValorSubDisplay">R$ 6,00</span>, o próprio governo já divide um pedaço para o estado [ICMS] e um pedaço para a união [PIS/COFINS/IRPJ/CSLL/CPP] de forma automática).</i>
+                </small>
+            </div>
+
+            <!-- 3. Novo Sistema -->
+            <div class="calc-section-title">3. Como será no Novo Sistema (Reforma Tributária)</div>
+            <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
+                Com a reformulação tributária, o PIS e a COFINS são substituídos pela CBS, e o ICMS pelo IBS.
+            </p>
+
+            <div class="calc-box">
+                <span class="label">🟢 CBS (Federal — Substitui PIS e COFINS)</span>
+                <div>• Alíquota de Exemplo (Estimada Nacional): <b>8,80%</b></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 8,80%</div>
+                <div class="result">• Imposto cobrado: <span id="cbsValorDisplay">R$ 8,80</span></div>
+            </div>
+
+            <div class="calc-box">
+                <span class="label">🟡 IBS (Estadual/Municipal — Substitui ICMS e ISS)</span>
+                <div>• Alíquota de Exemplo (Estimada): <b>17,70%</b></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 17,70%</div>
+                <div class="result">• Imposto cobrado: <span id="ibsValorDisplay">R$ 17,70</span></div>
+            </div>
+
+            <!-- 4. Transparência Fiscal -->
+            <div class="calc-section-title">4. Transparência Fiscal na Nota (Tabela IBPT / Olho no Imposto)</div>
+            <div class="calc-box">
+                <p style="color: var(--text-light); margin-bottom: 8px;">
+                    Estes valores não são cobrados a mais da empresa; são apenas informativos impressos no final do cupom fiscal para o consumidor saber o quanto do preço final é tributo.
+                </p>
+                <div>• Alíquota Total Estimada de Impostos (<span id="ufTotalDisplay">SP</span>): <b id="totalAliqDisplay">31,25%</b></div>
+                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="totalFormulaDisplay">31,25%</span></div>
+                <div class="result" style="color: var(--warning); margin-top: 4px;">
+                    • Mensagem no Cupom Fiscal: "Você pagou aproximadamente <span id="totalValorDisplay">R$ 31,25</span> em impostos nesta compra."
+                </div>
+            </div>
+        </div>
+
+        <!-- CAMPO DE PESQUISA -->
+        <input type="text" id="searchInput" class="search-box" placeholder="🔎 Pesquisar por campo (ex: NCM, ICMS, CBS, CSOSN)..." onkeyup="filtrarCampos()">
+
+        <!-- GRUPO 1 -->
+        <div class="card category-card">
+            <div class="card-title">📦 Identificação do Produto e Operação</div>
+            <div class="accordion-group">
+                
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">NCM</span> — RG do Produto</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        O "RG" do produto. É um código de 8 dígitos exigido pelo governo que define a categoria exata da mercadoria (se é calçado, alimento, eletrônico, etc.).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CEST</span> — Substituição Tributária</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Código de 7 dígitos usado apenas em produtos que possuem Substituição Tributária (ST) — indica que o imposto foi retido antes na cadeia de venda.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CFOP</span> — Intenção da Nota</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Um código de 4 dígitos que explica a 'natureza' da operação EX: 5102: Você vende e paga o imposto sobre essa venda agora. 5405: Você vende, mas não paga o imposto agora, porque ele já foi substituído (pago antes).
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GRUPO 2 -->
+        <div class="card category-card">
+            <div class="card-title">🏛️ Impostos Atuais do Dia a Dia (Regime Normal / Lucro Presumido)</div>
+            <div class="accordion-group">
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">ICMS</span> — Imposto Estadual</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem do imposto estadual cobrado sobre o valor da venda do produto.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">SituacaoTRIBUTARIA</span> — CST do ICMS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        (Também chamado de CST) Código que avisa à Receita Estadual como o imposto deste produto é cobrado (ex: se paga normal, se é isento ou se teve ST).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemPIS</span> — Alíquota do PIS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem da contribuição federal (PIS) cobrada sobre o faturamento da venda.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemCOFINS</span> — Alíquota do COFINS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem da contribuição federal (COFINS) cobrada sobre o faturamento da venda.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CstPIS</span> — Código CST do PIS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Código que informa ao governo federal como calcular o PIS deste item (se tem imposto, alíquota zero ou isenção).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CstCOFINS</span> — Código CST da COFINS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Código que informa ao governo federal como calcular o COFINS deste item.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GRUPO 3 -->
+        <div class="card category-card">
+            <div class="card-title">🏢 Exclusivo para Empresas do Simples Nacional</div>
+            <div class="accordion-group">
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CSOSN</span> — Situação Tributária Simples</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        É o "CST exclusivo do Simples Nacional". Indica se o produto é tributado dentro da guia do Simples, se é isento ou se tem substituição tributária.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemCSOSN</span> — Crédito de ICMS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem de crédito do ICMS que a sua empresa do Simples Nacional repassa para o cliente de pessoa jurídica (se aplicável).
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GRUPO 4 -->
+        <div class="card category-card">
+            <div class="card-title">🏷️ Transparência Fiscal (Lei do Olho no Imposto / IBPT)</div>
+            <div class="accordion-group">
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">AliqFEDERAL</span> — Carga Tributária Federal</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem aproximada de impostos federais embutidos no preço daquele produto (exibido no rodapé do cupom).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">AliqESTADUAL</span> — Carga Tributária Estadual</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem aproximada de imposto estadual (ICMS) embutido no preço.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">AliqMUNICIPAL</span> — Carga Tributária Municipal</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem aproximada de imposto municipal (ISS) embutido no preço (usado em serviços).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">AliqGERAL</span> — Total Estimado de Impostos</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Soma total estimada de todos os impostos juntas para exibir no final do cupom fiscal.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GRUPO 5 -->
+        <div class="card category-card">
+            <div class="card-title">📉 Benefícios Fiscais, Isenções e Descontos de ICMS</div>
+            <div class="accordion-group">
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">baseREDUZIDA</span> — Desconto na Base de ICMS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem de desconto concedida pelo estado sobre o valor do produto antes de calcular o ICMS (faz o imposto final ficar mais barato).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CodBeneficioFISCAL</span> — cBenef</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        (Conhecido como cBenef) Código de autorização que o governo exige para comprovar que seu produto tem direito a um desconto ou isenção de ICMS.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemDESONERACAO</span> — Desconto do Benefício</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem do desconto do imposto que foi economizada graças a um benefício fiscal.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemReducaoBaseEfetiva</span> — Redução Efetiva</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem usada para definir o valor real da nota em regras de "Cobrança Efetiva de ICMS".
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemICMSEfetiva</span> — Alíquota Real de ICMS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        A taxa real de ICMS cobrada no final, já após a aplicação de todas as reduções.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CreditoPresumidoUF</span> — Estado Emissor do Crédito</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Sigla do estado (ex: SP, MG) que concedeu um incentivo fiscal em forma de crédito "de presente" para sua empresa.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemCreditoPresumido</span> — % de Crédito Presumido</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Porcentagem do imposto que o estado permite que a empresa "desconte" da sua conta como incentivo para a indústria/comércio.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GRUPO 6 -->
+        <div class="card category-card">
+            <div class="card-title">🔮 Novo Sistema Tributário (Campos da Reforma Tributária)</div>
+            <div class="accordion-group">
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CSTReformaTributaria</span> — Novo CST Unificado</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        O novo código de situação tributária que substituirá os atuais para indicar se o item paga ou não os novos impostos.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">CodClassificacaoTributaria</span> — cClass</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Código (cClass) que classifica se o produto tem alíquota reduzida na reforma (como cestas básicas, remédios ou insumos agrícolas).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemCBS</span> — Alíquota CBS Federal</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Alíquota da CBS (novo imposto federal unificado que vai substituir o PIS e COFINS).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemIBSEstadual</span> — Alíquota IBS Estadual</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Alíquota da fatia estadual do IBS (novo imposto que vai substituir o ICMS).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemIBSMunicipal</span> — Alíquota IBS Municipal</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Alíquota da fatia municipal do IBS (novo imposto que vai substituir o ISS).
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemReducaoCBS</span> — Redução CBS</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Desconto em porcentagem concedido pelo governo federal sobre o novo imposto CBS para aquele item.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemReducaoIBSEstadual</span> — Redução IBS Estadual</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Desconto em porcentagem concedido pelo estado sobre o novo imposto IBS.
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span><span class="tag-name">PorcentagemReducaoMunicipal</span> — Redução IBS Municipal</span>
+                        <span class="icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Desconto em porcentagem concedido pelo município sobre o novo imposto IBS.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Função para atualizar os valores com base no Valor do Item, Regime e Estado Selecionado
+        function atualizarCalculoEstado() {
+            // Valor digitado para o produto
+            const inputPreco = document.getElementById('valorItemInput');
+            let precoProduto = parseFloat(inputPreco ? inputPreco.value : 100.00);
+            if (isNaN(precoProduto) || precoProduto < 0) precoProduto = 0;
+
+            const precoFormatado = 'R$ ' + precoProduto.toFixed(2).replace('.', ',');
+
+            // Atualiza exibição do preço de base
+            const baseDisplays = document.querySelectorAll('.displayPrecoBase');
+            baseDisplays.forEach(el => el.innerText = precoFormatado);
+
+            const displaySimulado = document.getElementById('displayPrecoBaseSimulado');
+            if (displaySimulado) displaySimulado.innerText = precoFormatado;
+
+            // Regime Selecionado de PIS e COFINS
+            const selectRegime = document.getElementById('regimePisCofinsSelect');
+            const regime = selectRegime ? selectRegime.value : 'presumido';
+
+            let pisAliq = 0.65;
+            let cofinsAliq = 3.00;
+            let regimeText = '(Lucro Presumido / Cumulativo)';
+
+            if (regime === 'real') {
+                pisAliq = 1.65;
+                cofinsAliq = 7.60;
+                regimeText = '(Lucro Real / Não Cumulativo)';
+            } else if (regime === 'monofasico') {
+                pisAliq = 0.00;
+                cofinsAliq = 0.00;
+                regimeText = '(Monofásico / Alíquota Zero - CST 04)';
+            }
+
+            // Atualiza PIS
+            const pisValor = (precoProduto * pisAliq) / 100;
+            const pisAliqDisplay = document.getElementById('pisAliqDisplay');
+            if (pisAliqDisplay) pisAliqDisplay.innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
+            
+            const pisRegimeText = document.getElementById('pisRegimeText');
+            if (pisRegimeText) pisRegimeText.innerText = regimeText;
+
+            const pisFormulaDisplay = document.getElementById('pisFormulaDisplay');
+            if (pisFormulaDisplay) pisFormulaDisplay.innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
+
+            const pisValorDisplay = document.getElementById('pisValorDisplay');
+            if (pisValorDisplay) pisValorDisplay.innerText = 'R$ ' + pisValor.toFixed(2).replace('.', ',');
+
+            // Atualiza COFINS
+            const cofinsValor = (precoProduto * cofinsAliq) / 100;
+            const cofinsAliqDisplay = document.getElementById('cofinsAliqDisplay');
+            if (cofinsAliqDisplay) cofinsAliqDisplay.innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
+
+            const cofinsRegimeText = document.getElementById('cofinsRegimeText');
+            if (cofinsRegimeText) cofinsRegimeText.innerText = regimeText;
+
+            const cofinsFormulaDisplay = document.getElementById('cofinsFormulaDisplay');
+            if (cofinsFormulaDisplay) cofinsFormulaDisplay.innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
+
+            const cofinsValorDisplay = document.getElementById('cofinsValorDisplay');
+            if (cofinsValorDisplay) cofinsValorDisplay.innerText = 'R$ ' + cofinsValor.toFixed(2).replace('.', ',');
+
+            // Estado Selecionado para ICMS
+            const select = document.getElementById('ufSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            const uf = select.value;
+            const nomeEstado = selectedOption.text.split('-')[0].trim();
+            const icmsAliq = parseFloat(selectedOption.getAttribute('data-icms'));
+            
+            const icmsValor = (precoProduto * icmsAliq) / 100;
+
+            // PIS + COFINS + ICMS do Estado para IBPT
+            const totalAliq = icmsAliq + pisAliq + cofinsAliq;
+            const totalValor = (precoProduto * totalAliq) / 100;
+
+            // Atualiza ICMS
+            document.getElementById('ufNomeDisplay').innerText = nomeEstado;
+            document.getElementById('icmsAliqDisplay').innerText = icmsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('icmsFormulaDisplay').innerText = icmsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('icmsValorDisplay').innerText = 'R$ ' + icmsValor.toFixed(2).replace('.', ',');
+
+            // Atualiza Simples Nacional (Guia DAS 6%)
+            const dasAliq = 6.00;
+            const dasValor = (precoProduto * dasAliq) / 100;
+            const dasValorDisplay = document.getElementById('dasValorDisplay');
+            if (dasValorDisplay) dasValorDisplay.innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
+            const dasValorSubDisplay = document.getElementById('dasValorSubDisplay');
+            if (dasValorSubDisplay) dasValorSubDisplay.innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
+
+            // Atualiza Reforma Tributária (CBS 8,8% e IBS 17,7%)
+            const cbsValor = (precoProduto * 8.80) / 100;
+            const ibsValor = (precoProduto * 17.70) / 100;
+            const cbsValorDisplay = document.getElementById('cbsValorDisplay');
+            if (cbsValorDisplay) cbsValorDisplay.innerText = 'R$ ' + cbsValor.toFixed(2).replace('.', ',');
+            const ibsValorDisplay = document.getElementById('ibsValorDisplay');
+            if (ibsValorDisplay) ibsValorDisplay.innerText = 'R$ ' + ibsValor.toFixed(2).replace('.', ',');
+
+            // Atualiza IBPT (Transparência)
+            document.getElementById('ufTotalDisplay').innerText = uf;
+            document.getElementById('totalAliqDisplay').innerText = totalAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('totalFormulaDisplay').innerText = totalAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('totalValorDisplay').innerText = 'R$ ' + totalValor.toFixed(2).replace('.', ',');
+        }
+
+        // Alterna a exibição do Guia de Cálculo
+        function toggleGuiaCalculo() {
+            const cardCalculo = document.getElementById('guiaCalculoCard');
+            if (cardCalculo.classList.contains('active')) {
+                cardCalculo.classList.remove('active');
+            } else {
+                cardCalculo.classList.add('active');
+                cardCalculo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Alterna os itens do dicionário
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            item.classList.toggle('active');
+        }
+
+        // Filtro em tempo real
+        function filtrarCampos() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.accordion-item');
+            const categories = document.querySelectorAll('.category-card');
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(input)) {
+                    item.style.display = 'block';
+                    if (input.length > 1) item.classList.add('active');
+                } else {
+                    item.style.display = 'none';
+                    item.classList.remove('active');
+                }
+            });
+
+            categories.forEach(category => {
+                const visibleItems = category.querySelectorAll('.accordion-item[style*="display: block"]');
+                category.style.display = (input !== '' && visibleItems.length === 0) ? 'none' : 'block';
+            });
+        }
+    </script>
+</body>
+</html>
