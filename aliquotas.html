@@ -146,7 +146,7 @@
             margin-top: 14px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             flex-wrap: wrap;
         }
         .state-selector-container label {
@@ -164,13 +164,17 @@
             outline: none;
             cursor: pointer;
         }
+        .state-select-highlight {
+            border-color: var(--primary);
+            background: #1e293b;
+        }
         .state-select:focus {
             border-color: var(--success);
         }
         .calc-section-title {
             color: var(--primary);
-            font-size: 1.15rem;
-            margin: 18px 0 10px 0;
+            font-size: 1.2rem;
+            margin: 22px 0 12px 0;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -197,6 +201,79 @@
         .calc-box .result {
             color: var(--success);
             font-weight: 700;
+        }
+
+        /* Destaques de Totais e Avisos */
+        .total-box {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-box .total-value {
+            color: var(--success);
+            font-size: 1.3rem;
+        }
+        .regime-notice {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 14px 16px;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-top: 14px;
+        }
+        .ibpt-card-block {
+            margin-top: 30px;
+            border-top: 2px dashed var(--border);
+            padding-top: 20px;
+        }
+        .ibpt-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning);
+            padding: 14px 16px;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-top: 12px;
+        }
+
+        /* Estilos da Tabela da Linha do Tempo */
+        .timeline-table-container {
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            font-size: 0.92rem;
+        }
+        .timeline-table th, .timeline-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            line-height: 1.5;
+        }
+        .timeline-table th {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .timeline-table tr:last-child td {
+            border-bottom: none;
         }
         
         /* Estilos do Accordion */
@@ -285,18 +362,37 @@
             </div>
 
             <div class="calc-scenario">
-                <h3 style="color: var(--text); margin-bottom: 6px;">🏬 Simulador de Dados do Item</h3>
-                <p style="color: var(--text-light);">Informe abaixo o valor de venda do item e o regime para recalcular as porcentagens automaticamente:</p>
+                <h3 style="color: var(--text); margin-bottom: 6px;">🏬 Parâmetros da Simulação</h3>
+                <p style="color: var(--text-light);">Selecione abaixo o <b>Regime Tributário</b> desejado para visualizar exclusivamente a sua simulação de impostos:</p>
                 
-                <!-- CAMPOS DE ENTRADA DO SIMULADOR -->
-                <div class="state-selector-container" style="gap: 16px; margin-top: 12px;">
+                <!-- SELETORES DO SIMULADOR -->
+                <div class="state-selector-container">
                     <div>
-                        <label for="valorItemInput">💵 Valor de Venda do Item (R$):</label><br>
-                        <input type="number" id="valorItemInput" class="state-select" value="100.00" min="0" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 150px;">
+                        <label for="regimeTributarioMainSelect">🏛️ Selecione o Regime Tributário:</label><br>
+                        <select id="regimeTributarioMainSelect" class="state-select state-select-highlight" onchange="atualizarCalculoEstado()" style="margin-top: 4px; font-weight:700;">
+                            <option value="normal" selected>Regime Normal (Lucro Presumido / Lucro Real)</option>
+                            <option value="simples">Simples Nacional</option>
+                            <option value="reforma">Reforma Tributária (CBS / IBS)</option>
+                        </select>
                     </div>
 
                     <div>
-                        <label for="regimePisCofinsSelect">📋 Regime PIS/COFINS:</label><br>
+                        <label for="valorItemInput">💵 Valor de Venda do Item (R$):</label><br>
+                        <input type="number" id="valorItemInput" class="state-select" value="100.00" min="0" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 140px;">
+                    </div>
+
+                    <!-- Campo Condicional para Fase da Reforma Tributária -->
+                    <div id="filtroReformaAno" style="display: none;">
+                        <label for="anoRegimeReformaSelect">📅 Fase da Reforma Tributária:</label><br>
+                        <select id="anoRegimeReformaSelect" class="state-select" onchange="atualizarCalculoEstado()" style="margin-top: 4px;">
+                            <option value="2026" selected>2026 - Fase de Testes (CBS 0,9% + IBS 0,1%)</option>
+                            <option value="2027">2027+ - Entrada Efetiva (CBS 8,8% + IBS Estadual)</option>
+                        </select>
+                    </div>
+
+                    <!-- Campos Condicionais para Regime Normal / Reforma 2027 -->
+                    <div id="filtroRegimeNormalPis" style="display: block;">
+                        <label for="regimePisCofinsSelect">📋 Tipo de Enquadramento PIS/COFINS:</label><br>
                         <select id="regimePisCofinsSelect" class="state-select" onchange="atualizarCalculoEstado()" style="margin-top: 4px;">
                             <option value="presumido" selected>Lucro Presumido (Cumulativo: PIS 0,65% / COFINS 3,00%)</option>
                             <option value="real">Lucro Real (Não Cumulativo: PIS 1,65% / COFINS 7,60%)</option>
@@ -304,8 +400,8 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label for="ufSelect">📍 Estado de Origem (ICMS):</label><br>
+                    <div id="filtroRegimeNormalUf" style="display: block;">
+                        <label for="ufSelect" id="labelUfSelect">📍 Estado de Origem (ICMS):</label><br>
                         <select id="ufSelect" class="state-select" onchange="atualizarCalculoEstado()" style="margin-top: 4px;">
                             <option value="AC" data-icms="19">Acre (AC) - 19%</option>
                             <option value="AL" data-icms="19">Alagoas (AL) - 19%</option>
@@ -336,6 +432,12 @@
                             <option value="TO" data-icms="20">Tocantins (TO) - 20%</option>
                         </select>
                     </div>
+
+                    <!-- Campos Condicionais para Simples Nacional -->
+                    <div id="filtroSimplesDas" style="display: none;">
+                        <label for="dasAliqInput">🏷️ Alíquota Efetiva do DAS (%):</label><br>
+                        <input type="number" id="dasAliqInput" class="state-select" value="6.00" min="0" max="30" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 120px;">
+                    </div>
                 </div>
 
                 <div style="margin-top: 14px; font-weight: 600; color: var(--text); background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
@@ -344,99 +446,164 @@
                 </div>
             </div>
 
-            <!-- 1. Impostos Atuais -->
-            <div class="calc-section-title">1. Impostos Atuais (Empresas do Regime Normal / Lucro Presumido)</div>
-            <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
-                Neste regime, a empresa calcula cada imposto separadamente sobre o valor total do produto.
-            </p>
-
-            <div class="calc-box">
-                <span class="label">🔴 ICMS (Imposto Estadual — <span id="ufNomeDisplay">São Paulo</span>)</span>
-                <div>• Alíquota do Estado: <b id="icmsAliqDisplay">18,00%</b></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="icmsFormulaDisplay">18,00%</span></div>
-                <div class="result">• Imposto cobrado: <span id="icmsValorDisplay">R$ 18,00</span></div>
-            </div>
-
-            <div class="calc-box">
-                <span class="label">🔵 PIS (Contribuição Federal)</span>
-                <div>• Alíquota Aplicada: <b id="pisAliqDisplay">0,65%</b> <span id="pisRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="pisFormulaDisplay">0,65%</span></div>
-                <div class="result">• Imposto cobrado: <span id="pisValorDisplay">R$ 0,65</span></div>
-                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light); border-top: 1px dashed var(--border); padding-top: 8px;">
-                    📌 <b>Quando se aplica cada porcentagem de PIS?</b><br>
-                    • <b>0,65% (Lucro Presumido / Cumulativo):</b> Alíquota padrão para a maioria dos restaurantes, bares e prestadores de serviços.<br>
-                    • <b>1,65% (Lucro Real / Não Cumulativo):</b> Alíquota padrão para indústrias e grandes empresas, permitindo abatimento de créditos.<br>
-                    • <b>0,00% (Monofásico / CST 04):</b> Alíquota zero no varejo para bebidas frias (cervejas, refrigerantes, águas), pois o PIS foi pago antecipadamente na fábrica.
-                </div>
-            </div>
-
-            <div class="calc-box">
-                <span class="label">🔵 COFINS (Contribuição Federal)</span>
-                <div>• Alíquota Aplicada: <b id="cofinsAliqDisplay">3,00%</b> <span id="cofinsRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="cofinsFormulaDisplay">3,00%</span></div>
-                <div class="result">• Imposto cobrado: <span id="cofinsValorDisplay">R$ 3,00</span></div>
-                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light); border-top: 1px dashed var(--border); padding-top: 8px;">
-                    📌 <b>Quando se aplica cada porcentagem de COFINS?</b><br>
-                    • <b>3,00% (Lucro Presumido / Cumulativo):</b> Alíquota padrão para restaurantes, bares e comércio no Lucro Presumido.<br>
-                    • <b>7,60% (Lucro Real / Não Cumulativo):</b> Alíquota padrão para empresas tributadas no Lucro Real.<br>
-                    • <b>0,00% (Monofásico / CST 04):</b> Alíquota zero para vendas varejistas de produtos monofásicos.
-                </div>
-            </div>
-
-            <!-- 2. Simples Nacional -->
-            <div class="calc-section-title">2. Como funciona no Simples Nacional</div>
-            <div class="calc-box">
-                <p style="color: var(--text-light); margin-bottom: 8px;">
-                    No Simples Nacional, a empresa não calcula ICMS, PIS e COFINS separadamente por item. O sistema calcula uma única porcentagem unificada (na guia DAS) que varia conforme o faturamento total da empresa.
+            <!-- CENÁRIO 1: REGIME NORMAL -->
+            <div id="cenarioRegimeNormal" style="display: block;">
+                <div class="calc-section-title">1. Simulação do Regime Normal (Lucro Presumido / Lucro Real)</div>
+                <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
+                    Neste regime, a empresa apura cada imposto individualmente sobre a operação do item.
                 </p>
 
-                <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--primary); padding: 10px; margin: 10px 0; border-radius: 4px; font-size: 0.9rem; color: var(--text);">
-                    <b>🏷️ Identificação dos Campos Fiscais no XML/NFe do Simples Nacional:</b><br>
-                    • <b>ICMS:</b> É identificado pelo campo <b><code>CSOSN</code> (Código de Situação da Operação no Simples Nacional)</b>, como CSOSN 101, 102, 500, etc. (substituindo a tag tradicional de <code>CST</code> de ICMS).<br>
-                    • <b>PIS / COFINS:</b> São informados nas tags <b><code>CstPIS</code></b> e <b><code>CstCOFINS</code></b> (geralmente CST 49 para vendas normais do Simples ou CST 04 para itens monofásicos segregados do DAS).<br>
-                    • <b>Guia de Arrecadação:</b> Todos os impostos são recolhidos de forma unificada através da guia <b>DAS (Documento de Arrecadação do Simples Nacional)</b>.
+                <div class="calc-box">
+                    <span class="label">🔴 ICMS (Imposto Estadual — <span id="ufNomeDisplay">São Paulo</span>)</span>
+                    <div>• Alíquota do Estado: <b id="icmsAliqDisplay">18,00%</b></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="icmsFormulaDisplay">18,00%</span></div>
+                    <div class="result">• Imposto cobrado: <span id="icmsValorDisplay">R$ 18,00</span></div>
                 </div>
 
-                <div>• Alíquota Única de Exemplo (Anexo I/III inicial): <b>6,00%</b></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 6,00%</div>
-                <div class="result">• Imposto Total a Pagar no DAS: <span id="dasValorDisplay">R$ 6,00</span></div>
-                <small style="color: var(--text-light); display:block; margin-top:4px;">
-                    <i>(Dentro desses <span id="dasValorSubDisplay">R$ 6,00</span>, o próprio governo já divide um pedaço para o estado [ICMS] e um pedaço para a união [PIS/COFINS/IRPJ/CSLL/CPP] de forma automática).</i>
-                </small>
+                <div class="calc-box">
+                    <span class="label">🔵 PIS (Contribuição Federal)</span>
+                    <div>• Alíquota Aplicada: <b id="pisAliqDisplay">0,65%</b> <span id="pisRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="pisFormulaDisplay">0,65%</span></div>
+                    <div class="result">• Imposto cobrado: <span id="pisValorDisplay">R$ 0,65</span></div>
+                </div>
+
+                <div class="calc-box">
+                    <span class="label">🔵 COFINS (Contribuição Federal)</span>
+                    <div>• Alíquota Aplicada: <b id="cofinsAliqDisplay">3,00%</b> <span id="cofinsRegimeText" style="font-size:0.85rem; color:var(--text-light);">(Lucro Presumido / Cumulativo)</span></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="cofinsFormulaDisplay">3,00%</span></div>
+                    <div class="result">• Imposto cobrado: <span id="cofinsValorDisplay">R$ 3,00</span></div>
+                </div>
+
+                <div class="total-box">
+                    <span>Total de tributos desta operação:</span>
+                    <span class="total-value" id="regimeNormalTotalDisplay">R$ 21,65</span>
+                </div>
+
+                <div class="regime-notice">
+                    📌 <b>Aviso:</b> Estes são os tributos incidentes nesta operação. Outros tributos periódicos, como IRPJ e CSLL, não estão considerados nesta simulação.
+                </div>
             </div>
 
-            <!-- 3. Novo Sistema -->
-            <div class="calc-section-title">3. Como será no Novo Sistema (Reforma Tributária)</div>
-            <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
-                Com a reformulação tributária, o PIS e a COFINS são substituídos pela CBS, e o ICMS pelo IBS.
-            </p>
-
-            <div class="calc-box">
-                <span class="label">🟢 CBS (Federal — Substitui PIS e COFINS)</span>
-                <div>• Alíquota de Exemplo (Estimada Nacional): <b>8,80%</b></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 8,80%</div>
-                <div class="result">• Imposto cobrado: <span id="cbsValorDisplay">R$ 8,80</span></div>
-            </div>
-
-            <div class="calc-box">
-                <span class="label">🟡 IBS (Estadual/Municipal — Substitui ICMS e ISS)</span>
-                <div>• Alíquota de Exemplo (Estimada): <b>17,70%</b></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × 17,70%</div>
-                <div class="result">• Imposto cobrado: <span id="ibsValorDisplay">R$ 17,70</span></div>
-            </div>
-
-            <!-- 4. Transparência Fiscal -->
-            <div class="calc-section-title">4. Transparência Fiscal na Nota (Tabela IBPT / Olho no Imposto)</div>
-            <div class="calc-box">
-                <p style="color: var(--text-light); margin-bottom: 8px;">
-                    Estes valores não são cobrados a mais da empresa; são apenas informativos impressos no final do cupom fiscal para o consumidor saber o quanto do preço final é tributo.
+            <!-- CENÁRIO 2: SIMPLES NACIONAL -->
+            <div id="cenarioSimplesNacional" style="display: none;">
+                <div class="calc-section-title">2. Simulação do Simples Nacional</div>
+                <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
+                    No Simples Nacional, os impostos não são calculados de forma separada por item na nota fiscal.
                 </p>
-                <div>• Alíquota Total Estimada de Impostos (<span id="ufTotalDisplay">SP</span>): <b id="totalAliqDisplay">31,25%</b></div>
-                <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="totalFormulaDisplay">31,25%</span></div>
-                <div class="result" style="color: var(--warning); margin-top: 4px;">
-                    • Mensagem no Cupom Fiscal: "Você pagou aproximadamente <span id="totalValorDisplay">R$ 31,25</span> em impostos nesta compra."
+
+                <div class="calc-box">
+                    <span class="label">🟩 DAS (Documento de Arrecadação do Simples Nacional)</span>
+                    <div>• Alíquota Efetiva do DAS: <b id="dasAliqDisplay">6,00%</b></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="dasFormulaDisplay">6,00%</span></div>
+                    <div class="result" style="font-size: 1.1rem; margin-top: 4px;">
+                        • Imposto do DAS: <span id="dasValorDisplay">R$ 6,00</span>
+                    </div>
+                </div>
+
+                <div class="total-box">
+                    <span>Total da operação (via DAS):</span>
+                    <span class="total-value" id="simplesTotalDisplay">R$ 6,00</span>
+                </div>
+
+                <div class="regime-notice">
+                    📌 <b>Aviso:</b> No Simples Nacional, os tributos são recolhidos de forma unificada por meio da guia DAS. ICMS, PIS, COFINS, IRPJ, CSLL e outros tributos já estão incorporados nessa alíquota, conforme o enquadramento da empresa.
                 </div>
             </div>
+
+            <!-- CENÁRIO 3: REFORMA TRIBUTÁRIA -->
+            <div id="cenarioReformaTributaria" style="display: none;">
+                <div class="calc-section-title">3. Simulação do Novo Sistema (Reforma Tributária - IVA Dual)</div>
+                <p style="color: var(--text-light); margin-bottom: 12px; font-size: 0.95rem;">
+                    Novo modelo de Imposto sobre Bens e Serviços (IVA Dual) unificado (CBS + IBS).
+                </p>
+
+                <div class="regime-notice" id="reformaAvisoAnoBox" style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); color: var(--text); margin-bottom: 16px;">
+                    ⚠️ <b>Vigência 2026 (Fase de Testes):</b> Em 2026 vigoram as alíquotas reduzidas para validação de sistemas (<b>CBS: 0,9%</b> e <b>IBS: 0,1%</b>, totalizando 1,0%).<br>
+                    <em>A partir de 2027 entra a cobrança efetiva da CBS (~8,8%) e do IBS por Estado com a extinção gradual de PIS/COFINS/ICMS/ISS.</em>
+                </div>
+
+                <!-- TABELA: LINHA DO TEMPO DA TRANSIÇÃO TRIBUTÁRIA -->
+                <div class="timeline-table-container">
+                    <h4 style="color: var(--text); margin-bottom: 10px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                        🗓️ Linha do Tempo da Transição Tributária
+                    </h4>
+                    <table class="timeline-table">
+                        <thead>
+                            <tr>
+                                <th>Período</th>
+                                <th>O que acontece na prática?</th>
+                                <th>O que muda nos Impostos?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Ano de Teste (2026)</b></td>
+                                <td>Emissão de notas com destaque de IBS/CBS para validação de sistemas.</td>
+                                <td>Impostos antigos continuam normais. O valor de IBS/CBS pago é abatido do PIS/COFINS.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2027</b></td>
+                                <td>A CBS entra em vigor de forma definitiva.</td>
+                                <td>PIS e COFINS são extintos definitivamente. IPI tem alíquotas reduzidas a zero (salvo exceções).</td>
+                            </tr>
+                            <tr>
+                                <td><b>2029 a 2032</b></td>
+                                <td>Transição gradual do IBS.</td>
+                                <td>Alíquotas do ICMS e ISS sobram/caem gradualmente.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2033</b></td>
+                                <td>Fim da transição.</td>
+                                <td>ICMS e ISS são totalmente extintos. O Brasil opera 100% no IBS e CBS (IVA Dual).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="calc-box">
+                    <span class="label">🟢 CBS (Contribuição sobre Bens e Serviços — Federal)</span>
+                    <div>• Alíquota Aplicada: <b id="cbsAliqDisplay">0,90%</b> <span id="cbsBadgeDisplay" style="font-size:0.85rem; color:var(--text-light);">(Nacional)</span></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="cbsFormulaDisplay">0,90%</span></div>
+                    <div class="result">• CBS cobrada: <span id="cbsValorDisplay">R$ 0,90</span></div>
+                </div>
+
+                <div class="calc-box">
+                    <span class="label">🟡 IBS (Imposto sobre Bens e Serviços — Estadual / Municipal)</span>
+                    <div>• Alíquota Aplicada: <b id="ibsAliqDisplay">0,10%</b> <span id="ibsBadgeDisplay" style="font-size:0.85rem; color:var(--text-light);">(SP)</span></div>
+                    <div class="formula">• Como calcular: <span class="displayPrecoBase">R$ 100,00</span> × <span id="ibsFormulaDisplay">0,10%</span></div>
+                    <div class="result">• IBS cobrado: <span id="ibsValorDisplay">R$ 0,10</span></div>
+                </div>
+
+                <div class="total-box">
+                    <span>Total IVA Dual (<span id="reformaTotalPctDisplay">1,00%</span>):</span>
+                    <span class="total-value" id="reformaTotalDisplay">R$ 1,00</span>
+                </div>
+
+                <div class="regime-notice">
+                    📌 <b>Aviso:</b> Este cenário representa o novo modelo tributário previsto pela Reforma Tributária (IVA Dual). CBS e IBS substituirão gradualmente PIS, COFINS, ICMS, ISS e parte do IPI conforme o cronograma de implementação.
+                </div>
+            </div>
+
+            <!-- SEÇÃO SEPARADA: TRANSPARÊNCIA FISCAL (IBPT) -->
+            <div class="ibpt-card-block">
+                <div class="calc-section-title" style="color: var(--warning);">
+                    🏷️ Transparência Fiscal (Tabela IBPT / Olho no Imposto)
+                </div>
+
+                <div class="calc-box" style="border-color: rgba(245, 158, 11, 0.3);">
+                    <span class="label" style="color: var(--warning);">Estimativa de Carga Tributária Aproximada (<span id="ufTotalDisplay">SP</span>)</span>
+                    <div>• Alíquota Estimada da Cadeia Econômica: <b id="totalAliqDisplay">31,25%</b></div>
+                    <div class="formula">• Como calcular a estimativa: <span class="displayPrecoBase">R$ 100,00</span> × <span id="totalFormulaDisplay">31,25%</span></div>
+                    <div class="result" style="color: var(--warning); margin-top: 4px;">
+                        • Carga Estimada Impressa no Cupom: <span id="totalValorDisplay">R$ 31,25</span>
+                    </div>
+                </div>
+
+                <div class="ibpt-notice">
+                    ℹ️ <b>Importante:</b> O valor informado pela Tabela IBPT é apenas uma estimativa da carga tributária incidente ao longo da cadeia econômica, utilizada para fins de transparência fiscal (Lei nº 12.741/2012). Esse valor não representa um imposto adicional a ser pago pelo estabelecimento e não deve ser somado aos tributos calculados nesta simulação.
+                </div>
+            </div>
+
         </div>
 
         <!-- CAMPO DE PESQUISA -->
@@ -793,109 +960,181 @@
     </div>
 
     <script>
-        // Função para atualizar os valores com base no Valor do Item, Regime e Estado Selecionado
+        // Função principal para recalcular os valores e alternar cenários tributários
         function atualizarCalculoEstado() {
-            // Valor digitado para o produto
+            // Valor do item
             const inputPreco = document.getElementById('valorItemInput');
             let precoProduto = parseFloat(inputPreco ? inputPreco.value : 100.00);
             if (isNaN(precoProduto) || precoProduto < 0) precoProduto = 0;
 
             const precoFormatado = 'R$ ' + precoProduto.toFixed(2).replace('.', ',');
 
-            // Atualiza exibição do preço de base
+            // Atualiza preço base nos displays
             const baseDisplays = document.querySelectorAll('.displayPrecoBase');
             baseDisplays.forEach(el => el.innerText = precoFormatado);
 
             const displaySimulado = document.getElementById('displayPrecoBaseSimulado');
             if (displaySimulado) displaySimulado.innerText = precoFormatado;
 
-            // Regime Selecionado de PIS e COFINS
-            const selectRegime = document.getElementById('regimePisCofinsSelect');
-            const regime = selectRegime ? selectRegime.value : 'presumido';
+            // 1. REGIME SELECIONADO NO SELETOR PRINCIPAL
+            const regimeMainSelect = document.getElementById('regimeTributarioMainSelect');
+            const regimeAtivo = regimeMainSelect ? regimeMainSelect.value : 'normal';
+
+            const anoReformaSelect = document.getElementById('anoRegimeReformaSelect');
+            const anoReforma = anoReformaSelect ? anoReformaSelect.value : '2026';
+
+            const cenarioNormal = document.getElementById('cenarioRegimeNormal');
+            const cenarioSimples = document.getElementById('cenarioSimplesNacional');
+            const cenarioReforma = document.getElementById('cenarioReformaTributaria');
+
+            const filtroNormalPis = document.getElementById('filtroRegimeNormalPis');
+            const filtroNormalUf = document.getElementById('filtroRegimeNormalUf');
+            const filtroSimplesDas = document.getElementById('filtroSimplesDas');
+            const filtroReformaAno = document.getElementById('filtroReformaAno');
+            const labelUfSelect = document.getElementById('labelUfSelect');
+
+            // Exibe e oculta os componentes com base no regime ativo
+            if (regimeAtivo === 'normal') {
+                cenarioNormal.style.display = 'block';
+                cenarioSimples.style.display = 'none';
+                cenarioReforma.style.display = 'none';
+
+                filtroNormalPis.style.display = 'block';
+                filtroNormalUf.style.display = 'block';
+                filtroSimplesDas.style.display = 'none';
+                if (filtroReformaAno) filtroReformaAno.style.display = 'none';
+                if (labelUfSelect) labelUfSelect.innerText = '📍 Estado de Origem (ICMS):';
+            } else if (regimeAtivo === 'simples') {
+                cenarioNormal.style.display = 'none';
+                cenarioSimples.style.display = 'block';
+                cenarioReforma.style.display = 'none';
+
+                filtroNormalPis.style.display = 'none';
+                filtroNormalUf.style.display = 'none';
+                filtroSimplesDas.style.display = 'block';
+                if (filtroReformaAno) filtroReformaAno.style.display = 'none';
+            } else if (regimeAtivo === 'reforma') {
+                cenarioNormal.style.display = 'none';
+                cenarioSimples.style.display = 'none';
+                cenarioReforma.style.display = 'block';
+
+                filtroNormalPis.style.display = 'none';
+                filtroSimplesDas.style.display = 'none';
+                if (filtroReformaAno) filtroReformaAno.style.display = 'block';
+                
+                // No modo 2027+, o estado de destino define a alíquota do IBS
+                if (anoReforma === '2027') {
+                    filtroNormalUf.style.display = 'block';
+                    if (labelUfSelect) labelUfSelect.innerText = '📍 Estado de Destino (IBS):';
+                } else {
+                    filtroNormalUf.style.display = 'none';
+                }
+            }
+
+            // --- CÁLCULOS REGIME NORMAL ---
+            const selectRegimePis = document.getElementById('regimePisCofinsSelect');
+            const regimePis = selectRegimePis ? selectRegimePis.value : 'presumido';
 
             let pisAliq = 0.65;
             let cofinsAliq = 3.00;
             let regimeText = '(Lucro Presumido / Cumulativo)';
 
-            if (regime === 'real') {
+            if (regimePis === 'real') {
                 pisAliq = 1.65;
                 cofinsAliq = 7.60;
                 regimeText = '(Lucro Real / Não Cumulativo)';
-            } else if (regime === 'monofasico') {
+            } else if (regimePis === 'monofasico') {
                 pisAliq = 0.00;
                 cofinsAliq = 0.00;
                 regimeText = '(Monofásico / Alíquota Zero - CST 04)';
             }
 
-            // Atualiza PIS
+            // PIS
             const pisValor = (precoProduto * pisAliq) / 100;
-            const pisAliqDisplay = document.getElementById('pisAliqDisplay');
-            if (pisAliqDisplay) pisAliqDisplay.innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
-            
-            const pisRegimeText = document.getElementById('pisRegimeText');
-            if (pisRegimeText) pisRegimeText.innerText = regimeText;
+            document.getElementById('pisAliqDisplay').innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('pisRegimeText').innerText = regimeText;
+            document.getElementById('pisFormulaDisplay').innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('pisValorDisplay').innerText = 'R$ ' + pisValor.toFixed(2).replace('.', ',');
 
-            const pisFormulaDisplay = document.getElementById('pisFormulaDisplay');
-            if (pisFormulaDisplay) pisFormulaDisplay.innerText = pisAliq.toFixed(2).replace('.', ',') + '%';
-
-            const pisValorDisplay = document.getElementById('pisValorDisplay');
-            if (pisValorDisplay) pisValorDisplay.innerText = 'R$ ' + pisValor.toFixed(2).replace('.', ',');
-
-            // Atualiza COFINS
+            // COFINS
             const cofinsValor = (precoProduto * cofinsAliq) / 100;
-            const cofinsAliqDisplay = document.getElementById('cofinsAliqDisplay');
-            if (cofinsAliqDisplay) cofinsAliqDisplay.innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('cofinsAliqDisplay').innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('cofinsRegimeText').innerText = regimeText;
+            document.getElementById('cofinsFormulaDisplay').innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('cofinsValorDisplay').innerText = 'R$ ' + cofinsValor.toFixed(2).replace('.', ',');
 
-            const cofinsRegimeText = document.getElementById('cofinsRegimeText');
-            if (cofinsRegimeText) cofinsRegimeText.innerText = regimeText;
-
-            const cofinsFormulaDisplay = document.getElementById('cofinsFormulaDisplay');
-            if (cofinsFormulaDisplay) cofinsFormulaDisplay.innerText = cofinsAliq.toFixed(2).replace('.', ',') + '%';
-
-            const cofinsValorDisplay = document.getElementById('cofinsValorDisplay');
-            if (cofinsValorDisplay) cofinsValorDisplay.innerText = 'R$ ' + cofinsValor.toFixed(2).replace('.', ',');
-
-            // Estado Selecionado para ICMS
-            const select = document.getElementById('ufSelect');
-            const selectedOption = select.options[select.selectedIndex];
-            
-            const uf = select.value;
+            // ICMS Estado
+            const selectUf = document.getElementById('ufSelect');
+            const selectedOption = selectUf.options[selectUf.selectedIndex];
+            const uf = selectUf.value;
             const nomeEstado = selectedOption.text.split('-')[0].trim();
             const icmsAliq = parseFloat(selectedOption.getAttribute('data-icms'));
-            
             const icmsValor = (precoProduto * icmsAliq) / 100;
 
-            // PIS + COFINS + ICMS do Estado para IBPT
-            const totalAliq = icmsAliq + pisAliq + cofinsAliq;
-            const totalValor = (precoProduto * totalAliq) / 100;
-
-            // Atualiza ICMS
             document.getElementById('ufNomeDisplay').innerText = nomeEstado;
             document.getElementById('icmsAliqDisplay').innerText = icmsAliq.toFixed(2).replace('.', ',') + '%';
             document.getElementById('icmsFormulaDisplay').innerText = icmsAliq.toFixed(2).replace('.', ',') + '%';
             document.getElementById('icmsValorDisplay').innerText = 'R$ ' + icmsValor.toFixed(2).replace('.', ',');
 
-            // Atualiza Simples Nacional (Guia DAS 6%)
-            const dasAliq = 6.00;
+            // Total do Regime Normal
+            const totalRegimeNormal = icmsValor + pisValor + cofinsValor;
+            document.getElementById('regimeNormalTotalDisplay').innerText = 'R$ ' + totalRegimeNormal.toFixed(2).replace('.', ',');
+
+            // --- CÁLCULOS SIMPLES NACIONAL ---
+            const inputDasAliq = document.getElementById('dasAliqInput');
+            let dasAliq = parseFloat(inputDasAliq ? inputDasAliq.value : 6.00);
+            if (isNaN(dasAliq) || dasAliq < 0) dasAliq = 0;
+
             const dasValor = (precoProduto * dasAliq) / 100;
-            const dasValorDisplay = document.getElementById('dasValorDisplay');
-            if (dasValorDisplay) dasValorDisplay.innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
-            const dasValorSubDisplay = document.getElementById('dasValorSubDisplay');
-            if (dasValorSubDisplay) dasValorSubDisplay.innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
+            document.getElementById('dasAliqDisplay').innerText = dasAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('dasFormulaDisplay').innerText = dasAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('dasValorDisplay').innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
+            document.getElementById('simplesTotalDisplay').innerText = 'R$ ' + dasValor.toFixed(2).replace('.', ',');
 
-            // Atualiza Reforma Tributária (CBS 8,8% e IBS 17,7%)
-            const cbsValor = (precoProduto * 8.80) / 100;
-            const ibsValor = (precoProduto * 17.70) / 100;
-            const cbsValorDisplay = document.getElementById('cbsValorDisplay');
-            if (cbsValorDisplay) cbsValorDisplay.innerText = 'R$ ' + cbsValor.toFixed(2).replace('.', ',');
-            const ibsValorDisplay = document.getElementById('ibsValorDisplay');
-            if (ibsValorDisplay) ibsValorDisplay.innerText = 'R$ ' + ibsValor.toFixed(2).replace('.', ',');
+            // --- CÁLCULOS REFORMA TRIBUTÁRIA ---
+            let cbsAliq = 0.90;
+            let ibsAliq = 0.10;
+            let cbsLabelBadge = '(Nacional - Teste 2026)';
+            let ibsLabelBadge = `(${uf} - Teste 2026)`;
 
-            // Atualiza IBPT (Transparência)
+            if (anoReforma === '2026') {
+                cbsAliq = 0.90;
+                ibsAliq = 0.10;
+                cbsLabelBadge = '(Nacional - Teste 2026)';
+                ibsLabelBadge = `(${uf} - Teste 2026)`;
+            } else {
+                cbsAliq = 8.80;
+                ibsAliq = icmsAliq; // Utiliza a taxa estimada do estado selecionado
+                cbsLabelBadge = '(Nacional - Efetivo 2027+)';
+                ibsLabelBadge = `(${uf} - Estimado Estado)`;
+            }
+
+            const cbsValor = (precoProduto * cbsAliq) / 100;
+            const ibsValor = (precoProduto * ibsAliq) / 100;
+            const reformaTotal = cbsValor + ibsValor;
+            const reformaTotalPct = cbsAliq + ibsAliq;
+
+            document.getElementById('cbsAliqDisplay').innerText = cbsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('cbsBadgeDisplay').innerText = cbsLabelBadge;
+            document.getElementById('cbsFormulaDisplay').innerText = cbsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('cbsValorDisplay').innerText = 'R$ ' + cbsValor.toFixed(2).replace('.', ',');
+
+            document.getElementById('ibsAliqDisplay').innerText = ibsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('ibsBadgeDisplay').innerText = ibsLabelBadge;
+            document.getElementById('ibsFormulaDisplay').innerText = ibsAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('ibsValorDisplay').innerText = 'R$ ' + ibsValor.toFixed(2).replace('.', ',');
+
+            document.getElementById('reformaTotalPctDisplay').innerText = reformaTotalPct.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('reformaTotalDisplay').innerText = 'R$ ' + reformaTotal.toFixed(2).replace('.', ',');
+
+            // --- CÁLCULOS TRANSPARÊNCIA FISCAL (IBPT) ---
+            const totalIbptAliq = icmsAliq + pisAliq + cofinsAliq;
+            const totalIbptValor = (precoProduto * totalIbptAliq) / 100;
+
             document.getElementById('ufTotalDisplay').innerText = uf;
-            document.getElementById('totalAliqDisplay').innerText = totalAliq.toFixed(2).replace('.', ',') + '%';
-            document.getElementById('totalFormulaDisplay').innerText = totalAliq.toFixed(2).replace('.', ',') + '%';
-            document.getElementById('totalValorDisplay').innerText = 'R$ ' + totalValor.toFixed(2).replace('.', ',');
+            document.getElementById('totalAliqDisplay').innerText = totalIbptAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('totalFormulaDisplay').innerText = totalIbptAliq.toFixed(2).replace('.', ',') + '%';
+            document.getElementById('totalValorDisplay').innerText = 'R$ ' + totalIbptValor.toFixed(2).replace('.', ',');
         }
 
         // Alterna a exibição do Guia de Cálculo
@@ -915,7 +1154,7 @@
             item.classList.toggle('active');
         }
 
-        // Filtro em tempo real
+        // Filtro em tempo real para busca
         function filtrarCampos() {
             const input = document.getElementById('searchInput').value.toLowerCase();
             const items = document.querySelectorAll('.accordion-item');
@@ -937,6 +1176,11 @@
                 category.style.display = (input !== '' && visibleItems.length === 0) ? 'none' : 'block';
             });
         }
+
+        // Inicialização ao carregar a página
+        window.onload = function() {
+            atualizarCalculoEstado();
+        };
     </script>
 </body>
 </html>
