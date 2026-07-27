@@ -1,0 +1,15 @@
+{
+  "name": "ManutenCar",
+  "short_name": "ManutenCar",
+  "start_url": "./ManutenCar.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#7e00f3",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/741/741407.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
