@@ -69,6 +69,7 @@
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
         .btn-secondary {
@@ -149,11 +150,15 @@
             gap: 16px;
             flex-wrap: wrap;
         }
+        .state-selector-container > div {
+            flex: 1 1 220px;
+        }
         .state-selector-container label {
             font-weight: 700;
             color: var(--text);
         }
         .state-select {
+            width: 100%;
             padding: 10px 14px;
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -186,6 +191,7 @@
             padding: 14px 18px;
             margin-bottom: 12px;
             line-height: 1.6;
+            word-break: break-word;
         }
         .calc-box .label {
             font-weight: 700;
@@ -216,6 +222,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .total-box .total-value {
             color: var(--success);
@@ -251,9 +259,11 @@
         .timeline-table-container {
             margin: 20px 0;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .timeline-table {
             width: 100%;
+            min-width: 500px;
             border-collapse: collapse;
             background: var(--bg);
             border-radius: 8px;
@@ -301,6 +311,7 @@
             user-select: none;
             font-weight: 600;
             font-size: 1.05rem;
+            gap: 10px;
         }
         .accordion-header .tag-name {
             color: var(--primary);
@@ -309,11 +320,13 @@
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 0.95rem;
+            display: inline-block;
         }
         .accordion-header .icon {
             font-size: 1.1rem;
             color: var(--text-light);
             transition: transform 0.3s ease;
+            flex-shrink: 0;
         }
         .accordion-item.active .accordion-header .icon {
             transform: rotate(180deg);
@@ -331,9 +344,61 @@
             border-top: 0px solid transparent;
         }
         .accordion-item.active .accordion-content {
-            max-height: 300px;
+            max-height: 500px;
             padding: 16px 20px;
             border-top: 1px solid var(--border);
+        }
+
+        /* MEDIA QUERIES PARA RESPONSIVIDADE EM CELULARES */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+            header {
+                padding: 10px 5px;
+                margin-bottom: 16px;
+            }
+            header h1 {
+                font-size: 1.6rem;
+            }
+            header p {
+                font-size: 0.95rem;
+            }
+            .nav-bar {
+                flex-direction: column;
+                width: 100%;
+            }
+            .btn {
+                width: 100%;
+            }
+            .card {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            .card-title {
+                font-size: 1.1rem;
+            }
+            .accordion-header {
+                padding: 12px 14px;
+                font-size: 0.95rem;
+            }
+            .accordion-content {
+                font-size: 0.9rem;
+            }
+            .state-selector-container > div {
+                flex: 1 1 100%;
+            }
+            .calc-box {
+                padding: 12px;
+            }
+            .total-box {
+                font-size: 1rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .total-box .total-value {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -378,7 +443,7 @@
 
                     <div>
                         <label for="valorItemInput">💵 Valor de Venda do Item (R$):</label><br>
-                        <input type="number" id="valorItemInput" class="state-select" value="100.00" min="0" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 140px;">
+                        <input type="number" id="valorItemInput" class="state-select" value="100.00" min="0" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px;">
                     </div>
 
                     <!-- Campo Condicional para Fase da Reforma Tributária -->
@@ -436,7 +501,7 @@
                     <!-- Campos Condicionais para Simples Nacional -->
                     <div id="filtroSimplesDas" style="display: none;">
                         <label for="dasAliqInput">🏷️ Alíquota Efetiva do DAS (%):</label><br>
-                        <input type="number" id="dasAliqInput" class="state-select" value="6.00" min="0" max="30" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px; width: 120px;">
+                        <input type="number" id="dasAliqInput" class="state-select" value="6.00" min="0" max="30" step="0.01" oninput="atualizarCalculoEstado()" style="margin-top: 4px;">
                     </div>
                 </div>
 
@@ -600,7 +665,7 @@
                 </div>
 
                 <div class="ibpt-notice">
-                    ℹ️ <b>Importante:</b> O valor informado pela Tabela IBPT é apenas uma estimativa da carga tributária incidente ao longo da cadeia econômica, utilizada para fins de transparência fiscal (Lei nº 12.741/2012). Esse valor não representa um imposto adicional a ser pago pelo estabelecimento e não deve ser somado aos tributos calculados nesta simulação.
+                    ℹ️ <b>Importante:</b> O valor informado pela Tabela IBPT é apenas uma estimativa da carga tributária incidente ao longo da cadeia económica, utilizada para fins de transparência fiscal (Lei nº 12.741/2012). Esse valor não representa um imposto adicional a ser pago pelo estabelecimento e não deve ser somado aos tributos calculados nesta simulação.
                 </div>
             </div>
 
