@@ -4759,15 +4759,15 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                                 <th>Valor Unitário</th>
                                 <th>Valor Total</th>
                                 <th>vBC ICMS</th>
-                                <th>pICMS</th>
+                                <th>Alíquota ICMS</th>
                                 <th>vICMS</th>
                                 <th>CST PIS</th>
                                 <th>vBC PIS</th>
-                                <th>pPIS</th>
+                                <th>Alíquota PIS</th>
                                 <th>vPIS</th>
                                 <th>CST COFINS</th>
                                 <th>vBC COFINS</th>
-                                <th>pCOFINS</th>
+                                <th>Alíquota COFINS</th>
                                 <th>vCOFINS</th>
                                 <th>indIncIBSCBS</th>
                                 <th>CST RT</th>
@@ -5110,6 +5110,12 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                             </div>
                         </div>
                         <div class="diagnostic-grid">
+                            <div class="diagnostic-field">
+                                <span class="diagnostic-field-label">Alíquota ICMS</span>
+                                <span class="diagnostic-field-value" style="color: ${camposProblematicos.has('pICMS') ? corItem : 'var(--text)'}; font-weight: ${camposProblematicos.has('pICMS') ? 700 : 600};">
+                                    ${item.pICMS ? item.pICMS + '%' : '-'}
+                                </span>
+                            </div>
                             ${camposProblematicos.has('CST') ? `
                             <div class="diagnostic-field">
                                 <span class="diagnostic-field-label">CST</span>
