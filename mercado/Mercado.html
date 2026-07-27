@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Configurações PWA (Mercado) -->
+<link rel="manifest" href="manifest-mercado.json">
+<meta name="theme-color" content="#2e7d32">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mercado">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw-mercado.js');
+  }
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado</title>
+    <link class="favicon" rel="icon" type="image/x-icon" href="mercado.ico">
+
+    <style>
+        :root {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --bg-modal: #252525;
+            --bg-input: #2d2d2d;
+            --border: #333333;
+            --primary: #2e7d32;
+            --primary-accent: #4caf50;
+            --primary-light: #1b381e;
+            --danger: #ef5350;
+            --text-main: #f0f0f0;
+            --text-muted: #aaaaaa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding-bottom: 40px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            background-color: #1b2e1e;
+            color: var(--text-main);
+            padding: 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        /* Banner de Total */
+        .total-banner {
+            background: linear-gradient(135deg, #1b5e20, #003300);
+            color: #ffffff;
+            text-align: center;
+            border-radius: 16px;
+            padding: 22px 16px;
+            margin-bottom: 16px;
+            border: 1px solid #2e7d32;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .total-banner span {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #a5d6a7;
+        }
+
+        .total-banner h1 {
+            font-size: 2.6rem;
+            margin-top: 4px;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .market-info {
+            font-size: 0.95rem;
+            margin-top: 6px;
+            color: #c8e6c9;
+            font-style: italic;
+        }
+
+        /* Botões Principais */
+        .main-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            opacity: 0.85;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger);
+            color: #fff;
+        }
+
+        /* Lista Ativa */
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .item-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .item-obs {
+            font-size: 0.8rem;
+            color: #81c784;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .btn-remove {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 1.2rem;
+            padding: 6px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .empty-cart {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px 0;
+            line-height: 1.5;
+        }
+
+        /* Modais */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 100;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: var(--bg-modal);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+            margin-bottom: 14px;
+        }
+
+        /* Busca no Catálogo + Botão Adicionar Customizado */
+        .search-bar-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .search-bar-container input {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .search-bar-container input:focus {
+            border-color: var(--primary-accent);
+        }
+
+        .btn-add-custom {
+            background-color: var(--primary-accent);
+            color: #000;
+            width: 46px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Categorias e Itens do Catálogo */
+        .category-header {
+            color: var(--primary-accent);
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 16px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .category-header:first-child {
+            margin-top: 0;
+        }
+
+        .catalog-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .catalog-row:active {
+            border-color: var(--primary-accent);
+        }
+
+        .catalog-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-accent);
+            cursor: pointer;
+        }
+
+        .catalog-row-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        /* Formulários gerais em Modais */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-accent);
+        }
+
+        .qty-control {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-qty {
+            background: var(--primary-light);
+            color: var(--primary-accent);
+            border: 1px solid var(--primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            width: 40px;
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        /* Resumo Final */
+        .summary-list {
+            list-style: none;
+            margin: 10px 0;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 0.95rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+    </style>
+
+    <!-- SDKs do Firebase via CDN (Compatível com navegador estático / GitHub Pages) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <h2>🛒 Assistente de Compras</h2>
+    </header>
+
+    <div class="container">
+        <!-- Banner de Total -->
+        <div class="total-banner">
+            <span>Total da Compra</span>
+            <h1 id="total-display">R$ 0,00</h1>
+            <div id="market-display" class="market-info" onclick="openMarketModal()" style="cursor: pointer;">
+                📍 Clique para informar o Mercado
+            </div>
+        </div>
+
+        <!-- Ações Principais -->
+        <div class="main-actions">
+            <button class="btn btn-primary" onclick="openCatalogModal()">✏️ Fazer Lista</button>
+            <button class="btn btn-danger" onclick="showSummaryBeforeReset()">🔄 Zerar Lista</button>
+        </div>
+
+        <!-- Lista do Carrinho -->
+        <div class="card">
+            <div class="cart-header">
+                <h3>Itens Selecionados (<span id="cart-count">0</span>)</h3>
+            </div>
+            
+            <!-- Campo de busca na lista atual -->
+            <div class="search-bar-container" style="margin-bottom: 12px;">
+                <input type="text" id="home-cart-search" placeholder="🔍 Buscar na lista atual..." oninput="renderUI()">
+            </div>
+
+            <div id="cart-list">
+                <div class="empty-cart">
+                    Carregando dados em tempo real...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Catálogo / Fazer Lista -->
+    <div id="modal-catalog" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span>📋 Selecione os Itens</span>
+                <button class="close-btn" onclick="closeCatalogModal()">&times;</button>
+            </div>
+
+            <div class="search-bar-container">
+                <input type="text" id="catalog-search" placeholder="Buscar ou adicionar item..." oninput="renderCatalog()" onkeypress="handleSearchKeyPress(event)">
+                <button class="btn-add-custom" onclick="addCustomItem()" title="Adicionar item não listado">+</button>
+            </div>
+
+            <div class="modal-body" id="catalog-container">
+                <!-- Categorias e checkboxes inseridos via JS -->
+            </div>
+
+            <button class="btn btn-primary" onclick="closeCatalogModal()">Concluir Seleção</button>
+        </div>
+    </div>
+
+    <!-- Modal: Detalhes do Item (Preço / Quantidade) -->
+    <div id="modal-item" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">
+                <div>
+                    <span id="modal-item-emoji"></span>
+                    <span id="modal-item-name"></span>
+                </div>
+                <button class="close-btn" onclick="closeItemModal()">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="item-price">Valor Unitário (R$)</label>
+                <input type="number" id="item-price" step="0.01" inputmode="decimal" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Quantidade</label>
+                <div class="qty-control">
+                    <button class="btn-qty" onclick="changeQty(-1)">-</button>
+                    <span id="item-qty" class="qty-value">1</span>
+                    <button class="btn-qty" onclick="changeQty(1)">+</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="item-obs">Observação (Opcional)</label>
+                <input type="text" id="item-obs" placeholder="Ex: Marca X, 200g, promoção...">
+            </div>
+
+            <button class="btn btn-primary" onclick="saveItemDetails()">Salvar no Carrinho</button>
+            <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeItemModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Nome do Mercado -->
+    <div id="modal-market" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span>🏪 Nome do Mercado</span>
+                <button class="close-btn" onclick="closeMarketModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="market-name-input">Onde você está comprando?</label>
+                <input type="text" id="market-name-input" placeholder="Ex: Supermercado Silva">
+            </div>
+            <button class="btn btn-primary" onclick="confirmMarketName()">Salvar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Resumo antes de Zerar -->
+    <div id="modal-summary" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span>📊 Resumo da Lista</span>
+                <button class="close-btn" onclick="closeSummaryModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+                    Confira os itens selecionados antes de reiniciar:
+                </p>
+                <div id="summary-content"></div>
+            </div>
+
+            <button class="btn btn-danger" onclick="confirmReset()">Confirmar e Zerar Lista</button>
+            <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeSummaryModal()">Voltar</button>
+        </div>
+    </div>
+
+    <script>
+        // Configurações do Firebase extraídas do seu projeto
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1tAdrPOS9-4LUBIsfFc2km20YHQADzas",
+            authDomain: "mercadoweb-aa1ed.firebaseapp.com",
+            projectId: "mercadoweb-aa1ed",
+            storageBucket: "mercadoweb-aa1ed.firebasestorage.app",
+            messagingSenderId: "143176986751",
+            appId: "1:143176986751:web:a3baa59d4eccfac8070f4a"
+        };
+
+        // Inicializa o Firebase e Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const docRef = db.collection('listas').doc('minha_lista_compartilhada');
+
+        // Catálogo Base de Produtos
+        const baseCatalog = [
+            { id: 1, name: "Arroz", category: "Alimentos", emoji: "🌾" },
+            { id: 2, name: "Feijão", category: "Alimentos", emoji: "🫘" },
+            { id: 3, name: "Açúcar", category: "Alimentos", emoji: "🧂" },
+            { id: 4, name: "Café", category: "Alimentos", emoji: "☕" },
+            { id: 5, name: "Óleo de Soja", category: "Alimentos", emoji: "🧴" },
+            { id: 6, name: "Macarrão", category: "Alimentos", emoji: "🍝" },
+            { id: 7, name: "Farinha de Trigo", category: "Alimentos", emoji: "🌾" },
+            { id: 8, name: "Farinha de Mandioca", category: "Alimentos", emoji: "🥣" },
+            { id: 9, name: "Sal", category: "Alimentos", emoji: "🧂" },
+            { id: 10, name: "Pão de Forma", category: "Alimentos", emoji: "🍞" },
+            { id: 11, name: "Biscoito / Bolacha Doce", category: "Alimentos", emoji: "🍪" },
+            { id: 12, name: "Biscoito Salgado / Água e Sal", category: "Alimentos", emoji: "🥨" },
+            { id: 13, name: "Molho de Tomate", category: "Alimentos", emoji: "🥫" },
+            { id: 14, name: "Azeite de Oliva", category: "Alimentos", emoji: "🫒" },
+            { id: 15, name: "Ovos", category: "Alimentos", emoji: "🥚" },
+            { id: 16, name: "Milho em Lata", category: "Alimentos", emoji: "🌽" },
+            { id: 17, name: "Ervilha em Lata", category: "Alimentos", emoji: "🫛" },
+            { id: 18, name: "Atum em Lata", category: "Alimentos", emoji: "🐟" },
+            { id: 19, name: "Sardinha em Lata", category: "Alimentos", emoji: "🐟" },
+            { id: 20, name: "Miojo / Sopa Instantânea", category: "Alimentos", emoji: "🍜" },
+            { id: 21, name: "Fermento em Pó", category: "Alimentos", emoji: "🧁" },
+            { id: 22, name: "Leite Integral", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 23, name: "Leite Desnatado / Semidesnatado", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 24, name: "Leite Zero Lactose", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 25, name: "Leite em Pó", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 26, name: "Leite Condensado", category: "Leites e Laticínios", emoji: "🥫" },
+            { id: 27, name: "Creme de Leite", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 28, name: "Manteiga", category: "Leites e Laticínios", emoji: "🧈" },
+            { id: 29, name: "Margarina", category: "Leites e Laticínios", emoji: "🧈" },
+            { id: 30, name: "Queijo Mussarela", category: "Leites e Laticínios", emoji: "🧀" },
+            { id: 31, name: "Presunto", category: "Leites e Laticínios", emoji: "🍖" },
+            { id: 32, name: "Requeijão", category: "Leites e Laticínios", emoji: "🥛" },
+            { id: 33, name: "Iogurte", category: "Leites e Laticínios", emoji: "🥤" },
+            { id: 34, name: "Yakult / Leite Fermentado", category: "Leites e Laticínios", emoji: "🍼" },
+            { id: 35, name: "Leite Aptamil", category: "Bebê e Infantil", emoji: "🍼" },
+            { id: 36, name: "Leite NAN", category: "Bebê e Infantil", emoji: "🍼" },
+            { id: 37, name: "Leite Nestogeno", category: "Bebê e Infantil", emoji: "🍼" },
+            { id: 38, name: "Leite Enfamil", category: "Bebê e Infantil", emoji: "🍼" },
+            { id: 39, name: "Mucilon / Cereal Infantil", category: "Bebê e Infantil", emoji: "🥣" },
+            { id: 40, name: "Papinha para Bebê", category: "Bebê e Infantil", emoji: "🫙" },
+            { id: 41, name: "Fralda Descartável", category: "Bebê e Infantil", emoji: "👶" },
+            { id: 42, name: "Lenço Umedecido", category: "Bebê e Infantil", emoji: "🧻" },
+            { id: 43, name: "Pomada de Assadura", category: "Bebê e Infantil", emoji: "🧴" },
+            { id: 44, name: "Shampoo Infantil", category: "Bebê e Infantil", emoji: "🧼" },
+            { id: 45, name: "Chocolate em Barra", category: "Snacks e Doces", emoji: "🍫" },
+            { id: 46, name: "Caixa de Bombom", category: "Snacks e Doces", emoji: "🍬" },
+            { id: 47, name: "Achocolatado (Nescau / Toddy)", category: "Snacks e Doces", emoji: "🍫" },
+            { id: 48, name: "Salgadinho (Doritos / Cheetos)", category: "Snacks e Doces", emoji: "🍿" },
+            { id: 49, name: "Batata Chips (Ruffles / Pringles)", category: "Snacks e Doces", emoji: "🥔" },
+            { id: 50, name: "Pipoca de Micro-ondas", category: "Snacks e Doces", emoji: "🍿" },
+            { id: 51, name: "Gummies / Balas / Chicletes", category: "Snacks e Doces", emoji: "🍬" },
+            { id: 52, name: "Paçoca / Pé de Moleque", category: "Snacks e Doces", emoji: "🥜" },
+            { id: 53, name: "Nutella / Creme de Avelã", category: "Snacks e Doces", emoji: "🍫" },
+            { id: 54, name: "Biscoito Wafer", category: "Snacks e Doces", emoji: "🧇" },
+            { id: 55, name: "Banana", category: "Hortifruti", emoji: "🍌" },
+            { id: 56, name: "Maçã", category: "Hortifruti", emoji: "🍎" },
+            { id: 57, name: "Tomate", category: "Hortifruti", emoji: "🍅" },
+            { id: 58, name: "Cebola", category: "Hortifruti", emoji: "🧅" },
+            { id: 59, name: "Alho", category: "Hortifruti", emoji: "🧄" },
+            { id: 60, name: "Batata", category: "Hortifruti", emoji: "🥔" },
+            { id: 61, name: "Alface", category: "Hortifruti", emoji: "🥬" },
+            { id: 62, name: "Cenoura", category: "Hortifruti", emoji: "🥕" },
+            { id: 63, name: "Laranja", category: "Hortifruti", emoji: "🍊" },
+            { id: 64, name: "Limão", category: "Hortifruti", emoji: "🍋" },
+            { id: 65, name: "Mamão", category: "Hortifruti", emoji: "🥭" },
+            { id: 66, name: "Melancia", category: "Hortifruti", emoji: "🍉" },
+            { id: 67, name: "Uva", category: "Hortifruti", emoji: "🍇" },
+            { id: 68, name: "Abacaxi", category: "Hortifruti", emoji: "🍍" },
+            { id: 69, name: "Pimentão", category: "Hortifruti", emoji: "🫑" },
+            { id: 70, name: "Cheiro Verde / Coentro", category: "Hortifruti", emoji: "🌿" },
+            { id: 71, name: "Detergente", category: "Limpeza", emoji: "🧼" },
+            { id: 72, name: "Sabão em Pó", category: "Limpeza", emoji: "🧺" },
+            { id: 73, name: "Sabão Líquido", category: "Limpeza", emoji: "🧺" },
+            { id: 74, name: "Amaciante de Roupas", category: "Limpeza", emoji: "🌸" },
+            { id: 75, name: "Desinfetante", category: "Limpeza", emoji: "🧹" },
+            { id: 76, name: "Água Sanitária / Cândida", category: "Limpeza", emoji: "🧴" },
+            { id: 77, name: "Desengordurante", category: "Limpeza", emoji: "✨" },
+            { id: 78, name: "Removedor", category: "Limpeza", emoji: "🪣" },
+            { id: 79, name: "Papel Toalha", category: "Limpeza", emoji: "🧻" },
+            { id: 80, name: "Lustra Móveis", category: "Limpeza", emoji: "🪑" },
+            { id: 81, name: "Limpa Vidros", category: "Limpeza", emoji: "🪟" },
+            { id: 82, name: "Limpador Multiuso (Veja)", category: "Limpeza", emoji: "🧴" },
+            { id: 83, name: "Esponja de Pia", category: "Limpeza", emoji: "🧽" },
+            { id: 84, name: "Palha de Aço (Bombril)", category: "Limpeza", emoji: "🧼" },
+            { id: 85, name: "Saco de Lixo", category: "Limpeza", emoji: "🗑️" },
+            { id: 86, name: "Pano de Chão / Perfex", category: "Limpeza", emoji: "🧹" },
+            { id: 87, name: "Sabão em Barra", category: "Limpeza", emoji: "🧼" },
+            { id: 88, name: "Sabonete em Barra", category: "Higiene", emoji: "🧼" },
+            { id: 89, name: "Sabonete Líquido", category: "Higiene", emoji: "🧼" },
+            { id: 90, name: "Shampoo", category: "Higiene", emoji: "🧴" },
+            { id: 91, name: "Condicionador", category: "Higiene", emoji: "🧴" },
+            { id: 92, name: "Creme Dental / Pasta de Dente", category: "Higiene", emoji: "🪥" },
+            { id: 93, name: "Escova de Dente", category: "Higiene", emoji: "🪥" },
+            { id: 94, name: "Papel Higiênico", category: "Higiene", emoji: "🧻" },
+            { id: 95, name: "Desodorante Roll-on / Aerosol", category: "Higiene", emoji: "🫧" },
+            { id: 96, name: "Fio Dental", category: "Higiene", emoji: "🧵" },
+            { id: 97, name: "Absorvente", category: "Higiene", emoji: "🌸" },
+            { id: 98, name: "Cotonete / Hastes Flexíveis", category: "Higiene", emoji: "👂" },
+            { id: 99, name: "Aparelho de Barbear", category: "Higiene", emoji: "🪒" },
+            { id: 100, name: "Carne Bovina", category: "Congelados e Carnes", emoji: "🥩" },
+            { id: 101, name: "Carne Moída", category: "Congelados e Carnes", emoji: "🥩" },
+            { id: 102, name: "Frango (Peito / Sassami)", category: "Congelados e Carnes", emoji: "🍗" },
+            { id: 103, name: "Linguiça", category: "Congelados e Carnes", emoji: "🌭" },
+            { id: 104, name: "Salsicha", category: "Congelados e Carnes", emoji: "🌭" },
+            { id: 105, name: "Peixe / Filé de Tilápia", category: "Congelados e Carnes", emoji: "🐟" },
+            { id: 106, name: "Pizza Congelada", category: "Congelados e Carnes", emoji: "🍕" },
+            { id: 107, name: "Lasanha Congelada", category: "Congelados e Carnes", emoji: "🍝" },
+            { id: 108, name: "Batata Palito Congelada", category: "Congelados e Carnes", emoji: "🍟" },
+            { id: 109, name: "Hambúrguer", category: "Congelados e Carnes", emoji: "🍔" },
+            { id: 110, name: "Nuggets de Frango", category: "Congelados e Carnes", emoji: "🍗" },
+            { id: 111, name: "Sorvete / Picolé", category: "Congelados e Carnes", emoji: "🍦" },
+            { id: 112, name: "Pão de Queijo Congelado", category: "Congelados e Carnes", emoji: "🧀" },
+            { id: 113, name: "Água Mineral", category: "Bebidas", emoji: "💧" },
+            { id: 114, name: "Refrigerante", category: "Bebidas", emoji: "🥤" },
+            { id: 115, name: "Suco em Caixa / Garrafa", category: "Bebidas", emoji: "🧃" },
+            { id: 116, name: "Suco em Pó (TANG / Clight)", category: "Bebidas", emoji: "🥤" },
+            { id: 117, name: "Cerveja", category: "Bebidas", emoji: "🍺" },
+            { id: 118, name: "Vinho", category: "Bebidas", emoji: "🍷" },
+            { id: 119, name: "Energético", category: "Bebidas", emoji: "⚡" },
+            { id: 120, name: "Isotônico (Gatorade)", category: "Bebidas", emoji: "🏃" },
+            { id: 121, name: "Chá em Garrafa / Saquinho", category: "Bebidas", emoji: "🍵" },
+            { id: 122, name: "Água de Coco", category: "Bebidas", emoji: "🥥" },
+            { id: 123, name: "Pão Francês", category: "Padaria e Matinais", emoji: "🥖" },
+            { id: 124, name: "Torrada", category: "Padaria e Matinais", emoji: "🍞" },
+            { id: 125, name: "Broa de Milho", category: "Padaria e Matinais", emoji: "🌽" },
+            { id: 126, name: "Croissant / Salgado de Padaria", category: "Padaria e Matinais", emoji: "🥐" },
+            { id: 127, name: "Bolo de Rolo / Bolo Caseiro", category: "Padaria e Matinais", emoji: "🍰" },
+            { id: 128, name: "Geleia de Frutas", category: "Padaria e Matinais", emoji: "🫐" },
+            { id: 129, name: "Mel", category: "Padaria e Matinais", emoji: "🍯" },
+            { id: 130, name: "Açúcar Mascavo / Demerara", category: "Alimentos", emoji: "🧂" },
+            { id: 131, name: "Adoçante Líquido / Pó", category: "Alimentos", emoji: "💧" },
+            { id: 132, name: "Aveia em Flocos / Farelo", category: "Alimentos", emoji: "🥣" },
+            { id: 133, name: "Granola", category: "Alimentos", emoji: "🥣" },
+            { id: 134, name: "Chia / Linhaça", category: "Alimentos", emoji: "🌱" },
+            { id: 135, name: "Lentilha", category: "Alimentos", emoji: "🍲" },
+            { id: 136, name: "Grão-de-Bico", category: "Alimentos", emoji: "🫘" },
+            { id: 137, name: "Pipoca (Milho em Grão)", category: "Alimentos", emoji: "🍿" },
+            { id: 138, name: "Canjica / Mungunzá", category: "Alimentos", emoji: "🥣" },
+            { id: 139, name: "Tapioca / Goma", category: "Alimentos", emoji: "🥞" },
+            { id: 140, name: "Creme de Cebola (Pó)", category: "Temperos e Condimentos", emoji: "🧅" },
+            { id: 141, name: "Caldo em Cubo (Carne/Frango)", category: "Temperos e Condimentos", emoji: "🧊" },
+            { id: 142, name: "Pimenta-do-Reino", category: "Temperos e Condimentos", emoji: "🌶️" },
+            { id: 143, name: "Pimenta Calabresa / Líquida", category: "Temperos e Condimentos", emoji: "🌶️" },
+            { id: 144, name: "Orégano", category: "Temperos e Condimentos", emoji: "🌿" },
+            { id: 145, name: "Louro em Folhas", category: "Temperos e Condimentos", emoji: "🍃" },
+            { id: 146, name: "Vinagre de Álcool", category: "Temperos e Condimentos", emoji: "🍾" },
+            { id: 147, name: "Vinagre de Maçã / Vinagre de Vinho", category: "Temperos e Condimentos", emoji: "🍾" },
+            { id: 148, name: "Ketchup", category: "Temperos e Condimentos", emoji: "🥫" },
+            { id: 149, name: "Mostarda", category: "Temperos e Condimentos", emoji: "🟡" },
+            { id: 150, name: "Maionese", category: "Temperos e Condimentos", emoji: "🥣" },
+            { id: 151, name: "Shoyu / Molho de Soja", category: "Temperos e Condimentos", emoji: "🥢" },
+            { id: 152, name: "Molho de Alho / Molho de Pimenta", category: "Temperos e Condimentos", emoji: "🧄" },
+            { id: 153, name: "Bacon", category: "Congelados e Carnes", emoji: "🥓" },
+            { id: 154, name: "Calabresa Defumada", category: "Congelados e Carnes", emoji: "🌭" },
+            { id: 155, name: "Carne de Porco (Lombo/Copa)", category: "Congelados e Carnes", emoji: "🥩" },
+            { id: 156, name: "Costelinha de Porco", category: "Congelados e Carnes", emoji: "🍖" },
+            { id: 157, name: "Cupim / Fraldinha / Picanha", category: "Congelados e Carnes", emoji: "🥩" },
+            { id: 158, name: "Carne Seca / Charque", category: "Congelados e Carnes", emoji: "🥩" },
+            { id: 159, name: "Empanado de Peixe / Camarão", category: "Congelados e Carnes", emoji: "🍤" },
+            { id: 160, name: "Verduras Congeladas (Seleta)", category: "Congelados e Carnes", emoji: "🥦" },
+            { id: 161, name: "Mandioca / Aipim Congelado", category: "Congelados e Carnes", emoji: "🥔" },
+            { id: 162, name: "Abobrinha", category: "Hortifruti", emoji: "🥒" },
+            { id: 163, name: "Beringela", category: "Hortifruti", emoji: "🍆" },
+            { id: 164, name: "Chuchu", category: "Hortifruti", emoji: "🫛" },
+            { id: 165, name: "Pepino", category: "Hortifruti", emoji: "🥒" },
+            { id: 166, name: "Beterraba", category: "Hortifruti", emoji: "🍠" },
+            { id: 167, name: "Couve / Couve-Manteiga", category: "Hortifruti", emoji: "🥬" },
+            { id: 168, name: "Brócolis / Couve-Flor", category: "Hortifruti", emoji: "🥦" },
+            { id: 169, name: "Espinafre / Rúcula / Agrião", category: "Hortifruti", emoji: "🌱" },
+            { id: 170, name: "Abóbora / Cabotiá", category: "Hortifruti", emoji: "🎃" },
+            { id: 171, name: "Batata-Doce", category: "Hortifruti", emoji: "🍠" },
+            { id: 172, name: "Maracujá", category: "Hortifruti", emoji: "🟡" },
+            { id: 173, name: "Manga", category: "Hortifruti", emoji: "🥭" },
+            { id: 174, name: "Kiwi", category: "Hortifruti", emoji: "🥝" },
+            { id: 175, name: "Morango", category: "Hortifruti", emoji: "🍓" },
+            { id: 176, name: "Pera", category: "Hortifruti", emoji: "🍐" },
+            { id: 177, name: "Saco de Carvão", category: "Utilidades e Casa", emoji: "🪵" },
+            { id: 178, name: "Acendedor de Churrasqueira", category: "Utilidades e Casa", emoji: "🔥" },
+            { id: 179, name: "Papel Alumínio", category: "Utilidades e Casa", emoji: "⬜" },
+            { id: 180, name: "Filme PVC / Insulfilm", category: "Utilidades e Casa", emoji: "🧻" },
+            { id: 181, name: "Papel Manteiga", category: "Utilidades e Casa", emoji: "📜" },
+            { id: 182, name: "Filtro de Café (Papel/Pano)", category: "Utilidades e Casa", emoji: "☕" },
+            { id: 183, name: "Palito de Dente", category: "Utilidades e Casa", emoji: "🪵" },
+            { id: 184, name: "F fósforo / Isqueiro", category: "Utilidades e Casa", emoji: "🕯️" },
+            { id: 185, name: "Vela", category: "Utilidades e Casa", emoji: "🕯️" },
+            { id: 186, name: "Lâmpada LED", category: "Utilidades e Casa", emoji: "💡" },
+            { id: 187, name: "Pilha / Bateria (AA/AAA)", category: "Utilidades e Casa", emoji: "🔋" },
+            { id: 188, name: "Inseticida em Aerosol / Raio", category: "Limpeza", emoji: "🪰" },
+            { id: 189, name: "Repelente de Insetos", category: "Higiene", emoji: "🧴" },
+            { id: 190, name: "Creme para Pentear / Reparação", category: "Higiene", emoji: "🧴" },
+            { id: 191, name: "Tintura de Cabelo", category: "Higiene", emoji: "🎨" },
+            { id: 192, name: "Algodão em Disco / Rolo", category: "Higiene", emoji: "☁️" },
+            { id: 193, name: "Enxaguante Bucal", category: "Higiene", emoji: "🧪" },
+            { id: 194, name: "Protetor Solar", category: "Higiene", emoji: "☀️" },
+            { id: 195, name: "Ração para Cão", category: "Pet Shop", emoji: "🐶" },
+            { id: 196, name: "Ração para Gato", category: "Pet Shop", emoji: "🐱" },
+            { id: 197, name: "Petisco / Biscoito Pet", category: "Pet Shop", emoji: "🦴" },
+            { id: 198, name: "Areia Sanitária para Gato", category: "Pet Shop", emoji: "🐈" },
+            { id: 199, name: "Tapete Higiênico para Cão", category: "Pet Shop", emoji: "🐕" },
+            { id: 200, name: "Sachê para Cão / Gato", category: "Pet Shop", emoji: "🥫" }
+        ];
+
+        // Estado local da Aplicação
+        let state = {
+            marketName: "",
+            cart: [],
+            customItems: [],
+            editingItemIndex: null,
+            currentQty: 1
+        };
+
+        // Escuta alterações no Firestore em Tempo Real
+        window.onload = () => {
+            docRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    state.marketName = data.marketName || "";
+                    state.cart = data.cart || [];
+                    state.customItems = data.customItems || [];
+                } else {
+                    state.marketName = "";
+                    state.cart = [];
+                    state.customItems = [];
+                }
+                renderUI();
+                renderCatalog();
+            }, (error) => {
+                console.error("Erro ao ouvir o Firestore:", error);
+            });
+        };
+
+        // Salva as alterações na Nuvem
+        function saveState() {
+            docRef.set({
+                marketName: state.marketName,
+                cart: state.cart,
+                customItems: state.customItems
+            }, { merge: true }).catch(err => console.error("Erro ao salvar:", err));
+        }
+
+        function getFullCatalog() {
+            return [...baseCatalog, ...state.customItems];
+        }
+
+        function renderUI() {
+            const totalDisplay = document.getElementById('total-display');
+            const marketDisplay = document.getElementById('market-display');
+            const cartList = document.getElementById('cart-list');
+            const cartCount = document.getElementById('cart-count');
+            const homeSearchInput = document.getElementById('home-cart-search');
+            const homeQuery = homeSearchInput ? homeSearchInput.value.toLowerCase().trim() : '';
+
+            const total = state.cart.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
+            totalDisplay.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+            marketDisplay.innerText = state.marketName ? `📍 Mercado: ${state.marketName}` : "📍 Clique para informar o Mercado";
+            cartCount.innerText = state.cart.length;
+
+            if (state.cart.length === 0) {
+                cartList.innerHTML = `
+                    <div class="empty-cart">
+                        Sua lista está vazia.<br>
+                        Clique em <strong>"Fazer Lista"</strong> para selecionar os produtos.
+                    </div>`;
+            } else {
+                const filteredCart = state.cart
+                    .map((item, originalIndex) => ({ ...item, originalIndex }))
+                    .filter(item => item.name.toLowerCase().includes(homeQuery));
+
+                if (filteredCart.length === 0) {
+                    cartList.innerHTML = `<div class="empty-cart">Nenhum item encontrado na busca.</div>`;
+                } else {
+                    cartList.innerHTML = filteredCart.map((item) => {
+                        const priceNum = item.price || 0;
+                        const qtyNum = item.quantity || 1;
+                        const subtotal = priceNum * qtyNum;
+
+                        return `
+                            <div class="cart-item" onclick="openItemModal(${item.originalIndex})">
+                                <div class="item-info">
+                                    <span style="font-size: 1.5rem;">${item.emoji || '📦'}</span>
+                                    <div>
+                                        <div class="item-title">${item.name}</div>
+                                        <div class="item-sub">
+                                            ${qtyNum}x R$ ${priceNum.toFixed(2).replace('.', ',')} = <strong>R$ ${subtotal.toFixed(2).replace('.', ',')}</strong>
+                                        </div>
+                                        ${item.obs ? `<div class="item-obs">Obs: ${item.obs}</div>` : ''}
+                                    </div>
+                                </div>
+                                <button class="btn-remove" onclick="event.stopPropagation(); removeFromCart(${item.originalIndex})">🗑️</button>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        function openCatalogModal() {
+            renderCatalog();
+            document.getElementById('modal-catalog').classList.remove('hidden');
+            document.getElementById('catalog-search').focus();
+        }
+
+        function closeCatalogModal() {
+            document.getElementById('modal-catalog').classList.add('hidden');
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog-container');
+            if (!container) return;
+            const query = document.getElementById('catalog-search').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            const catalog = getFullCatalog();
+            const grouped = {};
+
+            catalog.forEach(item => {
+                if (item.name.toLowerCase().includes(query)) {
+                    if (!grouped[item.category]) {
+                        grouped[item.category] = [];
+                    }
+                    grouped[item.category].push(item);
+                }
+            });
+
+            const categories = Object.keys(grouped);
+
+            if (categories.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">Nenhum item encontrado.<br>Clique no botão <strong>+</strong> para adicionar.</div>`;
+                return;
+            }
+
+            categories.forEach(category => {
+                const catHeader = document.createElement('div');
+                catHeader.className = 'category-header';
+                catHeader.innerText = category;
+                container.appendChild(catHeader);
+
+                grouped[category].forEach(item => {
+                    const isSelected = state.cart.some(cartItem => cartItem.name === item.name);
+                    
+                    const row = document.createElement('label');
+                    row.className = 'catalog-row';
+                    row.innerHTML = `
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleCartItem('${item.name}')">
+                        <div class="catalog-row-info">
+                            <span>${item.emoji || '📦'}</span>
+                            <span>${item.name}</span>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function toggleCartItem(itemName) {
+            const index = state.cart.findIndex(i => i.name === itemName);
+
+            if (index > -1) {
+                state.cart.splice(index, 1);
+            } else {
+                const fullCatalog = getFullCatalog();
+                const itemObj = fullCatalog.find(i => i.name === itemName);
+                if (itemObj) {
+                    state.cart.push({
+                        ...itemObj,
+                        price: 0,
+                        quantity: 1,
+                        obs: ""
+                    });
+                }
+            }
+
+            saveState();
+        }
+
+        function addCustomItem() {
+            const searchInput = document.getElementById('catalog-search');
+            const name = searchInput.value.trim();
+
+            if (!name) {
+                alert("Digite o nome do produto para adicionar.");
+                return;
+            }
+
+            const catalog = getFullCatalog();
+            const exists = catalog.some(i => i.name.toLowerCase() === name.toLowerCase());
+
+            if (!exists) {
+                const newItem = {
+                    id: Date.now(),
+                    name: name,
+                    category: "Outros / Personalizados",
+                    emoji: "📦"
+                };
+                state.customItems.push(newItem);
+            }
+
+            if (!state.cart.some(i => i.name.toLowerCase() === name.toLowerCase())) {
+                state.cart.push({
+                    id: Date.now(),
+                    name: name,
+                    category: "Outros / Personalizados",
+                    emoji: "📦",
+                    price: 0,
+                    quantity: 1,
+                    obs: ""
+                });
+            }
+
+            searchInput.value = '';
+            saveState();
+        }
+
+        function handleSearchKeyPress(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const searchVal = e.target.value.trim();
+                if (searchVal) {
+                    addCustomItem();
+                }
+            }
+        }
+
+        function openItemModal(cartIndex) {
+            state.editingItemIndex = cartIndex;
+            const item = state.cart[cartIndex];
+
+            document.getElementById('modal-item-emoji').innerText = item.emoji || '📦';
+            document.getElementById('modal-item-name').innerText = item.name;
+            document.getElementById('item-price').value = item.price ? item.price : "";
+            document.getElementById('item-obs').value = item.obs || "";
+            state.currentQty = item.quantity || 1;
+            document.getElementById('item-qty').innerText = state.currentQty;
+
+            document.getElementById('modal-item').classList.remove('hidden');
+            setTimeout(() => document.getElementById('item-price').focus(), 100);
+        }
+
+        function closeItemModal() {
+            document.getElementById('modal-item').classList.add('hidden');
+            state.editingItemIndex = null;
+        }
+
+        function changeQty(delta) {
+            if (state.currentQty + delta >= 1) {
+                state.currentQty += delta;
+                document.getElementById('item-qty').innerText = state.currentQty;
+            }
+        }
+
+        function saveItemDetails() {
+            if (state.editingItemIndex === null) return;
+
+            const priceInput = document.getElementById('item-price').value;
+            const price = parseFloat(priceInput) || 0;
+            const obs = document.getElementById('item-obs').value.trim();
+
+            state.cart[state.editingItemIndex].price = price;
+            state.cart[state.editingItemIndex].quantity = state.currentQty;
+            state.cart[state.editingItemIndex].obs = obs;
+
+            saveState();
+            closeItemModal();
+        }
+
+        function removeFromCart(index) {
+            state.cart.splice(index, 1);
+            saveState();
+        }
+
+        function openMarketModal() {
+            document.getElementById('market-name-input').value = state.marketName;
+            document.getElementById('modal-market').classList.remove('hidden');
+        }
+
+        function closeMarketModal() {
+            document.getElementById('modal-market').classList.add('hidden');
+        }
+
+        function confirmMarketName() {
+            const input = document.getElementById('market-name-input').value.trim();
+            state.marketName = input;
+            saveState();
+            closeMarketModal();
+        }
+
+        function showSummaryBeforeReset() {
+            if (state.cart.length === 0) {
+                alert("A lista já está vazia!");
+                return;
+            }
+
+            const container = document.getElementById('summary-content');
+            let total = 0;
+
+            let html = `<ul class="summary-list">`;
+            state.cart.forEach(item => {
+                const subtotal = (item.price || 0) * (item.quantity || 1);
+                total += subtotal;
+                html += `
+                    <li class="summary-item">
+                        <span>${item.emoji || '📦'} ${item.name} (${item.quantity || 1}x)</span>
+                        <strong>R$ ${subtotal.toFixed(2).replace('.', ',')}</strong>
+                    </li>
+                `;
+            });
+            html += `</ul>`;
+            html += `
+                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border); text-align: right;">
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Total Geral:</span>
+                    <h3 style="color: var(--primary-accent); font-size: 1.5rem;">R$ ${total.toFixed(2).replace('.', ',')}</h3>
+                </div>
+            `;
+
+            container.innerHTML = html;
+            document.getElementById('modal-summary').classList.remove('hidden');
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('modal-summary').classList.add('hidden');
+        }
+
+        function confirmReset() {
+            state.cart = [];
+            state.marketName = "";
+            saveState();
+            closeSummaryModal();
+        }
+    </script>
+</body>
+</html>
