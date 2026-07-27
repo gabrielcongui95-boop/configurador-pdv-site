@@ -1,0 +1,2553 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ManutenCar</title>
+    <link class="favicon" rel="icon" type="image/x-icon" href="Manutencar.ico">
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #7e00f3;
+            --secondary: #03dac6;
+            --text-main: #e1e1e1;
+            --text-dim: #a0a0a0;
+            --accent: #cf6679;
+            --success: #4caf50;
+            --warning: #fb8c00;
+            --card-bg-alt: #2a2a2a;
+            --border-color: #444444;
+        }
+
+        /* --- RESET E BASES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar customizada para Desktop */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* --- TELA CHEIA FOTO --- */
+        #fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            cursor: pointer;
+        }
+
+        #fullscreen-overlay img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        [style*="--bg-color: #f5f5f5"] .card {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-option {
+            flex: 1;
+            background: var(--card-bg-alt);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        [style*="--bg-color: #f5f5f5"] .theme-option {
+            background: var(--card-bg-alt);
+            color: #333333;
+        }
+
+        /* --- TELA DE LOADING --- */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading-screen img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(187, 134, 252, 0.3);
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            animation: dot-bounce 1.2s infinite ease-in-out;
+        }
+
+        .dot:nth-child(1) { animation-delay: 0ms; }
+        .dot:nth-child(2) { animation-delay: 100ms; }
+        .dot:nth-child(3) { animation-delay: 200ms; }
+
+        @keyframes dot-bounce {
+            0%, 100% { 
+                transform: translateY(0); 
+                background-color: var(--primary);
+                opacity: 0.6; 
+            }
+            50% { 
+                transform: translateY(-15px); 
+                background-color: var(--secondary);
+                opacity: 1; 
+            }
+        }
+
+        /* --- NAVEGAÇÃO MOBILE --- */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        [style*="--bg-color: #f5f5f5"] nav {
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        nav button span { font-size: 11px; }
+        nav button.active { color: var(--primary); }
+        nav button:hover { color: var(--primary); }
+
+        /* --- CONTAINER PRINCIPAL RESPONSIVO --- */
+        .container {
+            padding: 20px;
+            padding-bottom: 90px;
+            max-width: 1000px; /* Expandido para desktop */
+            margin: 0 auto;
+        }
+
+        h1, h2 { margin-bottom: 20px; color: var(--primary); }
+
+        /* --- FORMULÁRIOS --- */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-dim); font-size: 14px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--card-bg-alt);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+        input:focus, select:focus, textarea:focus { outline: 1px solid var(--primary); }
+
+        [style*="--bg-color: #f5f5f5"] input, 
+        [style*="--bg-color: #f5f5f5"] select, 
+        [style*="--bg-color: #f5f5f5"] textarea {
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            color: #333333;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            filter: brightness(0.9);
+        }
+
+        .btn:hover {
+            opacity: 0.92;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-secondary { background: var(--secondary); color: #000; margin-top: 10px; }
+        .btn-danger { background: var(--accent); color: white; margin-top: 10px; }
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+
+        .stat-item:active {
+            transform: scale(0.97);
+        }
+
+        /* --- TOAST --- */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--success);
+            color: black;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            z-index: 10000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* --- LISTA DE CARROS (RESPONSIVA) --- */
+        #car-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .car-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--card-bg-alt);
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .car-item:hover {
+            border-color: var(--primary);
+        }
+
+        [style*="--bg-color: #f5f5f5"] .car-item {
+            background: var(--card-bg-alt);
+            border: 1px solid #eeeeee;
+        }
+
+        .car-item img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .car-item.active { border: 2px solid var(--primary); }
+
+        /* --- CONSUMO --- */
+        .fuel-type-btn.active {
+            border: 2px solid var(--primary) !important;
+            background: var(--primary) !important;
+        }
+        .fuel-type-btn.active span, .fuel-type-btn.active i {
+            color: #fff !important;
+        }
+
+        /* --- DASHBOARD GRID RESPONSIVO --- */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: var(--card-bg-alt);
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 18px; font-weight: bold; color: var(--secondary); display: block; margin-top: 4px; }
+        .stat-label { font-size: 12px; color: var(--text-dim); }
+
+        /* --- HISTÓRICO --- */
+        .history-item {
+            border-left: 3px solid var(--primary);
+            padding: 12px;
+            margin-bottom: 10px;
+            background: var(--card-bg-alt);
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+        }
+        .history-item:hover {
+            background: var(--card-bg);
+        }
+        .history-date { font-size: 11px; color: var(--text-dim); }
+
+        /* --- UTILIDADES --- */
+        .hidden { display: none !important; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #car-photo-preview {
+            width: 100%;
+            height: 180px;
+            background: var(--card-bg-alt);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 2px dashed var(--border-color);
+            cursor: pointer;
+        }
+        #car-photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+        .tire-status {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .tire { text-align: center; font-size: 12px; }
+        .tire i { font-size: 24px; display: block; margin-bottom: 5px; }
+
+        /* --- FILTRO HISTÓRICO --- */
+        .filter-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 5px 0 15px 0;
+            margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .filter-container::-webkit-scrollbar { height: 4px; }
+        .filter-container::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+        .filter-chip {
+            background: var(--card-bg-alt);
+            color: var(--text-dim);
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 12px;
+            white-space: nowrap;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-chip.active {
+            background: var(--primary);
+            color: black;
+            border-color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* --- TUTORIAL --- */
+        #tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 11000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .tutorial-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 450px;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid var(--primary);
+            position: relative;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .tutorial-slide { display: none; }
+        .tutorial-slide.active { display: block; }
+
+        .tutorial-icon {
+            font-size: 50px;
+            color: var(--secondary);
+            margin-bottom: 20px;
+        }
+
+        .tutorial-title {
+            font-size: 22px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .tutorial-text {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: var(--text-main);
+        }
+
+        .tutorial-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .t-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+        }
+
+        .t-dot.active {
+            background: var(--primary);
+            width: 20px;
+            border-radius: 10px;
+        }
+
+        .tutorial-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tutorial-btn-skip {
+            background: transparent;
+            border: 1px solid var(--text-dim);
+            color: var(--text-dim);
+        }
+
+        .mockup-container {
+            background: var(--bg-color);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .mockup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background: var(--card-bg);
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .mockup-btn-plus {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .tutorial-glow {
+            animation: glow-pulse 1.5s infinite;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.8); outline: 2px solid rgba(255, 255, 0, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(255, 255, 0, 0); outline: 2px solid rgba(255, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); outline: 2px solid rgba(255, 255, 0, 0.5); }
+        }
+
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .mockup-item {
+            background: var(--card-bg-alt);
+            border-radius: 5px;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+        }
+
+        .mockup-item i { font-size: 16px; margin-bottom: 4px; display: block; }
+
+        /* ========================================================
+           ADAPTAÇÕES DE LAYOUT EXCLUSIVAS PARA DESKTOP (>= 768px)
+           ======================================================== */
+        @media (min-width: 768px) {
+            body {
+                padding-top: 70px; /* Dá espaço para a barra superior no desktop */
+            }
+
+            .container {
+                padding-bottom: 40px;
+            }
+
+            /* Transforma a Nav em cabeçalho no desktop */
+            nav {
+                top: 0;
+                bottom: auto;
+                border-top: none;
+                border-bottom: 1px solid var(--border-color);
+                box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+                max-width: 1000px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-radius: 0 0 16px 16px;
+                padding: 10px 20px;
+            }
+
+            nav button {
+                flex-direction: row;
+                gap: 8px;
+                font-size: 16px;
+                padding: 8px 18px;
+            }
+
+            nav button span {
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            /* Dashboard com 3 colunas em telas médias/grandes */
+            .stat-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 15px;
+            }
+
+            /* Garagem com layout em grid no desktop */
+            #car-list {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 15px;
+            }
+
+            /* Formulários em grid para aproveitar largura */
+            .form-grid-2col {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA CHEIA FOTO -->
+    <div id="fullscreen-overlay" onclick="toggleFullscreen(null)">
+        <img id="fullscreen-img" src="" alt="Visualização em Tela Cheia">
+    </div>
+
+    <!-- TUTORIAL -->
+    <div id="tutorial-overlay">
+        <div class="tutorial-card">
+            <!-- Slide 1: Boas-vindas -->
+            <div class="tutorial-slide active" data-index="0">
+                <i class="fas fa-hand-sparkles tutorial-icon"></i>
+                <div class="tutorial-title">Bem-vindo ao ManutenCar!</div>
+                <p class="tutorial-text">O seu assistente inteligente para cuidar de todos os detalhes do seu veículo de forma simples e organizada.</p>
+            </div>
+
+            <!-- Slide 2: Garagem -->
+            <div class="tutorial-slide" data-index="1">
+                <div class="tutorial-title">Sua Garagem Digital</div>
+                <div class="mockup-container">
+                    <div class="mockup-header" style="justify-content: center; font-weight: bold; color: var(--primary);">Seus Veículos</div>
+                    <div class="tutorial-glow" style="background: var(--card-bg-alt); padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--primary);">
+                        <div style="width: 30px; height: 30px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center;"><i class="fas fa-car" style="font-size: 14px;"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 12px; font-weight: bold;">Civic 2020</div>
+                            <div style="font-size: 10px; color: var(--secondary);">ABC-1234</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="tutorial-text">Comece adicionando seu carro ou moto. O app lembrará das configurações e manutenções de cada veículo separadamente.</p>
+            </div>
+
+            <!-- Slide 3: Dashboard -->
+            <div class="tutorial-slide" data-index="2">
+                <div class="tutorial-title">Personalize seu Dashboard</div>
+                <div class="mockup-container">
+                    <div class="mockup-header">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background: #333;"></div>
+                        <div class="mockup-btn-plus tutorial-glow">+</div>
+                    </div>
+                    <div class="mockup-grid">
+                        <div class="mockup-item"><i class="fas fa-oil-can" style="color: #ffa000;"></i>Óleo Motor</div>
+                        <div class="mockup-item"><i class="fas fa-circle" style="color: #4caf50;"></i>Pneus</div>
+                    </div>
+                </div>
+                <p class="tutorial-text">Use o botão <strong>"+"</strong> no canto superior direito para escolher quais itens você deseja monitorar no seu dia a dia.</p>
+            </div>
+
+            <!-- Slide 4: Atualização -->
+            <div class="tutorial-slide" data-index="3">
+                <div class="tutorial-title">Mantenha-se em Dia</div>
+                <div class="mockup-container">
+                    <div class="mockup-item tutorial-glow" style="border: 1px solid var(--primary); width: 60%; margin: 0 auto;">
+                        <i class="fas fa-oil-can" style="color: #ffa000;"></i>
+                        <strong>Óleo Motor</strong><br>
+                        <span style="font-size: 8px; color: var(--secondary);">CLIQUE PARA ATUALIZAR</span>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 10px; text-align: left; background: var(--card-bg-alt); padding: 8px; border-radius: 5px;">
+                        📅 20/03/2024<br>
+                        🛣️ 45.000 KM
+                    </div>
+                </div>
+                <p class="tutorial-text">Ao realizar uma manutenção, basta clicar no item e preencher os dados. O histórico será atualizado na hora!</p>
+            </div>
+
+            <!-- Slide 5: Consumo -->
+            <div class="tutorial-slide" data-index="4">
+                <div class="tutorial-title">Controle de Consumo</div>
+                <div class="mockup-container">
+                    <div class="mockup-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="mockup-item"><i class="fas fa-tag"></i>Preço</div>
+                        <div class="mockup-item"><i class="fas fa-dollar-sign"></i>Total</div>
+                        <div class="mockup-item tutorial-glow" style="border: 1px solid var(--secondary);"><i class="fas fa-gas-pump" style="color: var(--secondary);"></i>Posto</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 14px; color: var(--secondary); font-weight: bold;">Média: 12.5 KM/L</div>
+                </div>
+                <p class="tutorial-text">Informe os abastecimentos e a quilometragem para saber a média real de combustível do seu veículo.</p>
+            </div>
+
+            <!-- Slide 6: Histórico -->
+            <div class="tutorial-slide" data-index="5">
+                <div class="tutorial-title">Histórico Detalhado</div>
+                <div class="mockup-container">
+                    <div class="mockup-header" style="justify-content: center; font-weight: bold; color: var(--secondary);">Linha do Tempo</div>
+                    <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
+                        <div style="background: var(--card-bg-alt); padding: 8px; border-radius: 5px; text-align: left; font-size: 10px; border-left: 3px solid var(--primary);">
+                            <strong>Troca de Óleo</strong><br>
+                            📅 20/03/2024 - 45.000 KM
+                        </div>
+                        <div style="background: var(--card-bg-alt); padding: 8px; border-radius: 5px; text-align: left; font-size: 10px; border-left: 3px solid var(--secondary);">
+                            <strong>Filtro de Ar</strong><br>
+                            📅 15/02/2024 - 44.200 KM
+                        </div>
+                    </div>
+                    <div class="tutorial-glow" style="position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 12px;"><i class="fas fa-history"></i></div>
+                </div>
+                <p class="tutorial-text">Acesse o botão de <strong>Histórico</strong> no dashboard para visualizar todas as manutenções realizadas em ordem cronológica.</p>
+            </div>
+
+            <div class="tutorial-dots" id="tutorial-dots">
+                <div class="t-dot active"></div>
+                <div class="t-dot"></div>
+                <div class="t-dot"></div>
+                <div class="t-dot"></div>
+                <div class="t-dot"></div>
+                <div class="t-dot"></div>
+            </div>
+
+            <div class="tutorial-nav">
+                <button class="btn tutorial-btn-skip" onclick="closeTutorial()">PULAR</button>
+                <button class="btn btn-primary" id="tutorial-btn-next" onclick="nextTutorialSlide()">PRÓXIMO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DE LOADING -->
+    <div id="loading-screen" class="hidden">
+        <img id="loading-car-img" src="" alt="Carro">
+        <div class="loading-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <!-- TELA INICIAL / SELEÇÃO DE CARRO -->
+    <div id="car-selection" class="container section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Seus Veículos</h2>
+            <button onclick="showSection('settings')" style="background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+        <div id="car-list"></div>
+        <button class="btn btn-secondary" style="margin-top: 15px;" onclick="resetCarForm(); showSection('add-car')">
+            <i class="fas fa-plus"></i> Adicionar Veículo
+        </button>
+    </div>
+
+    <!-- TELA CONFIGURAÇÕES -->
+    <div id="settings" class="container section">
+        <h2>Configurações</h2>
+        <div class="card">
+            <div class="form-group">
+                <label>Tema do Aplicativo</label>
+                <div style="display: flex; gap: 10px;">
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="dark" checked onchange="applyTheme('dark')" style="width: auto; margin-right: 5px;"> 🌙 Escuro
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="light" onchange="applyTheme('light')" style="width: auto; margin-right: 5px;"> ☀️ Claro
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-grid-2col">
+                <div class="form-group">
+                    <label>Cor Principal (Roxo por padrão)</label>
+                    <input type="color" id="color-primary" value="#7e00f3" onchange="updateColors()" style="height: 40px; padding: 2px;">
+                </div>
+
+                <div class="form-group">
+                    <label>Cor Secundária (Ciano por padrão)</label>
+                    <input type="color" id="color-secondary" value="#03dac6" onchange="updateColors()" style="height: 40px; padding: 2px;">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="showSection('car-selection')">VOLTAR</button>
+        </div>
+    </div>
+
+    <!-- TELA ADICIONAR CARRO -->
+    <div id="add-car" class="container section">
+        <h2>Novo Veículo</h2>
+        <div class="card">
+            <div id="car-photo-preview" onclick="document.getElementById('car-photo-input').click()">
+                <i class="fas fa-camera fa-2x" id="camera-icon"></i>
+                <img id="preview-img" class="hidden" alt="Foto Prévia">
+            </div>
+            <input type="file" id="car-photo-input" class="hidden" accept="image/*" onchange="previewPhoto(this)">
+            
+            <div class="form-group">
+                <label>Tipo de Veículo</label>
+                <div style="display: flex; gap: 10px;">
+                    <label style="flex: 1; background: var(--card-bg-alt); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); cursor: pointer;">
+                        <input type="radio" name="car-type" value="car" checked style="width: auto; margin-right: 5px;"> 🚗 Carro
+                    </label>
+                    <label style="flex: 1; background: var(--card-bg-alt); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); cursor: pointer;">
+                        <input type="radio" name="car-type" value="moto" style="width: auto; margin-right: 5px;"> 🏍️ Moto
+                    </label>
+                </div>
+            </div>
+            <div class="form-grid-2col">
+                <div class="form-group">
+                    <label>Modelo do Veículo</label>
+                    <input type="text" id="car-model" placeholder="Ex: Honda Civic 2020">
+                </div>
+                <div class="form-group">
+                    <label>Placa</label>
+                    <input type="text" id="car-plate" placeholder="Ex: ABC-1234">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveNewCar()">SALVAR VEÍCULO</button>
+            <button class="btn btn-danger" onclick="showSection('car-selection')">VOLTAR</button>
+        </div>
+    </div>
+
+    <!-- TELA DASHBOARD (MANUTENÇÃO) -->
+    <div id="dashboard" class="container section active">
+        <div class="card" style="position: relative; text-align: center;">
+            <button onclick="showSection('help-section')" style="position: absolute; top: 10px; left: 10px; background: var(--card-bg-alt); border: 1px solid #555; width: 30px; height: 30px; border-radius: 50%; color: var(--primary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                ?
+            </button>
+            <button onclick="openAddButtonModal()" style="position: absolute; top: 10px; right: 10px; background: var(--primary); border: none; width: 30px; height: 30px; border-radius: 50%; color: black; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                +
+            </button>
+            <img id="dash-car-img" src="" alt="Imagem Veículo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 10px; cursor: pointer;">
+            <h2 id="dash-car-name" style="margin-bottom: 5px;">Nome do Carro</h2>
+            <p id="dash-car-plate" style="color: var(--secondary); font-weight: bold; letter-spacing: 1px;">ABC-1234</p>
+        </div>
+
+        <h3></h3>
+        <div class="stat-grid" id="dashboard-buttons">
+            <!-- Botões dinâmicos aqui -->
+        </div>
+
+        <div id="tire-section" class="card" style="margin-top: 15px;">
+            <h3>Condição dos Pneus</h3>
+            <div class="tire-status">
+                <div class="tire">
+                    <i class="fas fa-circle" id="tire-df"></i>
+                    Diant. Esq.
+                </div>
+                <div class="tire">
+                    <i class="fas fa-circle" id="tire-dd"></i>
+                    Diant. Dir.
+                </div>
+                <div class="tire">
+                    <i class="fas fa-circle" id="tire-tf"></i>
+                    Tras. Esq.
+                </div>
+                <div class="tire">
+                    <i class="fas fa-circle" id="tire-td"></i>
+                    Tras. Dir.
+                </div>
+            </div>
+            <button class="btn btn-secondary" style="margin-top: 15px;" onclick="openMaintenanceModal('tires')">ATUALIZAR PNEUS</button>
+        </div>
+    </div>
+
+    <!-- TELA DE AJUDA / HELPER -->
+    <div id="help-section" class="container section">
+        <h2>Como usar o <strong>M</strong>anuten<strong>C</strong>ar</h2>
+        <div class="card" style="line-height: 1.6; text-align: left; max-height: 70vh; overflow-y: auto;">
+            <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+                <i class="fas fa-plus-circle"></i> Personalizar Dashboard
+            </p>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                Use o botão <strong>"+"</strong> no topo direito para adicionar novos itens de manutenção. Você pode escolher quais informações deseja exibir (Data, KM ou Condição) para cada item.
+            </p>
+
+            <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+                <i class="fas fa-tools"></i> Atualizar Registros
+            </p>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                Clique em qualquer botão no Dashboard para abrir o formulário. Preencha os dados e adicione <strong>Observações</strong> se necessário. Ao salvar, o histórico será atualizado automaticamente.
+            </p>
+
+            <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+                <i class="fas fa-gas-pump"></i> Calculadora de Consumo
+            </p>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                Na aba <strong>Consumo</strong>, informe os litros abastecidos e quantos quilômetros rodou. O app calculará a média e salvará o registro no seu histórico.
+            </p>
+
+            <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+                <i class="fas fa-history"></i> Histórico Dinâmico
+            </p>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                Acompanhe todas as manutenções na aba <strong>Histórico</strong>. Use os filtros no topo para ver categorias específicas. Você também pode excluir registros individuais ou gerenciar categorias inteiras.
+            </p>
+
+            <p style="color: var(--primary); font-weight: bold; margin-bottom: 10px;">
+                <i class="fas fa-car"></i> Gerenciar Garagem
+            </p>
+            <p style="font-size: 14px; margin-bottom: 15px;">
+                Na aba <strong>Garagem</strong>, você pode cadastrar múltiplos veículos (Carros ou Motos), editar informações ou excluir veículos existentes. O app lembrará das configurações individuais de cada um.
+            </p>
+            
+            <p style="color: var(--text-dim); font-size: 14px; font-style: italic;">
+                <strong>M</strong>anuten<strong>C</strong>ar: Um aplicativo desenvolvido para manter todas as manutenções realizadas no veículo salvas e organizadas!
+            </p>
+        </div>
+        <button class="btn btn-secondary" style="margin-bottom: 10px;" onclick="openTutorial()">
+            <i class="fas fa-play-circle"></i> REINICIAR TUTORIAL
+        </button>
+        <button class="btn btn-primary" onclick="showSection('dashboard')">ENTENDI!</button>
+    </div>
+
+    <!-- TELA CONSUMO -->
+    <div id="consumption" class="container section">
+        <h2>Consumo</h2>
+        
+        <!-- Grid de Botões Estilo Dashboard -->
+        <div class="stat-grid" style="margin-bottom: 15px;">
+            <div class="stat-item card" onclick="promptConsumption('price')">
+                <i class="fas fa-tag" style="color: var(--primary);"></i>
+                <span class="stat-label">Preço Litro</span>
+                <span class="stat-value" id="disp-fuel-price">R$ 0,00</span>
+            </div>
+            <div class="stat-item card" onclick="promptConsumption('total')">
+                <i class="fas fa-dollar-sign" style="color: var(--primary);"></i>
+                <span class="stat-label">Valor Total</span>
+                <span class="stat-value" id="disp-fuel-total">R$ 0,00</span>
+            </div>
+            <div class="stat-item card fuel-type-btn" id="btn-gas-comum" onclick="selectFuelType('Gasolina Comum')">
+                <i class="fas fa-gas-pump" style="color: var(--secondary);"></i>
+                <span class="stat-label">G. Comum</span>
+            </div>
+            <div class="stat-item card fuel-type-btn" id="btn-gas-aditivada" onclick="selectFuelType('Gasolina Aditivada')">
+                <i class="fas fa-gas-pump" style="color: var(--secondary);"></i>
+                <span class="stat-label">G. Aditivada</span>
+            </div>
+            <div class="stat-item card fuel-type-btn" id="btn-alcool" onclick="selectFuelType('Álcool')">
+                <i class="fas fa-leaf" style="color: var(--secondary);"></i>
+                <span class="stat-label">Álcool</span>
+            </div>
+            <div class="stat-item card" onclick="openStationModal()">
+                <i class="fas fa-store" style="color: var(--primary);"></i>
+                <span class="stat-label">Posto</span>
+                <span class="stat-value" id="disp-fuel-station">---</span>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; margin-bottom: 15px;">
+            <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 5px;">LITROS ABASTECIDOS:</p>
+            <h2 id="calc-liters-val" style="color: var(--secondary); margin-bottom: 5px;">0.00 L</h2>
+            <p id="fuel-save-date" style="font-size: 11px; color: var(--text-dim);" class="hidden">Salvo em: --/--/----</p>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-primary" onclick="saveFuelInfo()" style="flex: 2;">
+                    <i class="fas fa-save"></i> SALVAR INFORMAÇÕES
+                </button>
+                <button class="btn btn-danger" onclick="clearFuelInfo()" style="flex: 1; background: transparent; border: 1px solid var(--accent); color: var(--accent);">
+                    <i class="fas fa-times"></i> LIMPAR
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label>KM Rodado (após rodar)</label>
+                <input type="number" id="fuel-km-input" placeholder="Ex: 500">
+            </div>
+            <button class="btn btn-secondary" onclick="calculateFuelAverage()">
+                <i class="fas fa-calculator"></i> CALCULAR MÉDIA
+            </button>
+            
+            <div id="average-result-display" class="hidden" style="margin-top: 20px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <p style="font-size: 14px; color: var(--text-dim);">Sua média foi de:</p>
+                <h2 id="average-val-display" style="color: var(--secondary);">0.00 KM/L</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POSTOS -->
+    <div id="station-modal" class="container section">
+        <h2>Selecione o Posto</h2>
+        <div class="card">
+            <button class="btn btn-secondary" onclick="selectStation('Ipiranga')" style="margin-bottom: 10px; text-align: left; padding: 15px;">
+                <i class="fas fa-gas-pump" style="margin-right: 10px;"></i> Ipiranga
+            </button>
+            <button class="btn btn-secondary" onclick="selectStation('Shell')" style="margin-bottom: 10px; text-align: left; padding: 15px;">
+                <i class="fas fa-gas-pump" style="margin-right: 10px;"></i> Shell
+            </button>
+            <button class="btn btn-secondary" onclick="selectStation('Sette')" style="margin-bottom: 10px; text-align: left; padding: 15px;">
+                <i class="fas fa-gas-pump" style="margin-right: 10px;"></i> Sette
+            </button>
+            <button class="btn btn-secondary" onclick="selectStation('Outros')" style="margin-bottom: 20px; text-align: left; padding: 15px;">
+                <i class="fas fa-gas-pump" style="margin-right: 10px;"></i> Outros
+            </button>
+            
+            <button class="btn btn-primary" onclick="showSection('consumption')">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- MODAL ENTRADA VALOR COMBUSTÍVEL -->
+    <div id="fuel-value-modal" class="container section">
+        <h2 id="fuel-value-title">Entrada de Valor</h2>
+        <div class="card">
+            <div class="form-group">
+                <label id="fuel-value-label">Informe o valor:</label>
+                <input type="number" id="fuel-value-input" step="0.01" placeholder="0.00">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="confirmFuelValue()" style="flex: 2;">CONFIRMAR</button>
+                <button class="btn btn-secondary" onclick="showSection('consumption')" style="flex: 1;">VOLTAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA HISTÓRICO -->
+    <div id="history" class="container section">
+        <h2>Histórico de Manutenção</h2>
+        <div class="filter-container" id="history-filters">
+            <div class="filter-chip active" onclick="setHistoryFilter('all')">Todos</div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn btn-danger" onclick="clearHistory()" style="flex: 1; padding: 10px; font-size: 12px; margin-top: 0;">
+                <i class="fas fa-trash-alt"></i> APAGAR TUDO
+            </button>
+            <button class="btn btn-secondary" onclick="openManageCategoriesModal()" style="flex: 1; padding: 10px; font-size: 12px; margin-top: 0;">
+                <i class="fas fa-tasks"></i> GERENCIAR
+            </button>
+        </div>
+        <div id="history-list"></div>
+    </div>
+
+    <!-- MODAL GERENCIAR CATEGORIAS -->
+    <div id="manage-categories-modal" class="container section">
+        <h2>Gerenciar Categorias</h2>
+        <div class="card">
+            <p style="font-size: 14px; color: var(--text-dim); margin-bottom: 15px;">
+                Selecione as categorias que deseja apagar do histórico.
+            </p>
+            <div id="categories-to-delete" style="display: flex; flex-direction: column; gap: 10px; background: var(--card-bg-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+                <!-- Categorias dinâmicas aqui -->
+            </div>
+            <button class="btn btn-danger" onclick="deleteSelectedCategories()">EXCLUIR SELECIONADAS</button>
+            <button class="btn btn-primary" onclick="showSection('history')" style="margin-top: 10px;">VOLTAR</button>
+        </div>
+    </div>
+
+    <!-- TELA DETALHES HISTÓRICO -->
+    <div id="history-detail" class="container section">
+        <h2 id="detail-title">Detalhes do Registro</h2>
+        <div class="card" id="detail-content" style="line-height: 1.6;">
+            <!-- Conteúdo dinâmico -->
+        </div>
+        <button class="btn btn-primary" onclick="showSection('history')">VOLTAR AO HISTÓRICO</button>
+    </div>
+
+    <!-- MODAL DE MANUTENÇÃO (SEÇÃO DEDICADA) -->
+    <div id="maint-modal" class="container section">
+        <h2 id="maint-title">Manutenção</h2>
+        <div class="card">
+            <div id="maint-fields"></div>
+            <button class="btn btn-primary" onclick="saveMaintenance()">SALVAR REGISTRO</button>
+            <button class="btn btn-danger" onclick="showSection('dashboard')">VOLTAR</button>
+        </div>
+    </div>
+
+    <!-- MODAL ADICIONAR BOTÃO CUSTOMIZADO -->
+    <div id="add-button-modal" class="container section">
+        <h2>Personalizar Botões</h2>
+        <div class="card">
+            <div class="form-group">
+                <label>Selecione os itens</label>
+                <select id="custom-button-select" multiple style="height: 150px;">
+                    <optgroup label="🚗 Itens para Carro" id="opts-car"></optgroup>
+                    <optgroup label="🏍️ Itens para Moto" id="opts-moto"></optgroup>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Campos a exibir:</label>
+                <div style="display: flex; flex-direction: column; gap: 10px; background: var(--card-bg-alt); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="field-date" style="width: auto;"> 📅 Data
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="field-km" style="width: auto;"> 🛣️ KM
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="field-status" style="width: auto;"> 🚦 Condição
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="addCustomButton()">ADICIONAR SELECIONADOS</button>
+            <button class="btn btn-danger" onclick="showSection('dashboard')">VOLTAR</button>
+        </div>
+        
+        <h3>Botões Ativos</h3>
+        <div id="active-buttons-list" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- NAVEGAÇÃO -->
+    <nav id="main-nav">
+        <button onclick="showSection('dashboard')" id="nav-dashboard" class="active">
+            <i class="fas fa-home"></i>
+            <span>Início</span>
+        </button>
+        <button onclick="showSection('consumption')" id="nav-consumption">
+            <i class="fas fa-gas-pump"></i>
+            <span>Consumo</span>
+        </button>
+        <button onclick="showSection('history')" id="nav-history">
+            <i class="fas fa-history"></i>
+            <span>Histórico</span>
+        </button>
+        <button onclick="showSection('car-selection')" id="nav-cars">
+            <i class="fas fa-car"></i>
+            <span>Garagem</span>
+        </button>
+    </nav>
+
+    <div id="toast"><i class="fas fa-check-circle"></i> <span id="toast-msg">Salvo com sucesso!</span></div>
+
+    <script>
+        // --- CONDIÇÃO GLOBAL DA APLICAÇÃO ---
+        let appData = {
+            cars: [],
+            activeCarId: null,
+            settings: {
+                theme: 'dark',
+                colorPrimary: '#7e00f3',
+                colorSecondary: '#03dac6'
+            },
+            tutorialSeen: false
+        };
+
+        const MAINTENANCE_CATALOG = {
+            // 🚗 CARRO - MOTOR
+            'oil_engine': { label: 'Óleo Motor', icon: 'fa-oil-can', color: '#ffa000', type: 'car', fields: ['date', 'km', 'obs'] },
+            'filter_oil': { label: 'Filtro Óleo', icon: 'fa-filter', color: '#ffa000', type: 'car', fields: ['date', 'km', 'obs'] },
+            'filter_air': { label: 'Filtro Ar', icon: 'fa-wind', color: '#03dac6', type: 'car', fields: ['date', 'km', 'obs'] },
+            'filter_fuel': { label: 'Filtro Comb.', icon: 'fa-gas-pump', color: '#ffa000', type: 'car', fields: ['date', 'km', 'obs'] },
+            'spark_plugs': { label: 'Velas Ignição', icon: 'fa-bolt', color: '#ffff00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'spark_cables': { label: 'Cabos de Vela', icon: 'fa-project-diagram', color: '#ffff00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'tbi_cleaning': { label: 'Limpeza TBI', icon: 'fa-spray-can', color: '#00bcd4', type: 'car', fields: ['date', 'km', 'obs'] },
+            'nozzles': { label: 'Bicos Inj.', icon: 'fa-spray-can', color: '#00bcd4', type: 'car', fields: ['date', 'km', 'status_nozzle', 'obs'] },
+            
+            // 🌡️ CARRO - ARREFECIMENTO
+            'coolant': { label: 'Líq. Arrefec.', icon: 'fa-tint', color: '#2196f3', type: 'car', fields: ['date', 'km', 'obs'] },
+            'radiator_clean': { label: 'Limpeza Rad.', icon: 'fa-faucet', color: '#2196f3', type: 'car', fields: ['date', 'km', 'obs'] },
+            'thermo_valve': { label: 'Válvula Term.', icon: 'fa-thermometer-half', color: '#2196f3', type: 'car', fields: ['date', 'km', 'obs'] },
+            'water_pump': { label: 'Bomba Água', icon: 'fa-water', color: '#2196f3', type: 'car', fields: ['date', 'km', 'obs'] },
+            'hoses': { label: 'Mangueiras', icon: 'fa-wave-square', color: '#2196f3', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // ⚙️ CARRO - TRANSMISSÃO
+            'trans_oil_manual': { label: 'Óleo Câmbio Man.', icon: 'fa-cog', color: '#fb8c00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'trans_oil_auto': { label: 'Óleo Câmbio Auto.', icon: 'fa-cog', color: '#fb8c00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'trans_filter': { label: 'Filtro Câmbio', icon: 'fa-filter', color: '#fb8c00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'clutch': { label: 'Embreagem', icon: 'fa-shoe-prints', color: '#fb8c00', type: 'car', fields: ['date', 'km', 'obs'] },
+            'clutch_fluid': { label: 'Fluido Embreagem', icon: 'fa-tint', color: '#fb8c00', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // 🛑 CARRO - FREIOS
+            'brake_pads': { label: 'Pastilhas Freio', icon: 'fa-stop-circle', color: '#cf6679', type: 'car', fields: ['date', 'km', 'status_brake', 'obs'] },
+            'brake_discs': { label: 'Discos Freio', icon: 'fa-compact-disc', color: '#cf6679', type: 'car', fields: ['date', 'km', 'status_brake', 'obs'] },
+            'brake_linings': { label: 'Lonas Freio', icon: 'fa-stop-circle', color: '#cf6679', type: 'car', fields: ['date', 'km', 'status_brake', 'obs'] },
+            'brake_fluid': { label: 'Fluido Freio', icon: 'fa-tint', color: '#cf6679', type: 'car', fields: ['date', 'km', 'status_fluid', 'obs'] },
+            'brake_calipers': { label: 'Pinças Freio', icon: 'fa-tools', color: '#cf6679', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // 🚘 CARRO - SUSPENSÃO E DIREÇÃO
+            'shock_absorbers': { label: 'Amortecedores', icon: 'fa-car-side', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'springs': { label: 'Molas', icon: 'fa-stream', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'suspension_bushings': { label: 'Buchas Susp.', icon: 'fa-puzzle-piece', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'pivots': { label: 'Pivôs', icon: 'fa-circle', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'steering_terminals': { label: 'Term. Direção', icon: 'fa-location-arrow', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'stabilizer_bar': { label: 'Barra Estab.', icon: 'fa-minus', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'alignment': { label: 'Alinhamento', icon: 'fa-car-side', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'balancing': { label: 'Balanceamento', icon: 'fa-balance-scale', color: '#7c4dff', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // 🛞 CARRO - RODAS E PNEUS
+            'tires_new': { label: 'Troca de Pneus', icon: 'fa-circle', color: '#4caf50', type: 'car', fields: ['date', 'km', 'obs'] },
+            'tire_rotation': { label: 'Rodízio Pneus', icon: 'fa-sync', color: '#4caf50', type: 'car', fields: ['date', 'km', 'obs'] },
+            'tire_calibration': { label: 'Calibragem', icon: 'fa-compress-arrows-alt', color: '#4caf50', type: 'car', fields: ['date', 'km', 'obs'] },
+            'spare_tire': { label: 'Estepe', icon: 'fa-life-ring', color: '#4caf50', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // ⚡ CARRO - SISTEMA ELÉTRICO
+            'battery': { label: 'Bateria', icon: 'fa-car-battery', color: '#448aff', type: 'car', fields: ['date', 'brand', 'status_battery', 'obs'] },
+            'alternator': { label: 'Alternador', icon: 'fa-bolt', color: '#448aff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'lamps': { label: 'Lâmpadas', icon: 'fa-lightbulb', color: '#448aff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'fuses': { label: 'Fusíveis', icon: 'fa-microchip', color: '#448aff', type: 'car', fields: ['date', 'km', 'obs'] },
+            'starter_motor': { label: 'Motor Partida', icon: 'fa-power-off', color: '#448aff', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // ❄️ CARRO - AR-CONDICIONADO
+            'ac_filter': { label: 'Filtro Cabine', icon: 'fa-wind', color: '#03dac6', type: 'car', fields: ['date', 'km', 'obs'] },
+            'ac_cleaning': { label: 'Higienização AC', icon: 'fa-spray-can', color: '#03dac6', type: 'car', fields: ['date', 'km', 'obs'] },
+            'ac_gas': { label: 'Gás Refriger.', icon: 'fa-snowflake', color: '#03dac6', type: 'car', fields: ['date', 'km', 'obs'] },
+            
+            // 🧰 CARRO - CORREIAS
+            'timing_belt': { label: 'Correia Dentada', icon: 'fa-sync', color: '#ff5252', type: 'car', fields: ['date', 'km', 'obs'] },
+            'accessory_belt': { label: 'Correia Acess.', icon: 'fa-sync', color: '#ff5252', type: 'car', fields: ['date', 'km', 'obs'] },
+            'tensors': { label: 'Tensores/Rol.', icon: 'fa-circle-notch', color: '#ff5252', type: 'car', fields: ['date', 'km', 'obs'] },
+
+            // 🏍️ MOTO - MOTOR
+            'moto_oil': { label: 'Óleo Motor', icon: 'fa-oil-can', color: '#ffa000', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_filter_oil': { label: 'Filtro Óleo', icon: 'fa-filter', color: '#ffa000', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_filter_air': { label: 'Filtro Ar', icon: 'fa-wind', color: '#03dac6', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_spark': { label: 'Vela Ignição', icon: 'fa-bolt', color: '#ffff00', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_valves': { label: 'Reg. Válvulas', icon: 'fa-tools', color: '#ffa000', type: 'moto', fields: ['date', 'km', 'obs'] },
+            
+            // ⚙️ MOTO - TRANSMISSÃO
+            'moto_chain_lub': { label: 'Lub. Corrente', icon: 'fa-oil-can', color: '#fb8c00', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_chain_adj': { label: 'Ajuste Corrente', icon: 'fa-tools', color: '#fb8c00', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_kit': { label: 'Kit Relação', icon: 'fa-cog', color: '#fb8c00', type: 'moto', fields: ['date', 'km', 'obs'] },
+            
+            // 🛑 MOTO - FREIOS
+            'moto_brake_pads': { label: 'Pastilhas Freio', icon: 'fa-stop-circle', color: '#cf6679', type: 'moto', fields: ['date', 'km', 'status_brake', 'obs'] },
+            'moto_brake_disc': { label: 'Disco Freio', icon: 'fa-compact-disc', color: '#cf6679', type: 'moto', fields: ['date', 'km', 'status_brake', 'obs'] },
+            'moto_brake_fluid': { label: 'Fluido Freio', icon: 'fa-tint', color: '#cf6679', type: 'moto', fields: ['date', 'km', 'status_fluid', 'obs'] },
+            'moto_rear_brake': { label: 'Freio Tras. (Tambor)', icon: 'fa-stop-circle', color: '#cf6679', type: 'moto', fields: ['date', 'km', 'obs'] },
+            
+            // 🛞 MOTO - RODAS E PNEUS
+            'moto_tires': { label: 'Troca de Pneus', icon: 'fa-circle', color: '#4caf50', type: 'moto', fields: ['date', 'km', 'status_tire', 'obs'] },
+            'moto_calibration': { label: 'Calibragem', icon: 'fa-compress-arrows-alt', color: '#4caf50', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_balancing': { label: 'Balanceamento', icon: 'fa-balance-scale', color: '#4caf50', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_spokes': { label: 'Verif. Raios', icon: 'fa-ellipsis-v', color: '#4caf50', type: 'moto', fields: ['date', 'km', 'obs'] },
+            
+            // ⚡ MOTO - SISTEMA ELÉTRICO
+            'moto_battery': { label: 'Bateria', icon: 'fa-car-battery', color: '#448aff', type: 'moto', fields: ['date', 'brand', 'status_battery', 'obs'] },
+            'moto_lamps': { label: 'Lâmpadas', icon: 'fa-lightbulb', color: '#448aff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_regulator': { label: 'Regulador/Retif.', icon: 'fa-bolt', color: '#448aff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_stator': { label: 'Estator', icon: 'fa-bolt', color: '#448aff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            
+            // 🧰 MOTO - SUSPENSÃO
+            'moto_front_susp': { label: 'Óleo Susp. Diant.', icon: 'fa-tint', color: '#7c4dff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_seals': { label: 'Retentores Susp.', icon: 'fa-ring', color: '#7c4dff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'moto_rear_shock': { label: 'Amort. Traseiro', icon: 'fa-minus', color: '#7c4dff', type: 'moto', fields: ['date', 'km', 'obs'] },
+            'future_maint': { label: 'Manut. Futuras', icon: 'fa-calendar-alt', color: '#03dac6', type: 'car', fields: ['date', 'km', 'obs'] },
+            'moto_future_maint': { label: 'Manut. Futuras', icon: 'fa-calendar-alt', color: '#03dac6', type: 'moto', fields: ['date', 'km', 'obs'] },
+        };
+
+        const HISTORY_FILTER_GROUPS = {
+            'oil': { label: 'Óleo', keys: ['oil_engine', 'filter_oil', 'moto_oil', 'moto_filter_oil'] },
+            'ac': { label: 'Ar Cond/Filtros', keys: ['ac_filter', 'ac_cleaning', 'ac_gas', 'moto_filter_air', 'filter_air'] },
+            'fluids': { label: 'Fluidos', keys: ['coolant', 'radiator_clean', 'thermo_valve', 'water_pump', 'hoses', 'trans_oil_manual', 'trans_oil_auto', 'clutch_fluid', 'moto_brake_fluid', 'moto_front_susp'] },
+            'brakes': { label: 'Freios', keys: ['brake_pads', 'brake_discs', 'brake_linings', 'brake_fluid', 'brake_calipers', 'moto_brake_pads', 'moto_brake_disc', 'moto_rear_brake'] },
+            'tires': { label: 'Pneus', keys: ['tires_new', 'tire_rotation', 'tire_calibration', 'spare_tire', 'moto_tires', 'moto_calibration', 'moto_balancing', 'moto_spokes', 'tires'] },
+            'belts': { label: 'Correias', keys: ['timing_belt', 'accessory_belt', 'tensors'] },
+            'battery': { label: 'Bateria', keys: ['battery', 'alternator', 'moto_battery', 'moto_regulator', 'moto_stator'] },
+            'spark_plugs': { label: 'Velas', keys: ['spark_plugs', 'spark_cables', 'moto_spark'] },
+            'coils': { label: 'Válvulas', keys: ['moto_valves'] },
+            'nozzles': { label: 'Bicos', keys: ['tbi_cleaning', 'nozzles'] },
+            'suspension': { label: 'Suspensão', keys: ['shock_absorbers', 'springs', 'suspension_bushings', 'pivots', 'steering_terminals', 'stabilizer_bar', 'alignment', 'balancing', 'moto_seals', 'moto_rear_shock'] },
+            'fuel': { label: 'Consumo', keys: ['fuel'] },
+            'future': { label: 'Futuras', keys: ['future_maint', 'moto_future_maint'] }
+        };
+
+        let currentMaintType = '';
+        let currentHistoryFilter = 'all';
+
+        // --- TUTORIAL ---
+        let currentTutorialSlide = 0;
+        const totalTutorialSlides = 6;
+
+        function openTutorial() {
+            currentTutorialSlide = 0;
+            updateTutorialDisplay();
+            document.getElementById('tutorial-overlay').style.display = 'flex';
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            if (!appData.tutorialSeen) {
+                appData.tutorialSeen = true;
+                saveData();
+            }
+        }
+
+        function nextTutorialSlide() {
+            if (currentTutorialSlide < totalTutorialSlides - 1) {
+                currentTutorialSlide++;
+                updateTutorialDisplay();
+            } else {
+                closeTutorial();
+            }
+        }
+
+        function updateTutorialDisplay() {
+            const slides = document.querySelectorAll('.tutorial-slide');
+            const dots = document.querySelectorAll('.t-dot');
+            const nextBtn = document.getElementById('tutorial-btn-next');
+
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentTutorialSlide);
+            });
+
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentTutorialSlide);
+            });
+
+            if (currentTutorialSlide === totalTutorialSlides - 1) {
+                nextBtn.innerText = 'CONCLUIR';
+            } else {
+                nextBtn.innerText = 'PRÓXIMO';
+            }
+        }
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = () => {
+            loadData();
+            populateCustomButtonOptions();
+            
+            if (!appData.tutorialSeen) {
+                openTutorial();
+            }
+
+            if (appData.cars.length === 0) {
+                showSection('add-car');
+            } else {
+                if (appData.activeCarId === null) {
+                    showSection('car-selection');
+                } else {
+                    startLoading();
+                }
+            }
+        };
+
+        function populateCustomButtonOptions() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const carOpts = document.getElementById('opts-car');
+            const motoOpts = document.getElementById('opts-moto');
+            carOpts.innerHTML = '';
+            motoOpts.innerHTML = '';
+
+            for (const key in MAINTENANCE_CATALOG) {
+                const item = MAINTENANCE_CATALOG[key];
+                
+                const isActive = car && car.activeButtons.some(b => {
+                    if (typeof b === 'string') return b === key;
+                    return b.key === key;
+                });
+
+                if (isActive) continue;
+
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = item.label;
+                
+                if (item.type === 'car') carOpts.appendChild(opt);
+                else motoOpts.appendChild(opt);
+            }
+
+            if (car) {
+                if (car.type === 'moto') {
+                    carOpts.classList.add('hidden');
+                    motoOpts.classList.remove('hidden');
+                } else {
+                    motoOpts.classList.add('hidden');
+                    carOpts.classList.remove('hidden');
+                }
+            }
+        }
+
+        function startLoading() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) {
+                showSection('car-selection');
+                return;
+            }
+
+            const screen = document.getElementById('loading-screen');
+            const img = document.getElementById('loading-car-img');
+            img.src = car.photo || (car.type === 'moto' ? 'https://via.placeholder.com/150/1e1e1e/7e00f3?text=Moto' : 'https://via.placeholder.com/150/1e1e1e/7e00f3?text=Carro');
+            
+            screen.style.display = 'flex';
+            screen.style.opacity = '1';
+            screen.classList.remove('hidden');
+
+            setTimeout(() => {
+                renderDashboard();
+                showSection('dashboard');
+                
+                screen.style.opacity = '0';
+                setTimeout(() => {
+                    screen.classList.add('hidden');
+                    screen.style.display = 'none';
+                    screen.style.opacity = '1';
+                }, 500);
+            }, 2500);
+        }
+
+        // --- PERSISTÊNCIA ---
+        function loadData() {
+            const saved = localStorage.getItem('carlog_data');
+            if (saved) {
+                appData = JSON.parse(saved);
+                
+                appData.cars.forEach(car => {
+                    if (!car.maintenance) car.maintenance = {};
+                    if (!car.type) car.type = 'car';
+                    if (car.pendingFuel === undefined) car.pendingFuel = null;
+                    if (!car.activeButtons) {
+                        car.activeButtons = car.type === 'car' ? 
+                            ['oil_engine', 'filter_oil', 'spark_plugs', 'brake_pads', 'alignment', 'battery'] : 
+                            ['moto_oil', 'moto_chain_lub', 'moto_kit', 'moto_brake_pads', 'moto_battery'];
+                    }
+                });
+
+                if (!appData.settings) {
+                    appData.settings = {
+                        theme: 'dark',
+                        colorPrimary: '#7e00f3',
+                        colorSecondary: '#03dac6'
+                    };
+                }
+                
+                applyTheme(appData.settings.theme);
+                updateColors(appData.settings.colorPrimary, appData.settings.colorSecondary);
+                
+                const themeInputs = document.getElementsByName('theme');
+                themeInputs.forEach(input => {
+                    if (input.value === appData.settings.theme) input.checked = true;
+                });
+                document.getElementById('color-primary').value = appData.settings.colorPrimary;
+                document.getElementById('color-secondary').value = appData.settings.colorSecondary;
+            }
+        }
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            appData.settings.theme = theme;
+            
+            if (theme === 'light') {
+                root.style.setProperty('--bg-color', '#f5f5f5');
+                root.style.setProperty('--card-bg', '#ffffff');
+                root.style.setProperty('--card-bg-alt', '#f0f0f0');
+                root.style.setProperty('--text-main', '#333333');
+                root.style.setProperty('--text-dim', '#666666');
+                root.style.setProperty('--border-color', '#dddddd');
+            } else {
+                root.style.setProperty('--bg-color', '#121212');
+                root.style.setProperty('--card-bg', '#1e1e1e');
+                root.style.setProperty('--card-bg-alt', '#2a2a2a');
+                root.style.setProperty('--text-main', '#e1e1e1');
+                root.style.setProperty('--text-dim', '#a0a0a0');
+                root.style.setProperty('--border-color', '#444444');
+            }
+            saveData();
+        }
+
+        function updateColors(primary, secondary) {
+            const root = document.documentElement;
+            const p = primary || document.getElementById('color-primary').value;
+            const s = secondary || document.getElementById('color-secondary').value;
+            
+            appData.settings.colorPrimary = p;
+            appData.settings.colorSecondary = s;
+            
+            root.style.setProperty('--primary', p);
+            root.style.setProperty('--secondary', s);
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('carlog_data', JSON.stringify(appData));
+        }
+
+        // --- UTILIDADES ---
+        function getTodayDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '--/--';
+            if (dateStr.includes('/')) return dateStr;
+            
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    const year = parts[0];
+                    const month = parts[1];
+                    const day = parts[2];
+                    return `${day}/${month}/${year}`;
+                }
+                return dateStr;
+            }
+            return dateStr;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function toggleFullscreen(src) {
+            const overlay = document.getElementById('fullscreen-overlay');
+            const img = document.getElementById('fullscreen-img');
+            
+            if (src) {
+                img.src = src;
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+                img.src = '';
+            }
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            const consumptionScreens = ['consumption', 'station-modal', 'fuel-value-modal'];
+            if (!consumptionScreens.includes(id)) {
+                if (isFuelFlowActive && isAverageCalculated) {
+                    clearFuelInfo(); 
+                }
+                isFuelFlowActive = false;
+            }
+
+            const navIdMap = {
+                'dashboard': 'nav-dashboard',
+                'consumption': 'nav-consumption',
+                'history': 'nav-history',
+                'car-selection': 'nav-cars',
+                'add-car': 'nav-cars'
+            };
+
+            const navBtnId = navIdMap[id];
+            if (navBtnId) {
+                const navBtn = document.getElementById(navBtnId);
+                if (navBtn) navBtn.classList.add('active');
+            }
+
+            if (id === 'car-selection') renderCarList();
+            if (id === 'dashboard') renderDashboard();
+            if (id === 'consumption') renderConsumption();
+            if (id === 'history') {
+                renderHistoryFilters();
+                renderHistory();
+            }
+        }
+
+        // --- GERENCIAMENTO DE VEÍCULOS ---
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('preview-img').classList.remove('hidden');
+                    document.getElementById('camera-icon').classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function renderCarList() {
+            const list = document.getElementById('car-list');
+            list.innerHTML = '';
+            appData.cars.forEach(car => {
+                const div = document.createElement('div');
+                div.className = `car-item ${car.id === appData.activeCarId ? 'active' : ''}`;
+                
+                div.innerHTML = `
+                    <img src="${car.photo || 'https://via.placeholder.com/50/1e1e1e/7e00f3?text=Car'}" onclick="selectCar(${car.id})" alt="${car.model}">
+                    <div style="flex-grow: 1;" onclick="selectCar(${car.id})">
+                        <strong>${car.model}</strong><br>
+                        <small style="color: var(--secondary)">${car.plate || 'SEM PLACA'}</small>
+                    </div>
+                    <div class="car-actions" style="display: flex; gap: 10px;">
+                        <button onclick="editCar(${car.id})" style="background: none; border: none; color: var(--primary); cursor: pointer; padding: 5px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteCar(${car.id})" style="background: none; border: none; color: var(--accent); cursor: pointer; padding: 5px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function selectCar(id) {
+            if (appData.activeCarId === id) {
+                showSection('dashboard');
+                return;
+            }
+            appData.activeCarId = id;
+            saveData();
+            showSection('dashboard');
+        }
+
+        let editingCarId = null;
+
+        function editCar(id) {
+            const car = appData.cars.find(c => c.id === id);
+            if (!car) return;
+
+            editingCarId = id;
+            showSection('add-car');
+            
+            document.getElementById('car-model').value = car.model;
+            document.getElementById('car-plate').value = car.plate;
+            
+            const types = document.getElementsByName('car-type');
+            types.forEach(t => {
+                if (t.value === (car.type || 'car')) t.checked = true;
+            });
+
+            if (car.photo) {
+                document.getElementById('preview-img').src = car.photo;
+                document.getElementById('preview-img').classList.remove('hidden');
+                document.getElementById('camera-icon').classList.add('hidden');
+            } else {
+                document.getElementById('preview-img').src = '';
+                document.getElementById('preview-img').classList.add('hidden');
+                document.getElementById('camera-icon').classList.remove('hidden');
+            }
+            
+            document.querySelector('#add-car h2').innerText = 'Editar Veículo';
+            document.querySelector('#add-car .btn-primary').innerText = 'ATUALIZAR VEÍCULO';
+        }
+
+        function deleteCar(id) {
+            const car = appData.cars.find(c => c.id === id);
+            if (!car) return;
+
+            if (confirm(`Tem certeza que deseja excluir o veículo ${car.model} (${car.plate})? Todos os dados de manutenção serão perdidos.`)) {
+                appData.cars = appData.cars.filter(c => c.id !== id);
+                
+                if (appData.activeCarId === id) {
+                    appData.activeCarId = appData.cars.length > 0 ? appData.cars[0].id : null;
+                    if (appData.activeCarId) showSection('dashboard');
+                }
+                
+                saveData();
+                renderCarList();
+                showToast('Veículo excluído com sucesso!');
+                
+                if (appData.cars.length === 0) {
+                    resetCarForm();
+                    showSection('add-car');
+                }
+            }
+        }
+
+        function resetCarForm() {
+            document.getElementById('car-model').value = '';
+            document.getElementById('car-plate').value = '';
+            document.getElementById('preview-img').src = '';
+            document.getElementById('preview-img').classList.add('hidden');
+            document.getElementById('camera-icon').classList.remove('hidden');
+            document.getElementById('car-photo-input').value = '';
+            
+            const types = document.getElementsByName('car-type');
+            types[0].checked = true;
+
+            document.querySelector('#add-car h2').innerText = 'Novo Veículo';
+            document.querySelector('#add-car .btn-primary').innerText = 'SALVAR VEÍCULO';
+            editingCarId = null;
+        }
+
+        function saveNewCar() {
+            const model = document.getElementById('car-model').value;
+            const plate = document.getElementById('car-plate').value;
+            const photoImg = document.getElementById('preview-img');
+            const photo = (!photoImg.classList.contains('hidden') && photoImg.src) ? photoImg.src : null;
+            
+            const typeEl = document.querySelector('input[name="car-type"]:checked');
+            const type = typeEl ? typeEl.value : 'car';
+
+            if (!model || !plate) {
+                alert('Preencha os campos obrigatórios!');
+                return;
+            }
+
+            if (editingCarId) {
+                const car = appData.cars.find(c => c.id === editingCarId);
+                if (car) {
+                    car.model = model;
+                    car.plate = plate;
+                    car.type = type;
+                    if (photo && photo.startsWith('data')) {
+                        car.photo = photo;
+                    } else if (!photo) {
+                        car.photo = null;
+                    }
+                    showToast('Veículo atualizado!');
+                }
+                editingCarId = null;
+            } else {
+                const newCar = {
+                    id: Date.now(),
+                    model,
+                    plate,
+                    type,
+                    km: 0,
+                    photo: (photo && photo.startsWith('data')) ? photo : null,
+                    history: [],
+                    activeButtons: type === 'car' ? 
+                        ['oil_engine', 'filter_oil', 'spark_plugs', 'brake_pads', 'alignment', 'battery'] : 
+                        ['moto_oil', 'moto_chain_lub', 'moto_kit', 'moto_brake_pads', 'moto_battery'],
+                    maintenance: {}
+                };
+                appData.cars.push(newCar);
+                appData.activeCarId = newCar.id;
+                showToast('Veículo adicionado!');
+            }
+
+            saveData();
+            resetCarForm();
+            showSection('dashboard');
+        }
+
+        // --- DASHBOARD E MANUTENÇÃO ---
+        function renderDashboard() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            document.getElementById('dash-car-img').src = car.photo || (car.type === 'moto' ? 'https://via.placeholder.com/80/1e1e1e/7e00f3?text=Moto' : 'https://via.placeholder.com/80/1e1e1e/7e00f3?text=Car');
+            document.getElementById('dash-car-img').onclick = () => toggleFullscreen(car.photo || (car.type === 'moto' ? 'https://via.placeholder.com/80/1e1e1e/7e00f3?text=Moto' : 'https://via.placeholder.com/80/1e1e1e/7e00f3?text=Car'));
+            document.getElementById('dash-car-name').innerText = car.model;
+            document.getElementById('dash-car-plate').innerText = car.plate || 'SEM PLACA';
+
+            const colorGood = '#4caf50';
+            const colorWarning = '#fb8c00';
+            const colorDanger = '#cf6679';
+
+            const grid = document.getElementById('dashboard-buttons');
+            grid.innerHTML = '';
+
+            car.activeButtons.forEach(btn => {
+                const btnKey = typeof btn === 'string' ? btn : btn.key;
+                const config = MAINTENANCE_CATALOG[btnKey];
+                if (!config) return;
+
+                const data = car.maintenance[btnKey] || {};
+                const div = document.createElement('div');
+                div.className = 'stat-item card';
+                div.onclick = () => openMaintenanceModal(btnKey);
+
+                let statusText = '--/--';
+                let statusColor = colorWarning;
+
+                const displayFields = typeof btn === 'object' ? btn.fields : config.fields;
+                
+                if (displayFields.includes('date') && data.date) {
+                    statusText = formatDate(data.date);
+                    statusColor = colorGood;
+                } else if (displayFields.some(f => f === 'km' || f === 'km_actual') && data.km) {
+                    statusText = data.km + ' KM';
+                    statusColor = colorGood;
+                }
+
+                if (btnKey === 'battery' || btnKey === 'moto_battery') {
+                    if (data.status === 'Fraca' || data.status === 'bad') { statusText = 'RUIM'; statusColor = colorDanger; }
+                    else if (data.status === 'Nova' || data.status === 'good') { statusText = 'BOM'; statusColor = colorGood; }
+                    else if (data.status === 'Boa') { statusText = 'BOM'; statusColor = colorGood; }
+                } else if (btnKey === 'nozzles') {
+                    if (data.status === 'Sujos' || data.status === 'bad') { statusText = 'SUJO'; statusColor = colorDanger; }
+                    else if (data.status === 'Limpos' || data.status === 'good') { statusText = 'LIMPO'; statusColor = colorGood; }
+                } else if (btnKey === 'alignment' && data.date) {
+                    const lastAlign = new Date(data.date);
+                    const diffMonths = (new Date() - lastAlign) / (1000 * 60 * 60 * 24 * 30.44);
+                    if (diffMonths > 6) { statusText = 'FAZER'; statusColor = colorDanger; }
+                } else if (data.status && (displayFields.includes('status') || displayFields.some(f => f.startsWith('status_')))) {
+                    const statusMap = {
+                        'good': { text: 'BOM', color: colorGood },
+                        'mid': { text: 'MÉDIO', color: colorWarning },
+                        'bad': { text: 'RUIM', color: colorDanger },
+                        'ok': { text: 'OK', color: colorGood },
+                        'attention': { text: 'ATENÇÃO', color: colorWarning },
+                        'change': { text: 'TROCAR', color: colorDanger },
+                        'Limpos': { text: 'LIMPO', color: colorGood },
+                        'Sujos': { text: 'SUJO', color: colorDanger },
+                        'Novo': { text: 'NOVO', color: colorGood },
+                        'Gasto': { text: 'GASTO', color: colorDanger },
+                        'Nova': { text: 'BOM', color: colorGood },
+                        'Boa': { text: 'BOM', color: colorGood },
+                        'Fraca': { text: 'RUIM', color: colorDanger }
+                    };
+                    if (statusMap[data.status]) {
+                        statusText = statusMap[data.status].text;
+                        statusColor = statusMap[data.status].color;
+                    }
+                }
+
+                div.innerHTML = `
+                    <i class="fas ${config.icon}" style="color: ${config.color}; font-size: 24px;"></i>
+                    <span class="stat-label">${config.label}</span>
+                    <span class="stat-value" style="color: ${statusColor}">${statusText}</span>
+                `;
+                grid.appendChild(div);
+            });
+
+            const tireSection = document.getElementById('tire-section');
+            if (car.type === 'car') {
+                tireSection.classList.remove('hidden');
+                const tireColorsMap = { 
+                    good: colorGood, mid: colorWarning, bad: colorDanger,
+                    ok: colorGood, attention: colorWarning, change: colorDanger
+                };
+                const tires = car.maintenance.tires || { df: 'good', dd: 'good', tf: 'good', td: 'good' };
+                document.getElementById('tire-df').style.color = tireColorsMap[tires.df] || '#fff';
+                document.getElementById('tire-dd').style.color = tireColorsMap[tires.dd] || '#fff';
+                document.getElementById('tire-tf').style.color = tireColorsMap[tires.tf] || '#fff';
+                document.getElementById('tire-td').style.color = tireColorsMap[tires.td] || '#fff';
+            } else {
+                tireSection.classList.add('hidden');
+            }
+        }
+
+        function openAddButtonModal() {
+            populateCustomButtonOptions();
+            renderActiveButtonsList();
+            showSection('add-button-modal');
+        }
+
+        function renderActiveButtonsList() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const list = document.getElementById('active-buttons-list');
+            list.innerHTML = '';
+
+            car.activeButtons.forEach(btn => {
+                const btnKey = typeof btn === 'string' ? btn : btn.key;
+                const config = MAINTENANCE_CATALOG[btnKey];
+                if (!config) return;
+
+                const div = document.createElement('div');
+                div.className = 'car-item';
+                div.style.marginBottom = '8px';
+                div.innerHTML = `
+                    <i class="fas ${config.icon}" style="color: ${config.color}; font-size: 20px;"></i>
+                    <div style="flex-grow: 1;">
+                        <strong>${config.label}</strong><br>
+                        <small style="color: var(--text-dim)">
+                            ${typeof btn === 'object' ? btn.fields.map(f => f === 'date' ? 'Data' : f === 'km' ? 'KM' : 'Condição').join(', ') : 'Padrão'}
+                        </small>
+                    </div>
+                    <button onclick="removeCustomButton('${btnKey}')" style="background: none; border: none; color: var(--accent); cursor: pointer; font-size: 18px;">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function addCustomButton() {
+            const select = document.getElementById('custom-button-select');
+            const selectedOptions = Array.from(select.selectedOptions);
+            
+            if (selectedOptions.length === 0) {
+                alert('Escolha pelo menos um item!');
+                return;
+            }
+
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            
+            const fields = [];
+            if (document.getElementById('field-date').checked) fields.push('date');
+            if (document.getElementById('field-km').checked) fields.push('km');
+            if (document.getElementById('field-status').checked) fields.push('status');
+
+            if (fields.length === 0) {
+                alert('Selecione pelo menos uma opção de campo para exibir!');
+                return;
+            }
+
+            let addedCount = 0;
+            selectedOptions.forEach(opt => {
+                const btnKey = opt.value;
+                
+                const exists = car.activeButtons.some(b => {
+                    if (typeof b === 'string') return b === btnKey;
+                    return b.key === btnKey;
+                });
+
+                if (!exists) {
+                    car.activeButtons.push({
+                        key: btnKey,
+                        fields: fields
+                    });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                saveData();
+                renderActiveButtonsList();
+                populateCustomButtonOptions();
+                
+                document.getElementById('field-date').checked = false;
+                document.getElementById('field-km').checked = false;
+                document.getElementById('field-status').checked = false;
+                select.value = '';
+
+                showToast(`${addedCount} botão(ões) adicionado(s)!`);
+            } else {
+                showToast('Os botões selecionados já existem!');
+            }
+        }
+
+        function removeCustomButton(btnKey) {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            car.activeButtons = car.activeButtons.filter(b => {
+                if (typeof b === 'string') return b !== btnKey;
+                return b.key !== btnKey;
+            });
+            saveData();
+            renderActiveButtonsList();
+            populateCustomButtonOptions();
+            showToast('Botão removido!');
+        }
+
+        function openMaintenanceModal(type) {
+            currentMaintType = type;
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const fields = document.getElementById('maint-fields');
+            const title = document.getElementById('maint-title');
+            fields.innerHTML = '';
+
+            if (type === 'tires') {
+                title.innerText = 'Condição dos Pneus';
+                const options = (val) => `
+                    <option value="good" ${val === 'good' ? 'selected' : ''}>Bom</option>
+                    <option value="mid" ${val === 'mid' ? 'selected' : ''}>Meia Vida</option>
+                    <option value="bad" ${val === 'bad' ? 'selected' : ''}>Ruim / Gasto</option>
+                    <option value="ok" ${val === 'ok' ? 'selected' : ''}>Ok</option>
+                    <option value="attention" ${val === 'attention' ? 'selected' : ''}>Atenção</option>
+                    <option value="change" ${val === 'change' ? 'selected' : ''}>Trocar</option>
+                `;
+                const t = car.maintenance.tires || {};
+                fields.innerHTML = `
+                    <div class="form-group"><label>Data Verificação</label><input type="date" id="m-date" value="${getTodayDateString()}"></div>
+                    <div class="form-grid-2col">
+                        <div class="form-group"><label>Dianteiro Esq.</label><select id="m-df">${options(t.df)}</select></div>
+                        <div class="form-group"><label>Dianteiro Dir.</label><select id="m-dd">${options(t.dd)}</select></div>
+                        <div class="form-group"><label>Traseiro Esq.</label><select id="m-tf">${options(t.tf)}</select></div>
+                        <div class="form-group"><label>Traseiro Dir.</label><select id="m-td">${options(t.td)}</select></div>
+                    </div>
+                    <div class="form-group"><label>Observações</label><textarea id="m-obs" rows="2">${t.obs || ''}</textarea></div>
+                `;
+                showSection('maint-modal');
+                return;
+            }
+
+            const config = MAINTENANCE_CATALOG[type];
+            if (!config) return;
+
+            const data = car.maintenance[type] || {};
+            
+            const activeBtn = car.activeButtons.find(b => {
+                if (typeof b === 'string') return b === type;
+                return b.key === type;
+            });
+            
+            const displayFields = (activeBtn && typeof activeBtn === 'object') ? activeBtn.fields : config.fields;
+
+            title.innerText = config.label;
+            let html = '';
+            
+            displayFields.forEach(f => {
+                if (f === 'date') html += `<div class="form-group"><label>Data</label><input type="date" id="m-date" value="${getTodayDateString()}"></div>`;
+                if (f === 'km') html += `<div class="form-group"><label>Quilometragem</label><input type="number" id="m-km" value="${data.km || car.km || ''}"></div>`;
+                if (f === 'brand') html += `<div class="form-group"><label>Marca</label><input type="text" id="m-brand" value="${data.brand || ''}"></div>`;
+                
+                if (f === 'status' || f === 'status_battery' || f === 'status_nozzle' || f === 'status_brake' || f === 'status_tire' || f === 'status_fluid' || f === 'status_clean' || f === 'status_worn') {
+                    const currentVal = data.status || 'good';
+                    html += `
+                        <div class="form-group"><label>Condição</label>
+                        <select id="m-status">
+                            <option value="good" ${currentVal === 'good' || currentVal === 'Nova' || currentVal === 'Boa' ? 'selected' : ''}>Bom</option>
+                            <option value="mid" ${currentVal === 'mid' ? 'selected' : ''}>Meia Vida</option>
+                            <option value="bad" ${currentVal === 'bad' || currentVal === 'Fraca' ? 'selected' : ''}>Ruim / Gasto</option>
+                            <option value="ok" ${currentVal === 'ok' ? 'selected' : ''}>Ok</option>
+                            <option value="attention" ${currentVal === 'attention' ? 'selected' : ''}>Atenção</option>
+                            <option value="change" ${currentVal === 'change' ? 'selected' : ''}>Trocar</option>
+                            <option value="Limpos" ${currentVal === 'Limpos' ? 'selected' : ''}>Limpo</option>
+                            <option value="Sujos" ${currentVal === 'Sujos' ? 'selected' : ''}>Sujo</option>
+                            <option value="Novo" ${currentVal === 'Novo' ? 'selected' : ''}>Novo</option>
+                            <option value="Gasto" ${currentVal === 'Gasto' ? 'selected' : ''}>Gasto</option>
+                        </select></div>`;
+                }
+            });
+
+            html += `<div class="form-group"><label>Observações</label><textarea id="m-obs" rows="3" placeholder="Detalhes da manutenção...">${data.obs || ''}</textarea></div>`;
+            
+            fields.innerHTML = html;
+            showSection('maint-modal');
+        }
+
+        function saveMaintenance() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const config = MAINTENANCE_CATALOG[currentMaintType];
+            let summary = '';
+            let details = {};
+
+            if (currentMaintType === 'tires') {
+                const tires = {
+                    df: document.getElementById('m-df').value,
+                    dd: document.getElementById('m-dd').value,
+                    tf: document.getElementById('m-tf').value,
+                    td: document.getElementById('m-td').value,
+                    obs: document.getElementById('m-obs').value,
+                    date: document.getElementById('m-date').value
+                };
+                car.maintenance.tires = tires;
+                summary = 'Atualização dos Pneus';
+                details = tires;
+            } else if (config) {
+                const data = {};
+                
+                const activeBtn = car.activeButtons.find(b => {
+                    if (typeof b === 'string') return b === currentMaintType;
+                    return b.key === currentMaintType;
+                });
+                const fieldsToSave = (activeBtn && typeof activeBtn === 'object') ? activeBtn.fields : config.fields;
+
+                fieldsToSave.forEach(f => {
+                    const el = document.getElementById('m-' + f) || document.getElementById('m-status');
+                    if (el) {
+                        const key = (f === 'status' || f === 'status_battery' || f.startsWith('status_')) ? 'status' : f;
+                        data[key] = el.value;
+                    }
+                });
+                
+                const obsEl = document.getElementById('m-obs');
+                if (obsEl) data.obs = obsEl.value;
+                
+                car.maintenance[currentMaintType] = data;
+                if (data.km) car.km = parseInt(data.km);
+                
+                let statusVal = data.status || '';
+                const valueLabels = { 
+                    good: 'Bom', mid: 'Meia Vida', bad: 'Ruim / Gasto', 
+                    ok: 'Ok', attention: 'Atenção', change: 'Trocar',
+                    Nova: 'Bom', Boa: 'Bom', Fraca: 'Ruim / Gasto', 
+                    Limpos: 'Limpo', Sujos: 'Sujo', Novo: 'Novo', Gasto: 'Gasto'
+                };
+                const translatedStatus = valueLabels[statusVal] || statusVal;
+                
+                summary = config.label + (translatedStatus ? ': ' + translatedStatus : '');
+                details = data;
+            }
+
+            car.history.unshift({
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                type: currentMaintType,
+                description: summary,
+                details: details
+            });
+
+            saveData();
+            showToast('Salvo com sucesso!');
+            showSection('dashboard');
+        }
+
+        // --- CONSUMO ---
+        let currentFuelType = null;
+        let currentFuelStation = null;
+        let currentFuelPrice = 0;
+        let currentFuelTotal = 0;
+        let currentPromptType = null;
+        let isFuelFlowActive = false;
+        let isAverageCalculated = false;
+
+        function renderConsumption() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            if (!isFuelFlowActive) {
+                currentFuelPrice = car.pendingPrice || 0;
+                currentFuelTotal = car.pendingTotal || 0;
+                currentFuelType = car.pendingFuelType || null;
+                currentFuelStation = car.pendingStation || null;
+                isFuelFlowActive = true;
+                isAverageCalculated = false;
+            }
+
+            document.getElementById('fuel-km-input').value = '';
+            document.getElementById('average-result-display').classList.add('hidden');
+
+            updateConsumptionUI();
+        }
+
+        function updateConsumptionUI() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            
+            document.getElementById('disp-fuel-price').innerText = currentFuelPrice > 0 ? `R$ ${currentFuelPrice.toFixed(2)}` : '---';
+            document.getElementById('disp-fuel-total').innerText = currentFuelTotal > 0 ? `R$ ${currentFuelTotal.toFixed(2)}` : '---';
+            document.getElementById('disp-fuel-station').innerText = currentFuelStation || '---';
+
+            document.querySelectorAll('.fuel-type-btn').forEach(btn => btn.classList.remove('active'));
+            if (currentFuelType === 'Gasolina Comum') document.getElementById('btn-gas-comum').classList.add('active');
+            if (currentFuelType === 'Gasolina Aditivada') document.getElementById('btn-gas-aditivada').classList.add('active');
+            if (currentFuelType === 'Álcool') document.getElementById('btn-alcool').classList.add('active');
+
+            let liters = 0;
+            if (currentFuelPrice > 0 && currentFuelTotal > 0) {
+                liters = currentFuelTotal / currentFuelPrice;
+            }
+            document.getElementById('calc-liters-val').innerText = liters > 0 ? liters.toFixed(2) + ' L' : '0.00 L';
+
+            const dateElem = document.getElementById('fuel-save-date');
+            if (car.pendingSaveDate) {
+                dateElem.innerText = `Salvo em: ${car.pendingSaveDate}`;
+                dateElem.classList.remove('hidden');
+            } else {
+                dateElem.classList.add('hidden');
+            }
+        }
+
+        function promptConsumption(type) {
+            currentPromptType = type;
+            const title = document.getElementById('fuel-value-title');
+            const label = document.getElementById('fuel-value-label');
+            const input = document.getElementById('fuel-value-input');
+
+            if (type === 'price') {
+                title.innerText = "Preço do Litro";
+                label.innerText = "Informe o preço pago pelo litro:";
+                input.value = currentFuelPrice || "";
+            } else if (type === 'total') {
+                title.innerText = "Valor Total";
+                label.innerText = "Informe o valor total abastecido (R$):";
+                input.value = currentFuelTotal || "";
+            }
+
+            showSection('fuel-value-modal');
+            setTimeout(() => input.focus(), 300);
+        }
+
+        function confirmFuelValue() {
+            const input = document.getElementById('fuel-value-input');
+            const val = parseFloat(input.value.replace(',', '.')) || 0;
+
+            if (currentPromptType === 'price') {
+                currentFuelPrice = val;
+            } else if (currentPromptType === 'total') {
+                currentFuelTotal = val;
+            }
+
+            showSection('consumption');
+            updateConsumptionUI();
+        }
+
+        function selectFuelType(type) {
+            currentFuelType = type;
+            updateConsumptionUI();
+        }
+
+        function openStationModal() {
+            showSection('station-modal');
+        }
+
+        function selectStation(name) {
+            currentFuelStation = name;
+            showSection('consumption');
+            updateConsumptionUI();
+        }
+
+        function saveFuelInfo() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            if (currentFuelPrice <= 0 || currentFuelTotal <= 0 || !currentFuelType) {
+                alert("Preencha o preço, valor e tipo de combustível!");
+                return;
+            }
+
+            car.pendingPrice = currentFuelPrice;
+            car.pendingTotal = currentFuelTotal;
+            car.pendingFuelType = currentFuelType;
+            car.pendingStation = currentFuelStation;
+            car.pendingFuel = currentFuelTotal / currentFuelPrice;
+            car.pendingSaveDate = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString().slice(0,5);
+
+            isAverageCalculated = false;
+            saveData();
+            showToast("Informações salvas!");
+            updateConsumptionUI();
+        }
+
+        function clearFuelInfo() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            car.pendingPrice = null;
+            car.pendingTotal = null;
+            car.pendingFuelType = null;
+            car.pendingStation = null;
+            car.pendingFuel = null;
+            car.pendingSaveDate = null;
+
+            currentFuelPrice = 0;
+            currentFuelTotal = 0;
+            currentFuelType = null;
+            currentFuelStation = null;
+            isFuelFlowActive = false;
+            isAverageCalculated = false;
+
+            saveData();
+            updateConsumptionUI();
+        }
+
+        function calculateFuelAverage() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const kmInput = document.getElementById('fuel-km-input');
+            const kmRodado = parseFloat(kmInput.value);
+
+            if (!car.pendingFuel) {
+                alert("Salve as informações de abastecimento primeiro!");
+                return;
+            }
+
+            if (isNaN(kmRodado) || kmRodado <= 0) {
+                alert("Informe a quilometragem percorrida!");
+                return;
+            }
+
+            const media = kmRodado / car.pendingFuel;
+            
+            document.getElementById('average-val-display').innerText = media.toFixed(2) + ' KM/L';
+            document.getElementById('average-result-display').classList.remove('hidden');
+
+            car.history.unshift({
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                type: 'fuel',
+                description: `Média: ${media.toFixed(2)} KM/L (${car.pendingFuelType})`,
+                details: {
+                    media: media.toFixed(2),
+                    km: kmRodado,
+                    liters: car.pendingFuel.toFixed(2),
+                    price: car.pendingPrice.toFixed(2),
+                    total: car.pendingTotal.toFixed(2),
+                    Combustível: car.pendingFuelType,
+                    station: car.pendingStation || 'Não informado'
+                }
+            });
+
+            isAverageCalculated = true;
+            saveData();
+            showToast("Média gravada no histórico!");
+            renderHistoryFilters();
+        }
+
+        // --- HISTÓRICO ---
+        function getGroupForType(type) {
+            for (const group in HISTORY_FILTER_GROUPS) {
+                if (HISTORY_FILTER_GROUPS[group].keys.includes(type)) {
+                    return group;
+                }
+            }
+            return null;
+        }
+
+        function renderHistoryFilters() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const container = document.getElementById('history-filters');
+            
+            container.innerHTML = `<div class="filter-chip ${currentHistoryFilter === 'all' ? 'active' : ''}" onclick="setHistoryFilter('all')">Todos</div>`;
+            
+            if (!car || car.history.length === 0) return;
+
+            const groupsInHistory = new Set();
+            car.history.forEach(item => {
+                const group = getGroupForType(item.type);
+                if (group) groupsInHistory.add(group);
+                else if (item.type === 'fuel') groupsInHistory.add('fuel');
+            });
+
+            groupsInHistory.forEach(groupKey => {
+                const groupInfo = HISTORY_FILTER_GROUPS[groupKey];
+                if (groupInfo) {
+                    const chip = document.createElement('div');
+                    chip.className = `filter-chip ${currentHistoryFilter === groupKey ? 'active' : ''}`;
+                    chip.innerText = groupInfo.label;
+                    chip.onclick = () => setHistoryFilter(groupKey);
+                    container.appendChild(chip);
+                }
+            });
+        }
+
+        function openManageCategoriesModal() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const container = document.getElementById('categories-to-delete');
+            container.innerHTML = '';
+
+            if (!car || car.history.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-dim);">Nenhum registro para gerenciar.</p>';
+                showSection('manage-categories-modal');
+                return;
+            }
+
+            const groupsInHistory = new Set();
+            car.history.forEach(item => {
+                const group = getGroupForType(item.type);
+                if (group) groupsInHistory.add(group);
+                else if (item.type === 'fuel') groupsInHistory.add('fuel');
+            });
+
+            if (groupsInHistory.size === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-dim);">Nenhuma categoria encontrada.</p>';
+            } else {
+                groupsInHistory.forEach(groupKey => {
+                    const groupInfo = HISTORY_FILTER_GROUPS[groupKey];
+                    if (groupInfo) {
+                        const label = document.createElement('label');
+                        label.style.display = 'flex';
+                        label.style.alignItems = 'center';
+                        label.style.gap = '10px';
+                        label.style.cursor = 'pointer';
+                        label.innerHTML = `
+                            <input type="checkbox" class="cat-delete-checkbox" value="${groupKey}" style="width: auto;">
+                            <span>${groupInfo.label}</span>
+                        `;
+                        container.appendChild(label);
+                    }
+                });
+            }
+
+            showSection('manage-categories-modal');
+        }
+
+        function deleteSelectedCategories() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const checkboxes = document.querySelectorAll('.cat-delete-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                alert('Selecione pelo menos uma categoria!');
+                return;
+            }
+
+            if (confirm(`Tem certeza que deseja excluir todos os registros das ${checkboxes.length} categorias selecionadas?`)) {
+                const groupsToDelete = Array.from(checkboxes).map(cb => cb.value);
+                
+                car.history = car.history.filter(item => {
+                    const group = getGroupForType(item.type) || (item.type === 'fuel' ? 'fuel' : null);
+                    return !groupsToDelete.includes(group);
+                });
+
+                saveData();
+                showToast('Categorias excluídas!');
+                currentHistoryFilter = 'all';
+                showSection('history');
+            }
+        }
+
+        function setHistoryFilter(filter) {
+            currentHistoryFilter = filter;
+            renderHistoryFilters();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+
+            if (!car || car.history.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:var(--text-dim);">Nenhum registro ainda.</p>';
+                return;
+            }
+
+            let filteredHistory = car.history;
+            if (currentHistoryFilter !== 'all') {
+                const groupInfo = HISTORY_FILTER_GROUPS[currentHistoryFilter];
+                const allowedKeys = groupInfo ? groupInfo.keys : [currentHistoryFilter];
+                filteredHistory = car.history.filter(item => {
+                    return allowedKeys.includes(item.type);
+                });
+            }
+
+            if (filteredHistory.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:var(--text-dim); margin-top:20px;">Nenhum registro nesta categoria.</p>`;
+                return;
+            }
+
+            filteredHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.onclick = () => showHistoryDetail(item.id);
+                
+                const config = MAINTENANCE_CATALOG[item.type];
+                let icon = config ? config.icon : 'fa-tools';
+                if (item.type === 'fuel') icon = 'fa-gas-pump';
+                if (item.type === 'tires') icon = 'fa-circle';
+
+                div.innerHTML = `
+                    <div class="history-date">${item.date}</div>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                        <i class="fas ${icon}" style="color:var(--primary)"></i>
+                        <span>${item.description}</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function clearHistory() {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            if (confirm('Tem certeza que deseja apagar TODO o histórico deste veículo? Esta ação não pode ser desfeita.')) {
+                car.history = [];
+                saveData();
+                renderHistory();
+                showToast('Histórico apagado!');
+            }
+        }
+
+        function showHistoryDetail(id) {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            const item = car.history.find(h => h.id === id);
+            if (!item) return;
+
+            const content = document.getElementById('detail-content');
+            const title = document.getElementById('detail-title');
+            
+            title.innerText = item.description;
+            
+            let html = `
+                <p><strong>Data:</strong> ${item.date}</p>
+                <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border-color);">
+            `;
+
+            if (item.details) {
+                const labels = {
+                    date: 'Data',
+                    km: 'Quilometragem',
+                    filter_oil: 'Filtro de Óleo',
+                    filter_air: 'Filtro de Ar',
+                    clean: 'Higienização',
+                    brake: 'Fluido de Freio',
+                    radiator: 'Fluido Radiador',
+                    battery_status: 'Condição Bateria',
+                    status: 'Condição',
+                    df: 'Pneu Diant. Esq.',
+                    dd: 'Pneu Diant. Dir.',
+                    tf: 'Pneu Tras. Esq.',
+                    td: 'Pneu Tras. Dir.',
+                    align: 'Alinhamento',
+                    tensors: 'Tensores',
+                    brand: 'Marca',
+                    align_date: 'Data Alinhamento',
+                    align_km: 'KM Alinhamento',
+                    status_nozzle: 'Condição Bicos',
+                    status_brake: 'Condição Freios',
+                    status_tire: 'Condição Pneus',
+                    status_fluid: 'Condição Fluido',
+                    status_battery: 'Condição Bateria',
+                    liters: 'Litros',
+                    price: 'Preço/Litro',
+                    total: 'Total Pago',
+                    station: 'Posto',
+                    media: 'Média (KM/L)'
+                };
+
+                const valueLabels = {
+                    good: 'Bom',
+                    mid: 'Meia Vida',
+                    bad: 'Ruim / Gasto',
+                    ok: 'Ok',
+                    attention: 'Atenção',
+                    change: 'Trocar',
+                    OK: 'OK',
+                    Baixo: 'Baixo',
+                    Trocar: 'Trocar',
+                    Fraca: 'Ruim / Gasto',
+                    Nova: 'Bom',
+                    Boa: 'Bom',
+                    Limpos: 'Limpo',
+                    Sujos: 'Sujo',
+                    Novo: 'Novo',
+                    Gasto: 'Gasto',
+                    Bom: 'Bom',
+                    Ruim: 'Ruim / Gasto',
+                    Sim: 'Sim',
+                    Não: 'Não',
+                    Fazer: 'Fazer'
+                };
+
+                for (const key in item.details) {
+                    if (item.details.hasOwnProperty(key)) {
+                        const label = labels[key] || key;
+                        const rawValue = item.details[key];
+                        const value = valueLabels[rawValue] || rawValue;
+                        if (value && key !== 'obs') {
+                            html += `<p style="margin-bottom: 5px;"><strong>${label}:</strong> ${value}</p>`;
+                        }
+                    }
+                }
+                
+                if (item.details.obs) {
+                    html += `<hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border-color);">`;
+                    html += `<p><strong>Observações:</strong><br>${item.details.obs}</p>`;
+                }
+            } else {
+                html += `<p>${item.description}</p>`;
+            }
+
+            // Adiciona botão para exclusão individual de histórico
+            html += `
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
+                <button class="btn btn-danger" onclick="deleteHistoryItem(${item.id})">
+                    <i class="fas fa-trash"></i> EXCLUIR REGISTRO
+                </button>
+            `;
+
+            content.innerHTML = html;
+            showSection('history-detail');
+        }
+
+        function deleteHistoryItem(id) {
+            const car = appData.cars.find(c => c.id === appData.activeCarId);
+            if (!car) return;
+
+            if (confirm('Deseja realmente excluir este registro do histórico?')) {
+                car.history = car.history.filter(h => h.id !== id);
+                saveData();
+                showToast('Registro excluído!');
+                showSection('history');
+            }
+        }
+    </script>
+</body>
+</html>
