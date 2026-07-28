@@ -9,22 +9,30 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="🖥️ Monitoramento",
+    page_title=" Monitoramento",
     page_icon="🖥️",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
+    initial_sidebar_state="collapsed"
 )
 
-# CSS para otimização visual no Celular (Mobile Friendly)
+# CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
 st.markdown("""
     <style>
+        /* Reduz o espaçamento entre elementos e botões na barra lateral */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
+            gap: 0.3rem !important;
+        }
+        [data-testid="stSidebar"] .stButton > button {
+            width: 100% !important;
+            margin-bottom: 2px !important;
+        }
+        
         /* Ajustes para telas pequenas (Celulares) */
         @media (max-width: 768px) {
             .stButton > button {
                 width: 100% !important;
                 height: 3em !important;
                 font-size: 16px !important;
-                margin-bottom: 5px;
             }
             .block-container {
                 padding-left: 0.8rem !important;
@@ -64,7 +72,6 @@ def buscar_dados_dashboard():
         for row in dados:
             nome_loja, rede_nome, status_banco, ultima_att, m_ativo, a_restart, comando_banco = row
             
-            # Cálculo de diferença em segundos usando a referência do próprio banco
             delta_seconds = (db_now - ultima_att).total_seconds() if ultima_att else 999999
 
             if m_ativo == 0:
@@ -74,7 +81,6 @@ def buscar_dados_dashboard():
             else:
                 status_calc = status_banco
 
-            # Conversão direta do registro UTC do banco para o Horário de Brasília
             if ultima_att:
                 if ultima_att.tzinfo is None:
                     ultima_att_utc = ultima_att.replace(tzinfo=ZoneInfo("UTC"))
@@ -155,16 +161,25 @@ def excluir_lojas(lojas):
     except Exception as e:
         st.error(f"Erro ao excluir lojas: {e}")
 
-def buscar_historico(nome_loja):
+def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT status, data_evento 
-                FROM historico_status 
-                WHERE nome_loja = %s 
-                ORDER BY data_evento DESC
-            """, (nome_loja,))
+            query = "SELECT status, data_evento FROM historico_status WHERE nome_loja = %s"
+            params = [nome_loja]
+            
+            if data_inicio and data_fim:
+                query += " AND DATE(data_evento) BETWEEN %s AND %s"
+                params.extend([data_inicio, data_fim])
+            elif data_inicio:
+                query += " AND DATE(data_evento) >= %s"
+                params.append(data_inicio)
+            elif data_fim:
+                query += " AND DATE(data_evento) <= %s"
+                params.append(data_fim)
+                
+            query += " ORDER BY data_evento DESC"
+            cursor.execute(query, tuple(params))
             res = cursor.fetchall()
         conn.close()
 
@@ -183,24 +198,6 @@ def buscar_historico(nome_loja):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
-# --- MODAL DE SEGURANÇA PARA ENCERRAMENTO ---
-@st.dialog("🔒 Autenticação de Segurança")
-def modal_confirmar_encerramento(lojas):
-    st.warning(f"Você está prestes a encerrar os pedidos WEB para **{len(lojas)} loja(s)**.")
-    senha = st.text_input("Digite a senha de confirmação:", type="password")
-    
-    col_c1, col_c2 = st.columns(2)
-    with col_c1:
-        if st.button("Confirmar", type="primary", use_container_width=True):
-            if senha == "080613":
-                executar_comando_remoto(lojas, "STOP")
-                st.rerun()
-            else:
-                st.error("Senha incorreta!")
-    with col_c2:
-        if st.button("Cancelar", use_container_width=True):
-            st.rerun()
-
 # --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
 @st.fragment(run_every="15s")
 def renderizar_tabela_dashboard():
@@ -209,12 +206,24 @@ def renderizar_tabela_dashboard():
     col_t, col_r = st.columns([3, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa (Última: {agora} - Horário de Brasília)")
+        st.caption(f"⚡ Atualização automática ativa (Última: {agora} - Brasília)")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
 
+    # Campo de busca orgânica por Rede ou Nome da Loja
+    termo_busca = st.text_input("🔍 Filtrar por Rede ou Nome da Loja:", placeholder="Digite para filtrar em tempo real...")
+
     if not df_lojas.empty:
+        # Aplicação do filtro
+        if termo_busca:
+            df_exibicao = df_lojas[
+                df_lojas["Nome da Loja"].astype(str).str.contains(termo_busca, case=False, na=False) |
+                df_lojas["Rede"].astype(str).str.contains(termo_busca, case=False, na=False)
+            ].reset_index(drop=True)
+        else:
+            df_exibicao = df_lojas.reset_index(drop=True)
+
         def destacar_status(val):
             if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
             if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
@@ -222,35 +231,52 @@ def renderizar_tabela_dashboard():
             if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
             return ''
 
-        st.dataframe(
-            df_lojas.style.map(destacar_status, subset=['Status']),
+        # Tabela com caixa de seleção (checkbox) habilitada
+        event = st.dataframe(
+            df_exibicao.style.map(destacar_status, subset=['Status']),
             use_container_width=True,
             hide_index=True,
-            height=500
+            height=500,
+            on_select="rerun",
+            selection_mode="multi-row",
+            key="tabela_lojas"
         )
+
+        # Atualiza a seleção global
+        indices_selecionados = event.selection.rows
+        if indices_selecionados:
+            st.session_state["lojas_selecionadas"] = df_exibicao.iloc[indices_selecionados]["Nome da Loja"].tolist()
+        else:
+            st.session_state["lojas_selecionadas"] = []
     else:
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
 st.title("🖥️ Monitoramento")
 
-# Carrega dados iniciais apenas para popular a lista do menu
-df_lojas_menu = buscar_dados_dashboard()
-lojas_lista = df_lojas_menu["Nome da Loja"].tolist() if not df_lojas_menu.empty else []
+# Inicializa sessão de lojas selecionadas
+if "lojas_selecionadas" not in st.session_state:
+    st.session_state["lojas_selecionadas"] = []
+
+lojas_selecionadas = st.session_state["lojas_selecionadas"]
+desabilitar_botoes = len(lojas_selecionadas) == 0
 
 # BARRA LATERAL (COMANDOS)
 st.sidebar.header("🕹️ CONTROLE OPERACIONAL")
-lojas_selecionadas = st.sidebar.multiselect("Selecione a(s) Loja(s):", lojas_lista)
-desabilitar_botoes = len(lojas_selecionadas) == 0
+
+if lojas_selecionadas:
+    st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
+else:
+    st.sidebar.info("👉 Selecione as lojas marcando a caixa no lado esquerdo da tabela.")
 
 st.sidebar.subheader("Comandos Remotos")
 
 if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "START")
 
-# Botão de encerramento aciona o modal de senha
-if st.sidebar.button("⏹️ Encerrar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
-    modal_confirmar_encerramento(lojas_selecionadas)
+# Botão de reiniciar (sem confirmação por senha, envia RESTART)
+if st.sidebar.button("🔄 Reiniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
+    executar_comando_remoto(lojas_selecionadas, "RESTART")
 
 st.sidebar.markdown("---")
 
@@ -282,6 +308,7 @@ if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar
 
 if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_botoes, type="primary", use_container_width=True):
     excluir_lojas(lojas_selecionadas)
+    st.session_state["lojas_selecionadas"] = []
     st.rerun()
 
 # ABA PRINCIPAL DE NAVEGAÇÃO
@@ -294,11 +321,22 @@ with tab_dash:
 # ABA 2: HISTÓRICO
 with tab_hist:
     st.subheader("Histórico por Loja")
-    loja_hist_sel = st.selectbox("Escolha a loja para ver o histórico:", lojas_lista)
     
+    df_lojas_menu = buscar_dados_dashboard()
+    lojas_lista = df_lojas_menu["Nome da Loja"].tolist() if not df_lojas_menu.empty else []
+
+    col_h1, col_h2 = st.columns([1, 1])
+    with col_h1:
+        loja_hist_sel = st.selectbox("Escolha a loja para ver o histórico:", lojas_lista)
+    with col_h2:
+        periodo = st.date_input("Filtrar por período (Início e Fim):", value=(), format="DD/MM/YYYY")
+
+    data_ini = periodo[0] if len(periodo) > 0 else None
+    data_fim = periodo[1] if len(periodo) > 1 else None
+
     if loja_hist_sel:
-        df_hist = buscar_historico(loja_hist_sel)
+        df_hist = buscar_historico(loja_hist_sel, data_ini, data_fim)
         if not df_hist.empty:
             st.dataframe(df_hist, use_container_width=True, hide_index=True)
         else:
-            st.warning("Nenhum histórico encontrado para esta loja.")
+            st.warning("Nenhum histórico encontrado para o filtro selecionado.")
