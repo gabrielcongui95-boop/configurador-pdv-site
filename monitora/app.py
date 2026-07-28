@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pymysql
 import pandas as pd
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -117,6 +119,18 @@ def executar_comando_remoto(lojas, comando):
     except Exception as e:
         st.error(f"Erro ao enviar comando: {e}")
 
+def reiniciar_lojas(lojas):
+    # 1. Envia comando para encerrar/fechar o monitor
+    executar_comando_remoto(lojas, "STOP")
+    
+    # 2. Aguarda 15 segundos exibindo alerta e spinner na tela
+    st.toast("Comando STOP enviado! Aguardando 15 segundos para reabrir...", icon="⏳")
+    with st.spinner("🔄 Encerrando o monitor... Aguardando 15 segundos para enviar o comando de reabrir (START)..."):
+        time.sleep(15)
+        
+    # 3. Envia comando para iniciar/abrir o monitor novamente
+    executar_comando_remoto(lojas, "START")
+
 def alterar_pausa(lojas, pausar):
     try:
         conn = conectar_banco()
@@ -217,6 +231,26 @@ def renderizar_tabela_dashboard():
         key="campo_busca_lojas"
     )
 
+    # JavaScript para forçar a busca a cada caractere digitado (sem precisar dar Enter)
+    components.html(
+        """
+        <script>
+        const doc = window.parent.document;
+        const inputs = doc.querySelectorAll('div[data-testid="stTextInput"] input');
+        inputs.forEach(input => {
+            if (!input.dataset.liveSearch) {
+                input.dataset.liveSearch = "true";
+                input.addEventListener('input', () => {
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+        });
+        </script>
+        """,
+        height=0,
+        width=0
+    )
+
     if not df_lojas.empty:
         if termo_busca:
             df_exibicao = df_lojas[
@@ -251,7 +285,7 @@ def renderizar_tabela_dashboard():
         else:
             novas_selecionadas = []
 
-        # Se houve mudança na seleção, atualiza o estado e força rerun global para liberar a sidebar imediatamente
+        # Atualiza a seleção global e recarrega a barra lateral se houver alteração nos checkboxes
         if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
             st.session_state["lojas_selecionadas"] = novas_selecionadas
             st.rerun()
@@ -282,7 +316,7 @@ if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, 
     executar_comando_remoto(lojas_selecionadas, "START")
 
 if st.sidebar.button("🔄 Reiniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
-    executar_comando_remoto(lojas_selecionadas, "RESTART")
+    reiniciar_lojas(lojas_selecionadas)
 
 st.sidebar.markdown("---")
 
