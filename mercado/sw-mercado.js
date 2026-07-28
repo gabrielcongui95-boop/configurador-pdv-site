@@ -1,6 +1,6 @@
 const CACHE_NAME = 'mercado-v1';
 const assets = [
-  './Mercado.html',
+  './Store.html',
   'manifest-mercado.json',
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js'
