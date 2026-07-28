@@ -5,7 +5,7 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento PDV",
+    page_title="Monitoramento",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
@@ -193,7 +193,7 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
-st.title("Monitoramento PDV")
+st.title("Monitoramento")
 
 # Carrega dados iniciais apenas para popular a lista do menu
 df_lojas_menu = buscar_dados_dashboard()
