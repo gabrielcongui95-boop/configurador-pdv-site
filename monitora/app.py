@@ -321,6 +321,7 @@ if st.sidebar.button("🔄 Reiniciar Pedidos Web", disabled=desabilitar_botoes, 
 st.sidebar.markdown("---")
 
 # PAUSAR / RETOMAR
+st.sidebar.subheader("Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
     if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True):
