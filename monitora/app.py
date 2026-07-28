@@ -308,7 +308,7 @@ st.sidebar.header("🕹️ CONTROLE OPERACIONAL")
 if lojas_selecionadas:
     st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
 else:
-    st.sidebar.info("👉 Selecione as lojas marcando a caixa no lado esquerdo da tabela.")
+    st.sidebar.info("Selecione para enviar comandos.")
 
 st.sidebar.subheader("Comandos Remotos")
 
