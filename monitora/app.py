@@ -5,16 +5,16 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="",
+    page_title="Painel de Monitoramento",
     page_icon="🖥️",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
+    initial_sidebar_state="collapsed"
 )
 
-# CSS para otimização visual no Celular (Mobile Friendly)
+# Estilização CSS personalizada para Celulares e Cards
 st.markdown("""
     <style>
-        /* Ajustes para telas pequenas (Celulares) */
+        /* Otimizações Mobile */
         @media (max-width: 768px) {
             .stButton > button {
                 width: 100% !important;
@@ -27,6 +27,12 @@ st.markdown("""
                 padding-right: 0.8rem !important;
                 padding-top: 1rem !important;
             }
+        }
+        /* Ajuste visual dos cards */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            background-color: #1A1D24;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -162,44 +168,98 @@ def modal_confirmar_encerramento(lojas):
         if st.button("Cancelar", use_container_width=True):
             st.rerun()
 
-# --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
+# --- FRAGMENTO DE CARDS COM FILTROS E REFRESH AUTOMÁTICO ---
 @st.fragment(run_every="15s")
-def renderizar_tabela_dashboard():
+def renderizar_cards_dashboard():
     df_lojas = buscar_dados_dashboard()
+
+    # --- BARRA DE FILTROS NA TELA PRINCIPAL ---
+    col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
     
-    col_t, col_r = st.columns([3, 1])
-    with col_t:
-        agora = datetime.now().strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa (Última: {agora})")
-    with col_r:
-        if st.button("🔄 Atualizar Agora", use_container_width=True):
+    with col_f1:
+        busca_nome = st.text_input("🔍 Buscar Loja:", placeholder="Digite o nome da loja...")
+    
+    with col_f2:
+        redes_disponiveis = ["Todas"] + (sorted(df_lojas["Rede"].dropna().unique().tolist()) if not df_lojas.empty else [])
+        rede_selecionada = st.selectbox("🏷️ Filtrar por Rede:", redes_disponiveis)
+        
+    with col_f3:
+        st.write("")
+        st.write("")
+        if st.button("🔄 Atualizar", use_container_width=True):
             st.rerun()
 
-    if not df_lojas.empty:
-        def destacar_status(val):
-            if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
-            if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
-            if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
-            if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
-            return ''
+    # Aplicando filtros
+    df_filtrado = df_lojas.copy()
+    if not df_filtrado.empty:
+        if busca_nome:
+            df_filtrado = df_filtrado[df_filtrado["Nome da Loja"].str.contains(busca_nome, case=False, na=False)]
+        if rede_selecionada != "Todas":
+            df_filtrado = df_filtrado[df_filtrado["Rede"] == rede_selecionada]
 
-        st.dataframe(
-            df_lojas.style.map(destacar_status, subset=['Status']),
-            use_container_width=True,
-            hide_index=True,
-            height=500
-        )
+    agora = datetime.now().strftime("%H:%M:%S")
+    st.caption(f"⚡ Atualização automática a cada 15s (Última: {agora}) — **{len(df_filtrado)}** loja(s) encontrada(s)")
+
+    st.markdown("---")
+
+    # --- EXIBIÇÃO DAS LOJAS EM CARDS ---
+    if not df_filtrado.empty:
+        # Cria uma grade de 2 colunas para os cards
+        cols = st.columns(2)
+        
+        for idx, row in df_filtrado.reset_index(drop=True).iterrows():
+            col_target = cols[idx % 2]
+            
+            with col_target:
+                with st.container(border=True):
+                    # Definir a cor do status
+                    status_val = row["Status"]
+                    if status_val == 'ONLINE':
+                        badge_color = "#00FFB2"
+                        badge_text = "🟢 ONLINE"
+                    elif status_val == 'OFFLINE':
+                        badge_color = "#F75A68"
+                        badge_text = "🔴 OFFLINE"
+                    elif status_val == 'PAUSADO':
+                        badge_color = "#4CC4FF"
+                        badge_text = "🔵 PAUSADO"
+                    else:
+                        badge_color = "#8D8D99"
+                        badge_text = "⚪ DESLIGADO"
+
+                    # Cabeçalho do Card
+                    c_h1, c_h2 = st.columns([3, 2])
+                    with c_h1:
+                        st.subheader(f"🏪 {row['Nome da Loja']}")
+                        st.caption(f"Rede: **{row['Rede']}**")
+                    with c_h2:
+                        st.markdown(
+                            f"<div style='text-align: right; font-weight: bold; color: {badge_color}; font-size: 1.1rem; padding-top: 5px;'>"
+                            f"{badge_text}</div>", 
+                            unsafe_allow_html=True
+                        )
+
+                    st.markdown("<hr style='margin: 8px 0; opacity: 0.2;'>", unsafe_allow_html=True)
+
+                    # Detalhes do Card
+                    c_d1, c_d2 = st.columns(2)
+                    with c_d1:
+                        st.markdown(f"**Auto Reinício:** {row['Auto Reinício']}")
+                        st.markdown(f"**Comando Pendente:** `{row['Comando Pendente']}`")
+                    with c_d2:
+                        st.markdown("**Última Atualização:**")
+                        st.caption(f"🕒 {row['Última Atualização']}")
     else:
-        st.info("Nenhuma loja encontrada.")
+        st.info("Nenhuma loja encontrada com os filtros informados.")
 
 # --- INTERFACE WEB ---
-st.title("")
+st.title("Painel de Monitoramento")
 
-# Carrega dados iniciais apenas para popular a lista do menu
+# Busca inicial para popular seletores
 df_lojas_menu = buscar_dados_dashboard()
 lojas_lista = df_lojas_menu["Nome da Loja"].tolist() if not df_lojas_menu.empty else []
 
-# BARRA LATERAL (COMANDOS)
+# BARRA LATERAL (COMANDOS OPERACIONAIS)
 st.sidebar.header("🕹️ CONTROLE OPERACIONAL")
 lojas_selecionadas = st.sidebar.multiselect("Selecione a(s) Loja(s):", lojas_lista)
 desabilitar_botoes = len(lojas_selecionadas) == 0
@@ -209,7 +269,6 @@ st.sidebar.subheader("Comandos Remotos")
 if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "START")
 
-# Botão de encerramento aciona o modal de senha
 if st.sidebar.button("⏹️ Encerrar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     modal_confirmar_encerramento(lojas_selecionadas)
 
@@ -235,9 +294,9 @@ if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_botoes, 
 # ABA PRINCIPAL DE NAVEGAÇÃO
 tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
 
-# ABA 1: DASHBOARD
+# ABA 1: DASHBOARD EM CARDS
 with tab_dash:
-    renderizar_tabela_dashboard()
+    renderizar_cards_dashboard()
 
 # ABA 2: HISTÓRICO
 with tab_hist:
