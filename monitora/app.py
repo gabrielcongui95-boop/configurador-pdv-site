@@ -5,7 +5,7 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento PDV",
+    page_title="",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
