@@ -5,7 +5,7 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Dashboard de Monitoramento PDV",
+    page_title="Painel de Monitoramento",
     page_icon="🖥️",
     layout="wide"
 )
@@ -127,7 +127,7 @@ def buscar_historico(nome_loja):
 st.title("🖥️ Dashboard de Monitoramento PDV")
 
 # Abas de Navegação
-tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Timeline Histórica"])
+tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
 
 df_lojas = buscar_dados_dashboard()
 
@@ -193,7 +193,7 @@ with tab_dash:
 
 # ABA 2: HISTÓRICO
 with tab_hist:
-    st.subheader("Timeline de Histórico por Loja")
+    st.subheader("Histórico por Loja")
     loja_hist_sel = st.selectbox("Escolha a loja para ver o histórico:", lojas_lista)
     
     if loja_hist_sel:
