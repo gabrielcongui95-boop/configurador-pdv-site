@@ -5,10 +5,31 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento",
-    page_icon="",
-    layout="wide"
+    page_title="Monitoramento PDV",
+    page_icon="🖥️",
+    layout="wide",
+    initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
 )
+
+# CSS para otimização visual no Celular (Mobile Friendly)
+st.markdown("""
+    <style>
+        /* Ajustes para telas pequenas (Celulares) */
+        @media (max-width: 768px) {
+            .stButton > button {
+                width: 100% !important;
+                height: 3em !important;
+                font-size: 16px !important;
+                margin-bottom: 5px;
+            }
+            .block-container {
+                padding-left: 0.8rem !important;
+                padding-right: 0.8rem !important;
+                padding-top: 1rem !important;
+            }
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- CONFIGURAÇÃO DO BANCO ---
 DB_HOST = st.secrets.get("DB_HOST", "mysql-71db31c-gabriel-8279.g.aivencloud.com")
@@ -123,28 +144,74 @@ def buscar_historico(nome_loja):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
+# --- MODAL DE SEGURANÇA PARA ENCERRAMENTO ---
+@st.dialog("🔒 Autenticação de Segurança")
+def modal_confirmar_encerramento(lojas):
+    st.warning(f"Você está prestes a encerrar os pedidos WEB para **{len(lojas)} loja(s)**.")
+    senha = st.text_input("Digite a senha de confirmação:", type="password")
+    
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        if st.button("Confirmar", type="primary", use_container_width=True):
+            if senha == "080613":
+                executar_comando_remoto(lojas, "STOP")
+                st.rerun()
+            else:
+                st.error("Senha incorreta!")
+    with col_c2:
+        if st.button("Cancelar", use_container_width=True):
+            st.rerun()
+
+# --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
+@st.fragment(run_every="15s")
+def renderizar_tabela_dashboard():
+    df_lojas = buscar_dados_dashboard()
+    
+    col_t, col_r = st.columns([3, 1])
+    with col_t:
+        agora = datetime.now().strftime("%H:%M:%S")
+        st.caption(f"⚡ Atualização automática ativa (Última: {agora})")
+    with col_r:
+        if st.button("🔄 Atualizar Agora", use_container_width=True):
+            st.rerun()
+
+    if not df_lojas.empty:
+        def destacar_status(val):
+            if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
+            if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
+            if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
+            if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
+            return ''
+
+        st.dataframe(
+            df_lojas.style.map(destacar_status, subset=['Status']),
+            use_container_width=True,
+            hide_index=True,
+            height=500
+        )
+    else:
+        st.info("Nenhuma loja encontrada.")
+
 # --- INTERFACE WEB ---
-st.title("Monitoramento")
+st.title("Monitoramento PDV")
 
-# Abas de Navegação
-tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
-
-df_lojas = buscar_dados_dashboard()
+# Carrega dados iniciais apenas para popular a lista do menu
+df_lojas_menu = buscar_dados_dashboard()
+lojas_lista = df_lojas_menu["Nome da Loja"].tolist() if not df_lojas_menu.empty else []
 
 # BARRA LATERAL (COMANDOS)
 st.sidebar.header("🕹️ CONTROLE OPERACIONAL")
-
-lojas_lista = df_lojas["Nome da Loja"].tolist() if not df_lojas.empty else []
 lojas_selecionadas = st.sidebar.multiselect("Selecione a(s) Loja(s):", lojas_lista)
-
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
 st.sidebar.subheader("Comandos Remotos")
+
 if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "START")
 
+# Botão de encerramento aciona o modal de senha
 if st.sidebar.button("⏹️ Encerrar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
-    executar_comando_remoto(lojas_selecionadas, "STOP")
+    modal_confirmar_encerramento(lojas_selecionadas)
 
 st.sidebar.markdown("---")
 
@@ -165,31 +232,12 @@ if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_botoes, 
     excluir_lojas(lojas_selecionadas)
     st.rerun()
 
+# ABA PRINCIPAL DE NAVEGAÇÃO
+tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
+
 # ABA 1: DASHBOARD
 with tab_dash:
-    col_t, col_r = st.columns([3, 1])
-    with col_t:
-        st.caption("Status atualizado em tempo real.")
-    with col_r:
-        if st.button("🔄 Atualizar Agora", use_container_width=True):
-            st.rerun()
-
-    if not df_lojas.empty:
-        # Estilização visual dos status
-        def destacar_status(val):
-            if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
-            if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
-            if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
-            if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
-            return ''
-
-        st.dataframe(
-            df_lojas.style.map(destacar_status, subset=['Status']),
-            use_container_width=True,
-            height=500
-        )
-    else:
-        st.info("Nenhuma loja encontrada.")
+    renderizar_tabela_dashboard()
 
 # ABA 2: HISTÓRICO
 with tab_hist:
@@ -199,6 +247,6 @@ with tab_hist:
     if loja_hist_sel:
         df_hist = buscar_historico(loja_hist_sel)
         if not df_hist.empty:
-            st.dataframe(df_hist, use_container_width=True)
+            st.dataframe(df_hist, use_container_width=True, hide_index=True)
         else:
             st.warning("Nenhum histórico encontrado para esta loja.")
