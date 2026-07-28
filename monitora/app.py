@@ -11,7 +11,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento",
+    page_title="",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -303,7 +303,7 @@ lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
 # BARRA LATERAL (COMANDOS)
-st.sidebar.header("🕹️ CONTROLE OPERACIONAL")
+st.sidebar.header("🕹️ PAINEL OPERACIONAL")
 
 if lojas_selecionadas:
     st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
