@@ -293,7 +293,7 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
-st.title("🖥️ Monitoramento")
+st.title("Lojas")
 
 # Inicializa o estado global das lojas selecionadas
 if "lojas_selecionadas" not in st.session_state:
