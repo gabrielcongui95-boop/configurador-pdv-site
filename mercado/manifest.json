@@ -1,7 +1,7 @@
 {
   "name": "Assistente de Compras - Mercado",
   "short_name": "Mercado",
-  "start_url": "./mercado.html",
+  "start_url": "./Store.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#121212",
