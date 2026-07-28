@@ -303,14 +303,14 @@ lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
 # BARRA LATERAL (COMANDOS)
-st.sidebar.header("🕹️ PAINEL OPERACIONAL")
+st.sidebar.header("🖥️ PAINEL OPERACIONAL")
 
 if lojas_selecionadas:
     st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
 else:
     st.sidebar.info("Selecione para enviar comandos.")
 
-st.sidebar.subheader("Comandos Remotos")
+st.sidebar.subheader("🕹️ Comandos Remotos")
 
 if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "START")
