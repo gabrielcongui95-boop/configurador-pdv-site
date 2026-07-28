@@ -11,7 +11,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="",
+    page_title="Monitoramento PDV",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -81,7 +81,12 @@ def buscar_dados_dashboard():
             elif delta_seconds > 75:
                 status_calc = 'DESLIGADO'
             else:
-                status_calc = status_banco
+                # REGRA: Converte erros ERR 401 e ERR 403 para ONLINE
+                status_str = str(status_banco).upper() if status_banco else ""
+                if any(err in status_str for err in ["401", "403", "ERR"]):
+                    status_calc = 'ONLINE'
+                else:
+                    status_calc = status_banco
 
             if ultima_att:
                 if ultima_att.tzinfo is None:
@@ -120,15 +125,10 @@ def executar_comando_remoto(lojas, comando):
         st.error(f"Erro ao enviar comando: {e}")
 
 def reiniciar_lojas(lojas):
-    # 1. Envia comando para encerrar/fechar o monitor
     executar_comando_remoto(lojas, "STOP")
-    
-    # 2. Aguarda 15 segundos exibindo alerta e spinner na tela
     st.toast("Comando STOP enviado! Aguardando 15 segundos para reabrir...", icon="⏳")
     with st.spinner("🔄 Encerrando o monitor... Aguardando 15 segundos para enviar o comando de reabrir (START)..."):
         time.sleep(15)
-        
-    # 3. Envia comando para iniciar/abrir o monitor novamente
     executar_comando_remoto(lojas, "START")
 
 def alterar_pausa(lojas, pausar):
@@ -212,6 +212,41 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
+# --- HELPER DE RENDERIZAÇÃO DAS TABELAS DE CADA ABA ---
+def renderizar_grid_lojas(df_subset, tab_key):
+    if df_subset.empty:
+        st.info("Nenhuma loja encontrada neste status.")
+        return
+
+    def destacar_status(val):
+        if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
+        if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
+        if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
+        if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
+        return ''
+
+    event = st.dataframe(
+        df_subset.style.map(destacar_status, subset=['Status']),
+        use_container_width=True,
+        hide_index=True,
+        height=450,
+        on_select="rerun",
+        selection_mode="multi-row",
+        key=f"tabela_lojas_{tab_key}"
+    )
+
+    state_key = f"last_sel_{tab_key}"
+    cur_sel = event.selection.rows
+    
+    if state_key not in st.session_state:
+        st.session_state[state_key] = cur_sel
+    elif st.session_state[state_key] != cur_sel:
+        st.session_state[state_key] = cur_sel
+        novas_selecionadas = df_subset.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
+        if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
+            st.session_state["lojas_selecionadas"] = novas_selecionadas
+            st.rerun()
+
 # --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
 @st.fragment(run_every="15s")
 def renderizar_tabela_dashboard():
@@ -231,7 +266,7 @@ def renderizar_tabela_dashboard():
         key="campo_busca_lojas"
     )
 
-    # JavaScript para forçar a busca a cada caractere digitado (sem precisar dar Enter)
+    # JavaScript para forçar a busca em tempo real
     components.html(
         """
         <script>
@@ -260,39 +295,38 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        def destacar_status(val):
-            if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
-            if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
-            if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
-            if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
-            return ''
+        # ABAS DE NAVEGAÇÃO DE STATUS
+        tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
+            "🟢 Online", 
+            "🔴 Offline", 
+            "⏸️ Pausadas", 
+            "⚪ Desligadas",
+            "📋 Todas"
+        ])
 
-        # Tabela interativa com seleção de linhas
-        event = st.dataframe(
-            df_exibicao.style.map(destacar_status, subset=['Status']),
-            use_container_width=True,
-            hide_index=True,
-            height=500,
-            on_select="rerun",
-            selection_mode="multi-row",
-            key="tabela_lojas"
-        )
+        with tab_online:
+            df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
+            renderizar_grid_lojas(df_sub, "online")
 
-        # Captura as lojas marcadas nos checkboxes
-        indices_selecionados = event.selection.rows
-        if indices_selecionados:
-            novas_selecionadas = df_exibicao.iloc[indices_selecionados]["Nome da Loja"].tolist()
-        else:
-            novas_selecionadas = []
+        with tab_offline:
+            df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
+            renderizar_grid_lojas(df_sub, "offline")
 
-        # Atualiza a seleção global e recarrega a barra lateral se houver alteração nos checkboxes
-        if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
-            st.session_state["lojas_selecionadas"] = novas_selecionadas
-            st.rerun()
+        with tab_pausado:
+            df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
+            renderizar_grid_lojas(df_sub, "pausado")
+
+        with tab_desligado:
+            df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
+            renderizar_grid_lojas(df_sub, "desligado")
+
+        with tab_todas:
+            renderizar_grid_lojas(df_exibicao, "todas")
+            
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- INTERFACE WEB ---
+# --- INTERFACE WEB PRINCIPAL ---
 st.title("Lojas")
 
 # Inicializa o estado global das lojas selecionadas
@@ -380,4 +414,4 @@ with tab_hist:
         if not df_hist.empty:
             st.dataframe(df_hist, use_container_width=True, hide_index=True)
         else:
-            st.warning("Nenhum histórico encontrado para o filtro selecionado.")
+            st.warning("Nenum histórico encontrado para o filtro selecionado.")
