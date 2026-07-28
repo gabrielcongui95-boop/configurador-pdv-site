@@ -5,8 +5,8 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Painel de Monitoramento",
-    page_icon="🖥️",
+    page_title="Monitoramento",
+    page_icon="",
     layout="wide"
 )
 
