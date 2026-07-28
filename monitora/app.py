@@ -124,7 +124,7 @@ def buscar_historico(nome_loja):
         return pd.DataFrame()
 
 # --- INTERFACE WEB ---
-st.title("🖥️ Dashboard de Monitoramento PDV")
+st.title("Monitoramento")
 
 # Abas de Navegação
 tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
