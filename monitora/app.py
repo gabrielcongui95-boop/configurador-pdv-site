@@ -11,7 +11,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="🖥️ Monitoramento",
+    page_title="Monitoramento",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"
