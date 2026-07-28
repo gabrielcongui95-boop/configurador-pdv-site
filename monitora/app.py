@@ -2,10 +2,14 @@ import streamlit as st
 import pymysql
 import pandas as pd
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+# Define o fuso horário oficial de Brasília (UTC-3)
+FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento",
+    page_title="🖥️ Monitoramento",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"  # Melhora a visualização inicial no celular
@@ -51,8 +55,6 @@ def buscar_dados_dashboard():
         with conn.cursor() as cursor:
             cursor.execute("SELECT NOW()")
             db_now = cursor.fetchone()[0]
-            local_now = datetime.now()
-            ajuste_fuso = local_now - db_now
 
             query = "SELECT nome_loja, rede, status, ultima_atualizacao, monitoramento_ativo, COALESCE(auto_restart, 0), comando FROM status_lojas ORDER BY nome_loja ASC"
             cursor.execute(query)
@@ -61,7 +63,9 @@ def buscar_dados_dashboard():
         lista_temp = []
         for row in dados:
             nome_loja, rede_nome, status_banco, ultima_att, m_ativo, a_restart, comando_banco = row
-            delta_seconds = (db_now - ultima_att).total_seconds()
+            
+            # Cálculo de diferença em segundos usando a referência do próprio banco
+            delta_seconds = (db_now - ultima_att).total_seconds() if ultima_att else 999999
 
             if m_ativo == 0:
                 status_calc = 'PAUSADO'
@@ -70,8 +74,16 @@ def buscar_dados_dashboard():
             else:
                 status_calc = status_banco
 
-            ultima_att_local = (ultima_att + ajuste_fuso).strftime('%d/%m/%Y %H:%M:%S')
-            
+            # Conversão direta do registro UTC do banco para o Horário de Brasília
+            if ultima_att:
+                if ultima_att.tzinfo is None:
+                    ultima_att_utc = ultima_att.replace(tzinfo=ZoneInfo("UTC"))
+                else:
+                    ultima_att_utc = ultima_att
+                ultima_att_local = ultima_att_utc.astimezone(FUSO_BRASILIA).strftime('%d/%m/%Y %H:%M:%S')
+            else:
+                ultima_att_local = "-"
+
             lista_temp.append({
                 "Nome da Loja": nome_loja,
                 "Rede": rede_nome,
@@ -155,7 +167,18 @@ def buscar_historico(nome_loja):
             """, (nome_loja,))
             res = cursor.fetchall()
         conn.close()
-        return pd.DataFrame(res, columns=["Status", "Data/Hora"])
+
+        dados_formatados = []
+        for status, data_evento in res:
+            if isinstance(data_evento, datetime):
+                if data_evento.tzinfo is None:
+                    data_evento = data_evento.replace(tzinfo=ZoneInfo("UTC"))
+                data_br = data_evento.astimezone(FUSO_BRASILIA).strftime('%d/%m/%Y %H:%M:%S')
+            else:
+                data_br = data_evento
+            dados_formatados.append({"Status": status, "Data/Hora": data_br})
+
+        return pd.DataFrame(dados_formatados)
     except Exception as e:
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
@@ -185,8 +208,8 @@ def renderizar_tabela_dashboard():
     
     col_t, col_r = st.columns([3, 1])
     with col_t:
-        agora = datetime.now().strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa (Última: {agora})")
+        agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
+        st.caption(f"⚡ Atualização automática ativa (Última: {agora} - Horário de Brasília)")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
@@ -209,7 +232,7 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
-st.title("🖥️Monitoramento")
+st.title("🖥️ Monitoramento")
 
 # Carrega dados iniciais apenas para popular a lista do menu
 df_lojas_menu = buscar_dados_dashboard()
