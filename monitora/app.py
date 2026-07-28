@@ -114,6 +114,22 @@ def alterar_pausa(lojas, pausar):
     except Exception as e:
         st.error(f"Erro na alteração de pausa: {e}")
 
+def alterar_auto_restart(lojas, ativar):
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            format_strings = ', '.join(['%s'] * len(lojas))
+            novo_auto_restart = 1 if ativar else 0
+            cursor.execute(
+                f"UPDATE status_lojas SET auto_restart = %s WHERE nome_loja IN ({format_strings})",
+                (novo_auto_restart,) + tuple(lojas)
+            )
+        conn.commit()
+        conn.close()
+        st.toast("Auto reinício atualizado com sucesso!", icon="🔁")
+    except Exception as e:
+        st.error(f"Erro ao alterar auto reinício: {e}")
+
 def excluir_lojas(lojas):
     try:
         conn = conectar_banco()
@@ -215,6 +231,7 @@ if st.sidebar.button("⏹️ Encerrar Pedidos Web", disabled=desabilitar_botoes,
 
 st.sidebar.markdown("---")
 
+# PAUSAR / RETOMAR
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
     if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True):
@@ -222,6 +239,18 @@ with col_p1:
 with col_p2:
     if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True):
         alterar_pausa(lojas_selecionadas, False)
+
+st.sidebar.markdown("---")
+
+# AUTO REINÍCIO (ATIVAR / DESATIVAR)
+st.sidebar.subheader("🔁 Auto Reinício")
+col_ar1, col_ar2 = st.sidebar.columns(2)
+with col_ar1:
+    if st.button("✅ Ativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_ativar"):
+        alterar_auto_restart(lojas_selecionadas, True)
+with col_ar2:
+    if st.button("❌ Desativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_desativar"):
+        alterar_auto_restart(lojas_selecionadas, False)
 
 st.sidebar.markdown("---")
 
