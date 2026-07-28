@@ -193,7 +193,7 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
-st.title("Monitoramento PDV")
+st.title("")
 
 # Carrega dados iniciais apenas para popular a lista do menu
 df_lojas_menu = buscar_dados_dashboard()
