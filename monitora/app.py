@@ -9,7 +9,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title=" Monitoramento",
+    page_title="🖥️ Monitoramento",
     page_icon="🖥️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -211,11 +211,13 @@ def renderizar_tabela_dashboard():
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
 
-    # Campo de busca orgânica por Rede ou Nome da Loja
-    termo_busca = st.text_input("🔍 Filtrar por Rede ou Nome da Loja:", placeholder="Digite para filtrar em tempo real...")
+    termo_busca = st.text_input(
+        "🔍 Filtrar por Rede ou Nome da Loja:", 
+        placeholder="Digite para filtrar em tempo real...",
+        key="campo_busca_lojas"
+    )
 
     if not df_lojas.empty:
-        # Aplicação do filtro
         if termo_busca:
             df_exibicao = df_lojas[
                 df_lojas["Nome da Loja"].astype(str).str.contains(termo_busca, case=False, na=False) |
@@ -231,7 +233,7 @@ def renderizar_tabela_dashboard():
             if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
             return ''
 
-        # Tabela com caixa de seleção (checkbox) habilitada
+        # Tabela interativa com seleção de linhas
         event = st.dataframe(
             df_exibicao.style.map(destacar_status, subset=['Status']),
             use_container_width=True,
@@ -242,19 +244,24 @@ def renderizar_tabela_dashboard():
             key="tabela_lojas"
         )
 
-        # Atualiza a seleção global
+        # Captura as lojas marcadas nos checkboxes
         indices_selecionados = event.selection.rows
         if indices_selecionados:
-            st.session_state["lojas_selecionadas"] = df_exibicao.iloc[indices_selecionados]["Nome da Loja"].tolist()
+            novas_selecionadas = df_exibicao.iloc[indices_selecionados]["Nome da Loja"].tolist()
         else:
-            st.session_state["lojas_selecionadas"] = []
+            novas_selecionadas = []
+
+        # Se houve mudança na seleção, atualiza o estado e força rerun global para liberar a sidebar imediatamente
+        if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
+            st.session_state["lojas_selecionadas"] = novas_selecionadas
+            st.rerun()
     else:
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB ---
 st.title("🖥️ Monitoramento")
 
-# Inicializa sessão de lojas selecionadas
+# Inicializa o estado global das lojas selecionadas
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
@@ -274,7 +281,6 @@ st.sidebar.subheader("Comandos Remotos")
 if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "START")
 
-# Botão de reiniciar (sem confirmação por senha, envia RESTART)
 if st.sidebar.button("🔄 Reiniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "RESTART")
 
