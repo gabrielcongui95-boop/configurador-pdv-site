@@ -192,21 +192,71 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 query += " AND DATE(data_evento) <= %s"
                 params.append(data_fim)
                 
-            query += " ORDER BY data_evento DESC"
+            query += " ORDER BY data_evento ASC"  # Ordena em ordem cronológica para calcular o término do evento
             cursor.execute(query, tuple(params))
             res = cursor.fetchall()
         conn.close()
 
+        if not res:
+            return pd.DataFrame()
+
         dados_formatados = []
-        for status, data_evento in res:
+        agora_br = datetime.now(FUSO_BRASILIA)
+
+        for i in range(len(res)):
+            status, data_evento = res[i]
+            
+            # Trata fuso horário do evento inicial
             if isinstance(data_evento, datetime):
                 if data_evento.tzinfo is None:
                     data_evento = data_evento.replace(tzinfo=ZoneInfo("UTC"))
-                data_br = data_evento.astimezone(FUSO_BRASILIA).strftime('%d/%m/%Y %H:%M:%S')
+                dt_inicio = data_evento.astimezone(FUSO_BRASILIA)
             else:
-                data_br = data_evento
-            dados_formatados.append({"Status": status, "Data/Hora": data_br})
+                dt_inicio = agora_br
 
+            # Define horário final baseando-se na data do próximo registro (troca de status)
+            if i + 1 < len(res):
+                data_prox = res[i + 1][1]
+                if isinstance(data_prox, datetime):
+                    if data_prox.tzinfo is None:
+                        data_prox = data_prox.replace(tzinfo=ZoneInfo("UTC"))
+                    dt_fim = data_prox.astimezone(FUSO_BRASILIA)
+                else:
+                    dt_fim = agora_br
+                fim_data_str = dt_fim.strftime('%d/%m/%Y %H:%M:%S')
+                fim_hora_str = dt_fim.strftime('%H:%M:%S')
+            else:
+                fim_data_str = "Em andamento"
+                fim_hora_str = "Atual"
+
+            inicio_data_str = dt_inicio.strftime('%d/%m/%Y %H:%M:%S')
+            inicio_hora_str = dt_inicio.strftime('%H:%M:%S')
+
+            # Define o ícone com a cor correspondente ao status
+            st_upper = str(status).upper()
+            if "ONLINE" in st_upper:
+                status_com_cor = f"🟢 {status}"
+            elif "OFFLINE" in st_upper:
+                status_com_cor = f"🔴 {status}"
+            elif "PAUSADO" in st_upper:
+                status_com_cor = f"🔵 {status}"
+            elif "DESLIGADO" in st_upper:
+                status_com_cor = f"⚪ {status}"
+            else:
+                status_com_cor = f"🟡 {status}"
+
+            # Formata o período no estilo: "15:43:23 até 18:00:00"
+            periodo_formatado = f"{inicio_hora_str} até {fim_hora_str}"
+
+            dados_formatados.append({
+                "Status": status_com_cor,
+                "Período Horário": período_formatado,
+                "Início": inicio_data_str,
+                "Término": fim_data_str
+            })
+
+        # Exibe do evento mais recente para o mais antigo
+        dados_formatados.reverse()
         return pd.DataFrame(dados_formatados)
     except Exception as e:
         st.error(f"Erro ao buscar histórico: {e}")
@@ -300,7 +350,7 @@ def renderizar_tabela_dashboard():
             "🟢 Online", 
             "🔴 Offline", 
             "⏸️ Pausadas", 
-            "⚪ Desligadas",
+            "⚪ Fechadas",
             "📋 Todas"
         ])
 
