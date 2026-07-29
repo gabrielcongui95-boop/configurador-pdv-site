@@ -400,7 +400,7 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- INTERFACE WEB PRINCIPAL ---
-st.title("Lojas")
+
 
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
@@ -449,7 +449,7 @@ with col_p1:
     if st.button("⏸️ Pausar", disabled=desabilitar_geral, use_container_width=True):
         alterar_pausa(lojas_selecionadas, True)
 with col_p2:
-    if st.button("▶️ Retomar", disabled=desabilitar_geral, use_container_width=True):
+    if st.button("▶️ Ativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_pausa(lojas_selecionadas, False)
 
 st.sidebar.subheader("🔁 Auto Reinício")
@@ -482,7 +482,7 @@ with tab_dash:
 
 # ABA 2: HISTÓRICO / LOGS (SEMPRE AGRUPADO E RECOLHIDO)
 with tab_hist:
-    st.subheader("📜 Histórico de Status por Rede e Loja")
+    st.subheader("📜 Histórico de Monitoramento")
     
     col_h1, col_h2 = st.columns([2, 1])
     with col_h1:
