@@ -240,7 +240,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 status_com_cor = f"🔴 {status}"
             elif "PAUSADO" in st_upper:
                 status_com_cor = f"🔵 {status}"
-            elif "DESLIGADO" in st_upper:
+            elif "FECHADA" in st_upper:
                 status_com_cor = f"⚪ {status}"
             else:
                 status_com_cor = f"🟡 {status}"
@@ -250,7 +250,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
 
             dados_formatados.append({
                 "Status": status_com_cor,
-                "Período Horário": período_formatado,
+                "Período Horário": periodo_formatado,
                 "Início": inicio_data_str,
                 "Término": fim_data_str
             })
