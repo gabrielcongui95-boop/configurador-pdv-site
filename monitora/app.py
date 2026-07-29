@@ -17,10 +17,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
+# --- CSS RESPONSIVO PARA MOBILE E DESKTOP ---
 st.markdown("""
     <style>
-        /* Reduz o espaçamento entre elementos e botões na barra lateral */
+        /* Reduz espaçamento na barra lateral */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
             gap: 0.3rem !important;
         }
@@ -29,27 +29,56 @@ st.markdown("""
             margin-bottom: 2px !important;
         }
         
-        /* Ajustes para telas pequenas (Celulares) */
+        /* Torna as abas (Tabs) roláveis no Mobile */
+        [data-baseweb="tab-list"] {
+            gap: 6px !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            padding-bottom: 4px !important;
+        }
+        [data-baseweb="tab"] {
+            font-size: 14px !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+        }
+
+        /* Otimizações específicas para Celulares (telas até 768px) */
         @media (max-width: 768px) {
+            .block-container {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+                padding-top: 1rem !important;
+                padding-bottom: 2rem !important;
+            }
+            
+            /* Botões maiores e amigáveis ao toque */
             .stButton > button {
                 width: 100% !important;
-                height: 3em !important;
-                font-size: 16px !important;
+                min-height: 48px !important;
+                font-size: 15px !important;
+                font-weight: 600 !important;
+                border-radius: 8px !important;
             }
-            .block-container {
-                padding-left: 0.8rem !important;
-                padding-right: 0.8rem !important;
-                padding-top: 1rem !important;
+
+            /* Melhora visibilidade dos inputs e filtros */
+            div[data-testid="stTextInput"], div[data-testid="stSelectbox"] {
+                margin-bottom: 0.4rem !important;
+            }
+
+            /* Container da tabela com scroll horizontal suave */
+            [data-testid="stDataFrame"] {
+                width: 100% !important;
             }
         }
     </style>
 """, unsafe_allow_html=True)
 
 # --- CONFIGURAÇÃO DO BANCO ---
+# DICA DE SEGURANÇA: Mantenha senhas apenas no st.secrets no ambiente de produção
 DB_HOST = st.secrets.get("DB_HOST", "mysql-71db31c-gabriel-8279.g.aivencloud.com")
 DB_PORT = int(st.secrets.get("DB_PORT", 14801))
 DB_USER = st.secrets.get("DB_USER", "avnadmin")
-DB_PASS = st.secrets.get("DB_PASS", "AVNS_krbCrutmFqF_LkqTrsa")
+DB_PASS = st.secrets.get("DB_PASS", "") # Preencha via st.secrets
 DB_NAME = st.secrets.get("DB_NAME", "monitoramento_pdv")
 
 def conectar_banco():
@@ -81,7 +110,6 @@ def buscar_dados_dashboard():
             elif delta_seconds > 75:
                 status_calc = 'DESLIGADO'
             else:
-                # REGRA: Converte erros ERR 401 e ERR 403 para ONLINE
                 status_str = str(status_banco).upper() if status_banco else ""
                 if any(err in status_str for err in ["401", "403", "ERR"]):
                     status_calc = 'ONLINE'
@@ -229,7 +257,7 @@ def renderizar_grid_lojas(df_subset, tab_key):
         df_subset.style.map(destacar_status, subset=['Status']),
         use_container_width=True,
         hide_index=True,
-        height=450,
+        height=380, # Altura ligeiramente ajustada para evitar excesso de scroll no celular
         on_select="rerun",
         selection_mode="multi-row",
         key=f"tabela_lojas_{tab_key}"
@@ -252,17 +280,18 @@ def renderizar_grid_lojas(df_subset, tab_key):
 def renderizar_tabela_dashboard():
     df_lojas = buscar_dados_dashboard()
     
-    col_t, col_r = st.columns([3, 1])
+    # Organização responsiva do cabeçalho
+    col_t, col_r = st.columns([2, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa (Última: {agora} - Brasília)")
+        st.caption(f"⚡ Atualização automática (Última: {agora})")
     with col_r:
-        if st.button("🔄 Atualizar Agora", use_container_width=True):
+        if st.button("🔄 Atualizar", use_container_width=True):
             st.rerun()
 
     termo_busca = st.text_input(
-        "🔍 Filtrar por Rede ou Nome da Loja:", 
-        placeholder="Digite para filtrar em tempo real...",
+        "🔍 Filtrar Loja ou Rede:", 
+        placeholder="Digite para buscar...",
         key="campo_busca_lojas"
     )
 
@@ -295,7 +324,7 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # ABAS DE NAVEGAÇÃO DE STATUS
+        # ABAS DE NAVEGAÇÃO
         tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
             "🟢 Online", 
             "🔴 Offline", 
@@ -326,65 +355,59 @@ def renderizar_tabela_dashboard():
     else:
         st.info("Nenhuma loja encontrada.")
 
+# --- COMPONENTE DE AÇÕES RÁPIDAS (EXCLUSIVO PARA PRATICIDADE NO MOBILE) ---
+def renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes):
+    if lojas_selecionadas:
+        st.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
+    else:
+        st.info("Selecione uma ou mais lojas na tabela para habilitar os comandos.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("▶️ Iniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_start"):
+            executar_comando_remoto(lojas_selecionadas, "START")
+        if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_pausa"):
+            alterar_pausa(lojas_selecionadas, True)
+        if st.button("✅ Ativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_ar_on"):
+            alterar_auto_restart(lojas_selecionadas, True)
+
+    with col2:
+        if st.button("🔄 Reiniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_restart"):
+            reiniciar_lojas(lojas_selecionadas)
+        if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_retomar"):
+            alterar_pausa(lojas_selecionadas, False)
+        if st.button("❌ Desativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_ar_off"):
+            alterar_auto_restart(lojas_selecionadas, False)
+
+    st.markdown("---")
+    col_danger1, col_danger2 = st.columns(2)
+    with col_danger1:
+        if st.button("🗑️ Rem. Monitor", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_uninst"):
+            executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
+    with col_danger2:
+        if st.button("🚨 Apagar Lojas", disabled=desabilitar_botoes, type="primary", use_container_width=True, key="m_btn_del"):
+            excluir_lojas(lojas_selecionadas)
+            st.session_state["lojas_selecionadas"] = []
+            st.rerun()
+
+
 # --- INTERFACE WEB PRINCIPAL ---
 st.title("Lojas")
 
-# Inicializa o estado global das lojas selecionadas
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
 lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
-# BARRA LATERAL (COMANDOS)
-st.sidebar.header("🖥️ PAINEL OPERACIONAL")
+# BARRA LATERAL (SIDEBAR - Para Desktop)
+with st.sidebar:
+    st.header("🖥️ PAINEL OPERACIONAL")
+    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes)
 
-if lojas_selecionadas:
-    st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
-else:
-    st.sidebar.info("Selecione para enviar comandos.")
-
-st.sidebar.subheader("🕹️ Comandos Remotos")
-
-if st.sidebar.button("▶️ Iniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
-    executar_comando_remoto(lojas_selecionadas, "START")
-
-if st.sidebar.button("🔄 Reiniciar Pedidos Web", disabled=desabilitar_botoes, use_container_width=True):
-    reiniciar_lojas(lojas_selecionadas)
-
-st.sidebar.markdown("---")
-
-# PAUSAR / RETOMAR
-st.sidebar.subheader("Monitoramento")
-col_p1, col_p2 = st.sidebar.columns(2)
-with col_p1:
-    if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True):
-        alterar_pausa(lojas_selecionadas, True)
-with col_p2:
-    if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True):
-        alterar_pausa(lojas_selecionadas, False)
-
-st.sidebar.markdown("---")
-
-# AUTO REINÍCIO (ATIVAR / DESATIVAR)
-st.sidebar.subheader("🔁 Auto Reinício")
-col_ar1, col_ar2 = st.sidebar.columns(2)
-with col_ar1:
-    if st.button("✅ Ativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_ativar"):
-        alterar_auto_restart(lojas_selecionadas, True)
-with col_ar2:
-    if st.button("❌ Desativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_desativar"):
-        alterar_auto_restart(lojas_selecionadas, False)
-
-st.sidebar.markdown("---")
-
-if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_botoes, use_container_width=True):
-    executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
-
-if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_botoes, type="primary", use_container_width=True):
-    excluir_lojas(lojas_selecionadas)
-    st.session_state["lojas_selecionadas"] = []
-    st.rerun()
+# EXPANDER DE COMANDOS NA TELA PRINCIPAL (Especialmente útil no Mobile)
+with st.expander("🛠️ **Painel de Comandos Remotos** (Clique para abrir)", expanded=not desabilitar_botoes):
+    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes)
 
 # ABA PRINCIPAL DE NAVEGAÇÃO
 tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
@@ -402,9 +425,9 @@ with tab_hist:
 
     col_h1, col_h2 = st.columns([1, 1])
     with col_h1:
-        loja_hist_sel = st.selectbox("Escolha a loja para ver o histórico:", lojas_lista)
+        loja_hist_sel = st.selectbox("Escolha a loja:", lojas_lista)
     with col_h2:
-        periodo = st.date_input("Filtrar por período (Início e Fim):", value=(), format="DD/MM/YYYY")
+        periodo = st.date_input("Filtrar período:", value=(), format="DD/MM/YYYY")
 
     data_ini = periodo[0] if len(periodo) > 0 else None
     data_fim = periodo[1] if len(periodo) > 1 else None
@@ -414,4 +437,4 @@ with tab_hist:
         if not df_hist.empty:
             st.dataframe(df_hist, use_container_width=True, hide_index=True)
         else:
-            st.warning("Nenum histórico encontrado para o filtro selecionado.")
+            st.warning("Nenhum histórico encontrado para o filtro selecionado.")
