@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
+# Estilização CSS para ajustar a navegação horizontal e layout mobile
 st.markdown("""
     <style>
         /* Reduz o espaçamento entre elementos e botões na barra lateral */
@@ -97,11 +97,10 @@ def buscar_dados_dashboard():
             else:
                 ultima_att_local = "-"
 
-            # --- EXTRAÇÃO INTELIGENTE DA REDE (ANTES DA BARRA '/') ---
+            # EXTRAÇÃO INTELIGENTE DA REDE (ANTES DA BARRA '/')
             raw_rede = str(rede_nome).strip() if rede_nome else ""
             raw_loja = str(nome_loja).strip() if nome_loja else ""
 
-            # Extrai o código da Rede (ex: '927' de '927/12')
             if "/" in raw_rede:
                 cod_rede = raw_rede.split("/")[0].strip()
             elif "/" in raw_loja:
@@ -109,17 +108,20 @@ def buscar_dados_dashboard():
             else:
                 cod_rede = raw_rede if raw_rede else "Sem Rede"
 
-            # Formata Rede/Loja para exibição (Ex: "927/12 - Loja teste")
             if raw_rede and raw_rede != "-":
                 rede_loja_fmt = f"{raw_rede} - {nome_loja}"
             else:
                 rede_loja_fmt = nome_loja
 
+            # Status de Monitoramento (Ativo / Suspenso)
+            status_monitoramento = "Ativo" if m_ativo == 1 else "Suspenso"
+
             lista_temp.append({
                 "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
-                "Rede": cod_rede,  # Código da rede isolado para agrupamento
+                "Rede": cod_rede,
                 "Status": status_calc,
+                "Monitoramento": status_monitoramento,  # Nova Coluna solicitada
                 "Auto Reinício": "✅ SIM" if a_restart == 1 else "❌ NÃO",
                 "Última Atualização": ultima_att_local,
                 "Comando Pendente": comando_banco or "-"
@@ -276,66 +278,46 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
-# --- HELPER DE RENDERIZAÇÃO DAS TABELAS DE CADA ABA ---
-def renderizar_grid_lojas(df_subset, tab_key, agrupar_por_rede=False):
+# --- HELPER DE RENDERIZAÇÃO DAS TABELAS (SEMPRE AGRUPADO POR REDE E RECOLHIDO) ---
+def renderizar_grid_lojas(df_subset, tab_key):
     if df_subset.empty:
         st.info("Nenhuma loja encontrada neste status.")
         return
 
-    def destacar_status(val):
+    def destacar_estilos(val):
         if val == 'ONLINE': return 'background-color: #162A16; color: #00FFB2'
         if val == 'OFFLINE': return 'background-color: #2A1616; color: #F75A68'
         if val == 'PAUSADO': return 'background-color: #16202A; color: #4CC4FF'
         if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
+        if val == 'Ativo': return 'color: #00FFB2; font-weight: bold'
+        if val == 'Suspenso': return 'color: #F75A68; font-weight: bold'
         return ''
 
     df_ordenado = df_subset.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
 
-    if agrupar_por_rede:
-        grupos = df_ordenado.groupby("Rede", sort=False)
-        for idx, (rede_codigo, df_grupo) in enumerate(grupos):
-            with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
-                event = st.dataframe(
-                    df_grupo.style.map(destacar_status, subset=['Status']),
-                    use_container_width=True,
-                    hide_index=True,
-                    on_select="rerun",
-                    selection_mode="multi-row",
-                    key=f"tabela_lojas_{tab_key}_rede_{idx}"
-                )
+    # AGRUPAMENTO FIXO POR REDE - RECOLHIDO POR PADRÃO (expanded=False)
+    grupos = df_ordenado.groupby("Rede", sort=False)
+    for idx, (rede_codigo, df_grupo) in enumerate(grupos):
+        with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
+            event = st.dataframe(
+                df_grupo.style.map(destacar_estilos, subset=['Status', 'Monitoramento']),
+                use_container_width=True,
+                hide_index=True,
+                on_select="rerun",
+                selection_mode="multi-row",
+                key=f"tabela_lojas_{tab_key}_rede_{idx}"
+            )
 
-                state_key = f"last_sel_{tab_key}_rede_{idx}"
-                cur_sel = event.selection.rows
-                
-                if state_key not in st.session_state:
-                    st.session_state[state_key] = cur_sel
-                elif st.session_state[state_key] != cur_sel:
-                    st.session_state[state_key] = cur_sel
-                    novas_selecionadas = df_grupo.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
-                    outras_lojas = [l for l in st.session_state.get("lojas_selecionadas", []) if l not in df_grupo["Nome da Loja"].tolist()]
-                    st.session_state["lojas_selecionadas"] = outras_lojas + novas_selecionadas
-                    st.rerun()
-    else:
-        event = st.dataframe(
-            df_ordenado.style.map(destacar_status, subset=['Status']),
-            use_container_width=True,
-            hide_index=True,
-            height=450,
-            on_select="rerun",
-            selection_mode="multi-row",
-            key=f"tabela_lojas_{tab_key}"
-        )
-
-        state_key = f"last_sel_{tab_key}"
-        cur_sel = event.selection.rows
-        
-        if state_key not in st.session_state:
-            st.session_state[state_key] = cur_sel
-        elif st.session_state[state_key] != cur_sel:
-            st.session_state[state_key] = cur_sel
-            novas_selecionadas = df_ordenado.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
-            if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
-                st.session_state["lojas_selecionadas"] = novas_selecionadas
+            state_key = f"last_sel_{tab_key}_rede_{idx}"
+            cur_sel = event.selection.rows
+            
+            if state_key not in st.session_state:
+                st.session_state[state_key] = cur_sel
+            elif st.session_state[state_key] != cur_sel:
+                st.session_state[state_key] = cur_sel
+                novas_selecionadas = df_grupo.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
+                outras_lojas = [l for l in st.session_state.get("lojas_selecionadas", []) if l not in df_grupo["Nome da Loja"].tolist()]
+                st.session_state["lojas_selecionadas"] = outras_lojas + novas_selecionadas
                 st.rerun()
 
 # --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
@@ -351,16 +333,11 @@ def renderizar_tabela_dashboard():
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
 
-    col_busca, col_toggle = st.columns([3, 1])
-    with col_busca:
-        termo_busca = st.text_input(
-            "🔍 Filtrar por Rede/Loja ou Nome:", 
-            placeholder="Ex: 927/12, 999/1, Loja teste...",
-            key="campo_busca_lojas"
-        )
-    with col_toggle:
-        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        agrupar_rede = st.toggle("📂 Agrupar por Rede", value=False, key="toggle_agrupar_rede")
+    termo_busca = st.text_input(
+        "🔍 Filtrar por Rede/Loja ou Nome:", 
+        placeholder="Ex: 927/12, 999/1, Loja teste...",
+        key="campo_busca_lojas"
+    )
 
     components.html(
         """
@@ -391,32 +368,29 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
-            "🟢 Online", 
-            "🔴 Offline", 
-            "⏸️ Pausadas", 
-            "⚪ Desligadas",
-            "📋 Todas"
-        ])
+        # NAVEGAÇÃO POR STATUS VIA RADIO HORIZONTAL (Atualiza a sessão dinamicamente)
+        aba_opcao = st.radio(
+            "Navegação de Status:",
+            ["🟢 Online", "🔴 Offline", "⏸️ Pausadas", "⚪ Desligadas", "📋 Todas"],
+            horizontal=True,
+            key="aba_ativa",
+            label_visibility="collapsed"
+        )
 
-        with tab_online:
+        if aba_opcao == "🟢 Online":
             df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "online", agrupar_por_rede=agrupar_rede)
-
-        with tab_offline:
+            renderizar_grid_lojas(df_sub, "online")
+        elif aba_opcao == "🔴 Offline":
             df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "offline", agrupar_por_rede=agrupar_rede)
-
-        with tab_pausado:
+            renderizar_grid_lojas(df_sub, "offline")
+        elif aba_opcao == "⏸️ Pausadas":
             df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "pausado", agrupar_por_rede=agrupar_rede)
-
-        with tab_desligado:
+            renderizar_grid_lojas(df_sub, "pausado")
+        elif aba_opcao == "⚪ Desligadas":
             df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "desligado", agrupar_por_rede=agrupar_rede)
-
-        with tab_todas:
-            renderizar_grid_lojas(df_exibicao, "todas", agrupar_por_rede=agrupar_rede)
+            renderizar_grid_lojas(df_sub, "desligado")
+        else:
+            renderizar_grid_lojas(df_exibicao, "todas")
             
     else:
         st.info("Nenhuma loja encontrada.")
@@ -427,10 +401,18 @@ st.title("Lojas")
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
-lojas_selecionadas = st.session_state["lojas_selecionadas"]
-desabilitar_botoes = len(lojas_selecionadas) == 0
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "🟢 Online"
 
-# --- BARRA LATERAL ---
+lojas_selecionadas = st.session_state["lojas_selecionadas"]
+aba_atual = st.session_state["aba_ativa"]
+
+desabilitar_geral = len(lojas_selecionadas) == 0
+
+# REGRA DE SEGURANÇA: Inativa Iniciar/Reiniciar se estiver nas abas 'Pausadas' ou 'Desligadas'
+desabilitar_iniciar_reiniciar = desabilitar_geral or (aba_atual in ["⏸️ Pausadas", "⚪ Desligadas"])
+
+# --- BARRA LATERAL (PAINEL OPERACIONAL) ---
 st.sidebar.header("🖥️ PAINEL OPERACIONAL")
 
 if lojas_selecionadas:
@@ -440,52 +422,58 @@ else:
 
 st.sidebar.markdown("---")
 
+# 1. COMANDOS REMOTOS
 st.sidebar.subheader("🕹️ Comandos Remotos")
 col_cmd1, col_cmd2 = st.sidebar.columns(2)
 with col_cmd1:
-    if st.button("▶️ Iniciar", disabled=desabilitar_botoes, use_container_width=True, help="Iniciar Pedidos Web"):
+    if st.button("▶️ Iniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Iniciar Pedidos Web"):
         executar_comando_remoto(lojas_selecionadas, "START")
 with col_cmd2:
-    if st.button("🔄 Reiniciar", disabled=desabilitar_botoes, use_container_width=True, help="Reiniciar Pedidos Web"):
+    if st.button("🔄 Reiniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Reiniciar Pedidos Web"):
         reiniciar_lojas(lojas_selecionadas)
 
+if aba_atual in ["⏸️ Pausadas", "⚪ Desligadas"]:
+    st.sidebar.caption("⚠️ Comandos 'Iniciar' e 'Reiniciar' estão inativos para abas Pausadas / Desligadas.")
+
+# 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
-    if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True):
+    if st.button("⏸️ Pausar", disabled=desabilitar_geral, use_container_width=True):
         alterar_pausa(lojas_selecionadas, True)
 with col_p2:
-    if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True):
+    if st.button("▶️ Retomar", disabled=desabilitar_geral, use_container_width=True):
         alterar_pausa(lojas_selecionadas, False)
 
 st.sidebar.subheader("🔁 Auto Reinício")
 col_ar1, col_ar2 = st.sidebar.columns(2)
 with col_ar1:
-    if st.button("✅ Ativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_ativar"):
+    if st.button("✅ Ativar", disabled=desabilitar_geral, use_container_width=True, key="btn_ar_ativar"):
         alterar_auto_restart(lojas_selecionadas, True)
 with col_ar2:
-    if st.button("❌ Desativar", disabled=desabilitar_botoes, use_container_width=True, key="btn_ar_desativar"):
+    if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True, key="btn_ar_desativar"):
         alterar_auto_restart(lojas_selecionadas, False)
 
 st.sidebar.markdown("---")
 
+# 3. MANUTENÇÃO E AÇÕES CRÍTICAS
 st.sidebar.subheader("⚠️ Sistema & Manutenção")
-if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_botoes, use_container_width=True):
+if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
 
-if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_botoes, type="primary", use_container_width=True):
+if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_geral, type="primary", use_container_width=True):
     excluir_lojas(lojas_selecionadas)
     st.session_state["lojas_selecionadas"] = []
     st.rerun()
 
-# ABA PRINCIPAL DE NAVEGAÇÃO
+# ABA PRINCIPAL DE NAVEGAÇÃO (DASHBOARD vs LOGS)
 tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
 
 # ABA 1: DASHBOARD
 with tab_dash:
     renderizar_tabela_dashboard()
 
-# ABA 2: HISTÓRICO / LOGS (AGRUPADO POR REDE E RECOLHIDO)
+# ABA 2: HISTÓRICO / LOGS (SEMPRE AGRUPADO E RECOLHIDO)
 with tab_hist:
     st.subheader("📜 Histórico de Status por Rede e Loja")
     
@@ -505,7 +493,6 @@ with tab_hist:
     df_lojas_menu = buscar_dados_dashboard()
 
     if not df_lojas_menu.empty:
-        # Aplica o filtro de busca se preenchido
         if termo_busca_hist:
             df_lojas_menu = df_lojas_menu[
                 df_lojas_menu["Nome da Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False) |
@@ -513,15 +500,12 @@ with tab_hist:
                 df_lojas_menu["Rede/Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False)
             ].reset_index(drop=True)
 
-        # Agrupa os logs pelo código da Rede (o que vem antes da '/')
         grupos_hist = df_lojas_menu.groupby("Rede", sort=False)
 
         for idx, (rede_codigo, df_grupo) in enumerate(grupos_hist):
-            # Inicia RECOLHIDO por padrão (expanded=False)
             with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
                 lojas_da_rede = dict(zip(df_grupo["Rede/Loja"], df_grupo["Nome da Loja"]))
                 
-                # Permite trocar de loja se a Rede tiver mais de uma
                 if len(lojas_da_rede) > 1:
                     loja_sel_fmt = st.selectbox(
                         f"Selecione a loja da Rede {rede_codigo}:", 
@@ -533,7 +517,6 @@ with tab_hist:
                     loja_alvo = list(lojas_da_rede.values())[0]
                     st.caption(f"📍 Exibindo histórico de: **{list(lojas_da_rede.keys())[0]}**")
 
-                # Busca o histórico do banco para a loja selecionada
                 df_hist = buscar_historico(loja_alvo, data_ini, data_fim)
                 if not df_hist.empty:
                     st.dataframe(df_hist, use_container_width=True, hide_index=True)
