@@ -66,7 +66,7 @@ def buscar_dados_dashboard():
             cursor.execute("SELECT NOW()")
             db_now = cursor.fetchone()[0]
 
-            query = "SELECT nome_loja, rede, status, ultima_atualizacao, monitoramento_ativo, COALESCE(auto_restart, 0), comando FROM status_lojas ORDER BY nome_loja ASC"
+            query = "SELECT nome_loja, rede, status, ultima_atualizacao, monitoramento_ativo, COALESCE(auto_restart, 0), comando FROM status_lojas ORDER BY rede ASC, nome_loja ASC"
             cursor.execute(query)
             dados = cursor.fetchall()
         
@@ -97,9 +97,28 @@ def buscar_dados_dashboard():
             else:
                 ultima_att_local = "-"
 
+            # --- EXTRAÇÃO INTELIGENTE DA REDE (ANTES DA BARRA '/') ---
+            raw_rede = str(rede_nome).strip() if rede_nome else ""
+            raw_loja = str(nome_loja).strip() if nome_loja else ""
+
+            # Extrai o código da Rede (ex: '927' de '927/12')
+            if "/" in raw_rede:
+                cod_rede = raw_rede.split("/")[0].strip()
+            elif "/" in raw_loja:
+                cod_rede = raw_loja.split("/")[0].strip()
+            else:
+                cod_rede = raw_rede if raw_rede else "Sem Rede"
+
+            # Formata Rede/Loja para exibição (Ex: "927/12 - Loja teste")
+            if raw_rede and raw_rede != "-":
+                rede_loja_fmt = f"{raw_rede} - {nome_loja}"
+            else:
+                rede_loja_fmt = nome_loja
+
             lista_temp.append({
+                "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
-                "Rede": rede_nome,
+                "Rede": cod_rede,  # Código da rede isolado para agrupamento
                 "Status": status_calc,
                 "Auto Reinício": "✅ SIM" if a_restart == 1 else "❌ NÃO",
                 "Última Atualização": ultima_att_local,
@@ -192,7 +211,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 query += " AND DATE(data_evento) <= %s"
                 params.append(data_fim)
                 
-            query += " ORDER BY data_evento ASC"  # Ordena em ordem cronológica para calcular o término do evento
+            query += " ORDER BY data_evento ASC"  # Ordena em ordem cronológica
             cursor.execute(query, tuple(params))
             res = cursor.fetchall()
         conn.close()
@@ -206,7 +225,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         for i in range(len(res)):
             status, data_evento = res[i]
             
-            # Trata fuso horário do evento inicial
             if isinstance(data_evento, datetime):
                 if data_evento.tzinfo is None:
                     data_evento = data_evento.replace(tzinfo=ZoneInfo("UTC"))
@@ -214,7 +232,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
             else:
                 dt_inicio = agora_br
 
-            # Define horário final baseando-se na data do próximo registro (troca de status)
             if i + 1 < len(res):
                 data_prox = res[i + 1][1]
                 if isinstance(data_prox, datetime):
@@ -232,7 +249,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
             inicio_data_str = dt_inicio.strftime('%d/%m/%Y %H:%M:%S')
             inicio_hora_str = dt_inicio.strftime('%H:%M:%S')
 
-            # Define o ícone com a cor correspondente ao status
             st_upper = str(status).upper()
             if "ONLINE" in st_upper:
                 status_com_cor = f"🟢 {status}"
@@ -245,7 +261,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
             else:
                 status_com_cor = f"🟡 {status}"
 
-            # Formata o período no estilo: "15:43:23 até 18:00:00"
             periodo_formatado = f"{inicio_hora_str} até {fim_hora_str}"
 
             dados_formatados.append({
@@ -255,7 +270,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 "Término": fim_data_str
             })
 
-        # Exibe do evento mais recente para o mais antigo
         dados_formatados.reverse()
         return pd.DataFrame(dados_formatados)
     except Exception as e:
@@ -263,7 +277,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         return pd.DataFrame()
 
 # --- HELPER DE RENDERIZAÇÃO DAS TABELAS DE CADA ABA ---
-def renderizar_grid_lojas(df_subset, tab_key):
+def renderizar_grid_lojas(df_subset, tab_key, agrupar_por_rede=False):
     if df_subset.empty:
         st.info("Nenhuma loja encontrada neste status.")
         return
@@ -275,27 +289,55 @@ def renderizar_grid_lojas(df_subset, tab_key):
         if val == 'DESLIGADO': return 'background-color: #202024; color: #8D8D99'
         return ''
 
-    event = st.dataframe(
-        df_subset.style.map(destacar_status, subset=['Status']),
-        use_container_width=True,
-        hide_index=True,
-        height=450,
-        on_select="rerun",
-        selection_mode="multi-row",
-        key=f"tabela_lojas_{tab_key}"
-    )
+    df_ordenado = df_subset.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
 
-    state_key = f"last_sel_{tab_key}"
-    cur_sel = event.selection.rows
-    
-    if state_key not in st.session_state:
-        st.session_state[state_key] = cur_sel
-    elif st.session_state[state_key] != cur_sel:
-        st.session_state[state_key] = cur_sel
-        novas_selecionadas = df_subset.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
-        if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
-            st.session_state["lojas_selecionadas"] = novas_selecionadas
-            st.rerun()
+    if agrupar_por_rede:
+        # Agrupa pela Rede (o que vem antes da '/') e inicia RECOLHIDO (expanded=False)
+        grupos = df_ordenado.groupby("Rede", sort=False)
+        for idx, (rede_codigo, df_grupo) in enumerate(grupos):
+            with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
+                event = st.dataframe(
+                    df_grupo.style.map(destacar_status, subset=['Status']),
+                    use_container_width=True,
+                    hide_index=True,
+                    on_select="rerun",
+                    selection_mode="multi-row",
+                    key=f"tabela_lojas_{tab_key}_rede_{idx}"
+                )
+
+                state_key = f"last_sel_{tab_key}_rede_{idx}"
+                cur_sel = event.selection.rows
+                
+                if state_key not in st.session_state:
+                    st.session_state[state_key] = cur_sel
+                elif st.session_state[state_key] != cur_sel:
+                    st.session_state[state_key] = cur_sel
+                    novas_selecionadas = df_grupo.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
+                    outras_lojas = [l for l in st.session_state.get("lojas_selecionadas", []) if l not in df_grupo["Nome da Loja"].tolist()]
+                    st.session_state["lojas_selecionadas"] = outras_lojas + novas_selecionadas
+                    st.rerun()
+    else:
+        event = st.dataframe(
+            df_ordenado.style.map(destacar_status, subset=['Status']),
+            use_container_width=True,
+            hide_index=True,
+            height=450,
+            on_select="rerun",
+            selection_mode="multi-row",
+            key=f"tabela_lojas_{tab_key}"
+        )
+
+        state_key = f"last_sel_{tab_key}"
+        cur_sel = event.selection.rows
+        
+        if state_key not in st.session_state:
+            st.session_state[state_key] = cur_sel
+        elif st.session_state[state_key] != cur_sel:
+            st.session_state[state_key] = cur_sel
+            novas_selecionadas = df_ordenado.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
+            if st.session_state.get("lojas_selecionadas") != novas_selecionadas:
+                st.session_state["lojas_selecionadas"] = novas_selecionadas
+                st.rerun()
 
 # --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
 @st.fragment(run_every="15s")
@@ -310,11 +352,16 @@ def renderizar_tabela_dashboard():
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
 
-    termo_busca = st.text_input(
-        "🔍 Filtrar por Rede ou Nome da Loja:", 
-        placeholder="Digite para filtrar em tempo real...",
-        key="campo_busca_lojas"
-    )
+    col_busca, col_toggle = st.columns([3, 1])
+    with col_busca:
+        termo_busca = st.text_input(
+            "🔍 Filtrar por Rede/Loja ou Nome:", 
+            placeholder="Ex: 927/12, 999/1, Loja teste...",
+            key="campo_busca_lojas"
+        )
+    with col_toggle:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+        agrupar_rede = st.toggle("📂 Agrupar por Rede", value=False, key="toggle_agrupar_rede")
 
     # JavaScript para forçar a busca em tempo real
     components.html(
@@ -340,7 +387,8 @@ def renderizar_tabela_dashboard():
         if termo_busca:
             df_exibicao = df_lojas[
                 df_lojas["Nome da Loja"].astype(str).str.contains(termo_busca, case=False, na=False) |
-                df_lojas["Rede"].astype(str).str.contains(termo_busca, case=False, na=False)
+                df_lojas["Rede"].astype(str).str.contains(termo_busca, case=False, na=False) |
+                df_lojas["Rede/Loja"].astype(str).str.contains(termo_busca, case=False, na=False)
             ].reset_index(drop=True)
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
@@ -356,22 +404,22 @@ def renderizar_tabela_dashboard():
 
         with tab_online:
             df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "online")
+            renderizar_grid_lojas(df_sub, "online", agrupar_por_rede=agrupar_rede)
 
         with tab_offline:
             df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "offline")
+            renderizar_grid_lojas(df_sub, "offline", agrupar_por_rede=agrupar_rede)
 
         with tab_pausado:
             df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "pausado")
+            renderizar_grid_lojas(df_sub, "pausado", agrupar_por_rede=agrupar_rede)
 
         with tab_desligado:
             df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "desligado")
+            renderizar_grid_lojas(df_sub, "desligado", agrupar_por_rede=agrupar_rede)
 
         with tab_todas:
-            renderizar_grid_lojas(df_exibicao, "todas")
+            renderizar_grid_lojas(df_exibicao, "todas", agrupar_por_rede=agrupar_rede)
             
     else:
         st.info("Nenhuma loja encontrada.")
@@ -396,7 +444,7 @@ else:
 
 st.sidebar.markdown("---")
 
-# 1. COMANDOS REMOTOS (Organizados em 2 colunas)
+# 1. COMANDOS REMOTOS
 st.sidebar.subheader("🕹️ Comandos Remotos")
 col_cmd1, col_cmd2 = st.sidebar.columns(2)
 with col_cmd1:
@@ -406,7 +454,7 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_botoes, use_container_width=True, help="Reiniciar Pedidos Web"):
         reiniciar_lojas(lojas_selecionadas)
 
-# 2. MONITORAMENTO E AUTO REINÍCIO (Divididos em blocos paralelos)
+# 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
@@ -449,11 +497,17 @@ with tab_hist:
     st.subheader("Histórico por Loja")
     
     df_lojas_menu = buscar_dados_dashboard()
-    lojas_lista = df_lojas_menu["Nome da Loja"].tolist() if not df_lojas_menu.empty else []
-
+    
     col_h1, col_h2 = st.columns([1, 1])
     with col_h1:
-        loja_hist_sel = st.selectbox("Escolha a loja para ver o histórico:", lojas_lista)
+        if not df_lojas_menu.empty:
+            opcoes_lojas = dict(zip(df_lojas_menu["Rede/Loja"], df_lojas_menu["Nome da Loja"]))
+            loja_exibida = st.selectbox("Escolha a loja para ver o histórico:", list(opcoes_lojas.keys()))
+            loja_hist_sel = opcoes_lojas.get(loja_exibida)
+        else:
+            loja_hist_sel = None
+            st.info("Nenhuma loja cadastrada.")
+            
     with col_h2:
         periodo = st.date_input("Filtrar por período (Início e Fim):", value=(), format="DD/MM/YYYY")
 
