@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
+# --- ESTILIZAÇÃO CSS (INCLUINDO DESIGN DE ABAS FLUIDAS) ---
 st.markdown("""
     <style>
         /* Reduz o espaçamento entre elementos e botões na barra lateral */
@@ -27,6 +27,26 @@ st.markdown("""
         [data-testid="stSidebar"] .stButton > button {
             width: 100% !important;
             margin-bottom: 2px !important;
+        }
+        
+        /* Estilização para transformal rádio/segmentos em Abas Modernas */
+        div[data-testid="stRadio"] > div {
+            flex-direction: row !important;
+            gap: 8px !important;
+            margin-bottom: 15px !important;
+        }
+        div[data-testid="stRadio"] label {
+            background-color: #1e1e2e !important;
+            padding: 8px 18px !important;
+            border-radius: 8px !important;
+            border: 1px solid #333344 !important;
+            cursor: pointer !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+        div[data-testid="stRadio"] label:hover {
+            border-color: #00FFB2 !important;
+            background-color: #2a2a3d !important;
         }
         
         /* Ajustes para telas pequenas (Celulares) */
@@ -40,6 +60,9 @@ st.markdown("""
                 padding-left: 0.8rem !important;
                 padding-right: 0.8rem !important;
                 padding-top: 1rem !important;
+            }
+            div[data-testid="stRadio"] > div {
+                flex-wrap: wrap !important;
             }
         }
     </style>
@@ -57,6 +80,16 @@ def conectar_banco():
         host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASS, database=DB_NAME,
         ssl={'ssl': True}, connect_timeout=5
     )
+
+# --- FUNÇÃO PARA LIMPAR SELEÇÃO AO TROCAR DE ABA ---
+def limpar_selecoes_lojas():
+    st.session_state["lojas_selecionadas"] = []
+    keys_para_remover = [
+        k for k in list(st.session_state.keys())
+        if k.startswith("last_sel_") or k.startswith("tabela_lojas_")
+    ]
+    for key in keys_para_remover:
+        del st.session_state[key]
 
 # --- FUNÇÕES DE BANCO ---
 def buscar_dados_dashboard():
@@ -81,7 +114,6 @@ def buscar_dados_dashboard():
             elif delta_seconds > 75:
                 status_calc = 'DESLIGADO'
             else:
-                # REGRA: Converte erros ERR 401 e ERR 403 para ONLINE
                 status_str = str(status_banco).upper() if status_banco else ""
                 if any(err in status_str for err in ["401", "403", "ERR"]):
                     status_calc = 'ONLINE'
@@ -97,7 +129,6 @@ def buscar_dados_dashboard():
             else:
                 ultima_att_local = "-"
 
-            # EXTRAÇÃO INTELIGENTE DA REDE (ANTES DA BARRA '/')
             raw_rede = str(rede_nome).strip() if rede_nome else ""
             raw_loja = str(nome_loja).strip() if nome_loja else ""
 
@@ -113,7 +144,6 @@ def buscar_dados_dashboard():
             else:
                 rede_loja_fmt = nome_loja
 
-            # Status de Monitoramento (Ativo / Suspenso)
             status_monitoramento = "Ativo" if m_ativo == 1 else "Suspenso"
 
             lista_temp.append({
@@ -278,7 +308,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
-# --- HELPER DE RENDERIZAÇÃO DAS TABELAS (SEMPRE AGRUPADO POR REDE E RECOLHIDO) ---
+# --- HELPER DE RENDERIZAÇÃO DAS TABELAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
     if df_subset.empty:
         st.info("Nenhuma loja encontrada neste status.")
@@ -295,7 +325,6 @@ def renderizar_grid_lojas(df_subset, tab_key):
 
     df_ordenado = df_subset.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
 
-    # AGRUPAMENTO FIXO POR REDE - RECOLHIDO POR PADRÃO (expanded=False)
     grupos = df_ordenado.groupby("Rede", sort=False)
     for idx, (rede_codigo, df_grupo) in enumerate(grupos):
         with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
@@ -309,7 +338,7 @@ def renderizar_grid_lojas(df_subset, tab_key):
             )
 
             state_key = f"last_sel_{tab_key}_rede_{idx}"
-            cur_sel = event.selection.rows
+            cur_sel = event.selection.rows if event and hasattr(event, 'selection') else []
             
             if state_key not in st.session_state:
                 st.session_state[state_key] = cur_sel
@@ -368,32 +397,33 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # RETORNO ÀS ABAS NATIVAS COM ANIMAÇÃO FLUIDA
-        tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
-            "🟢 Online", 
-            "🔴 Offline", 
-            "⏸️ Pausadas", 
-            "⚪ Desligadas",
-            "📋 Todas"
-        ])
+        # ABAS INTERATIVAS COM DESMARCAÇÃO AUTOMÁTICA AO DIVERGIR
+        aba_status = st.radio(
+            "Filtrar por Status:",
+            ["🟢 Online", "🔴 Offline", "⏸️ Pausadas", "⚪ Desligadas", "📋 Todas"],
+            key="aba_status_ativa",
+            horizontal=True,
+            on_change=limpar_selecoes_lojas,
+            label_visibility="collapsed"
+        )
 
-        with tab_online:
+        if aba_status == "🟢 Online":
             df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "online")
 
-        with tab_offline:
+        elif aba_status == "🔴 Offline":
             df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "offline")
 
-        with tab_pausado:
+        elif aba_status == "⏸️ Pausadas":
             df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "pausado")
 
-        with tab_desligado:
+        elif aba_status == "⚪ Desligadas":
             df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "desligado")
 
-        with tab_todas:
+        elif aba_status == "📋 Todas":
             renderizar_grid_lojas(df_exibicao, "todas")
             
     else:
@@ -401,15 +431,12 @@ def renderizar_tabela_dashboard():
 
 # --- INTERFACE WEB PRINCIPAL ---
 
-
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
 lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_geral = len(lojas_selecionadas) == 0
 
-# REGRA DE SEGURANÇA INTELIGENTE:
-# Inativa os botões "Iniciar" e "Reiniciar" caso alguma loja selecionada esteja PAUSADA ou DESLIGADA
 desabilitar_iniciar_reiniciar = desabilitar_geral
 
 if not desabilitar_geral:
@@ -439,9 +466,6 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Reiniciar Pedidos Web"):
         reiniciar_lojas(lojas_selecionadas)
 
-if desabilitar_iniciar_reiniciar and not desabilitar_geral:
-    st.sidebar.caption("")
-
 # 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
@@ -470,18 +494,25 @@ if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar
 
 if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_geral, type="primary", use_container_width=True):
     excluir_lojas(lojas_selecionadas)
-    st.session_state["lojas_selecionadas"] = []
+    limpar_selecoes_lojas()
     st.rerun()
 
-# ABA PRINCIPAL DE NAVEGAÇÃO (DASHBOARD vs LOGS)
-tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
+# ABA PRINCIPAL DE NAVEGAÇÃO (PAINEL GERAL vs LOGS)
+aba_principal = st.radio(
+    "Navegação Principal",
+    ["📊 Painel Geral", "📜 Logs"],
+    key="aba_principal_ativa",
+    horizontal=True,
+    on_change=limpar_selecoes_lojas,
+    label_visibility="collapsed"
+)
 
 # ABA 1: DASHBOARD
-with tab_dash:
+if aba_principal == "📊 Painel Geral":
     renderizar_tabela_dashboard()
 
-# ABA 2: HISTÓRICO / LOGS (SEMPRE AGRUPADO E RECOLHIDO)
-with tab_hist:
+# ABA 2: HISTÓRICO / LOGS
+elif aba_principal == "📜 Logs":
     st.subheader("📜 Histórico de Monitoramento")
     
     col_h1, col_h2 = st.columns([2, 1])
