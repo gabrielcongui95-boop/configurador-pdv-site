@@ -226,7 +226,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 fim_data_str = dt_fim.strftime('%d/%m/%Y %H:%M:%S')
                 fim_hora_str = dt_fim.strftime('%H:%M:%S')
             else:
-                fim_data_str = "Em andamento"
+                fim_data_str = "Loja Aberta"
                 fim_hora_str = "Atual"
 
             inicio_data_str = dt_inicio.strftime('%d/%m/%Y %H:%M:%S')
