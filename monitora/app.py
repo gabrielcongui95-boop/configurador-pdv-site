@@ -211,7 +211,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
                 query += " AND DATE(data_evento) <= %s"
                 params.append(data_fim)
                 
-            query += " ORDER BY data_evento ASC"  # Ordena em ordem cronológica
+            query += " ORDER BY data_evento ASC"
             cursor.execute(query, tuple(params))
             res = cursor.fetchall()
         conn.close()
@@ -292,7 +292,6 @@ def renderizar_grid_lojas(df_subset, tab_key, agrupar_por_rede=False):
     df_ordenado = df_subset.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
 
     if agrupar_por_rede:
-        # Agrupa pela Rede (o que vem antes da '/') e inicia RECOLHIDO (expanded=False)
         grupos = df_ordenado.groupby("Rede", sort=False)
         for idx, (rede_codigo, df_grupo) in enumerate(grupos):
             with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
@@ -363,7 +362,6 @@ def renderizar_tabela_dashboard():
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         agrupar_rede = st.toggle("📂 Agrupar por Rede", value=False, key="toggle_agrupar_rede")
 
-    # JavaScript para forçar a busca em tempo real
     components.html(
         """
         <script>
@@ -393,7 +391,6 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # ABAS DE NAVEGAÇÃO DE STATUS
         tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
             "🟢 Online", 
             "🔴 Offline", 
@@ -427,14 +424,13 @@ def renderizar_tabela_dashboard():
 # --- INTERFACE WEB PRINCIPAL ---
 st.title("Lojas")
 
-# Inicializa o estado global das lojas selecionadas
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
 lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
-# --- BARRA LATERAL (PAINEL OPERACIONAL ADAPTADO) ---
+# --- BARRA LATERAL ---
 st.sidebar.header("🖥️ PAINEL OPERACIONAL")
 
 if lojas_selecionadas:
@@ -444,7 +440,6 @@ else:
 
 st.sidebar.markdown("---")
 
-# 1. COMANDOS REMOTOS
 st.sidebar.subheader("🕹️ Comandos Remotos")
 col_cmd1, col_cmd2 = st.sidebar.columns(2)
 with col_cmd1:
@@ -454,7 +449,6 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_botoes, use_container_width=True, help="Reiniciar Pedidos Web"):
         reiniciar_lojas(lojas_selecionadas)
 
-# 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
@@ -475,7 +469,6 @@ with col_ar2:
 
 st.sidebar.markdown("---")
 
-# 3. MANUTENÇÃO E AÇÕES CRÍTICAS
 st.sidebar.subheader("⚠️ Sistema & Manutenção")
 if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_botoes, use_container_width=True):
     executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
@@ -492,31 +485,59 @@ tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
 with tab_dash:
     renderizar_tabela_dashboard()
 
-# ABA 2: HISTÓRICO
+# ABA 2: HISTÓRICO / LOGS (AGRUPADO POR REDE E RECOLHIDO)
 with tab_hist:
-    st.subheader("Histórico por Loja")
+    st.subheader("📜 Histórico de Status por Rede e Loja")
     
-    df_lojas_menu = buscar_dados_dashboard()
-    
-    col_h1, col_h2 = st.columns([1, 1])
+    col_h1, col_h2 = st.columns([2, 1])
     with col_h1:
-        if not df_lojas_menu.empty:
-            opcoes_lojas = dict(zip(df_lojas_menu["Rede/Loja"], df_lojas_menu["Nome da Loja"]))
-            loja_exibida = st.selectbox("Escolha a loja para ver o histórico:", list(opcoes_lojas.keys()))
-            loja_hist_sel = opcoes_lojas.get(loja_exibida)
-        else:
-            loja_hist_sel = None
-            st.info("Nenhuma loja cadastrada.")
-            
+        termo_busca_hist = st.text_input(
+            "🔍 Filtrar Rede ou Loja nos Logs:", 
+            placeholder="Ex: 927, 999/1, Loja teste...", 
+            key="busca_hist"
+        )
     with col_h2:
-        periodo = st.date_input("Filtrar por período (Início e Fim):", value=(), format="DD/MM/YYYY")
+        periodo = st.date_input("📅 Filtrar por período:", value=(), format="DD/MM/YYYY", key="periodo_hist")
 
     data_ini = periodo[0] if len(periodo) > 0 else None
     data_fim = periodo[1] if len(periodo) > 1 else None
 
-    if loja_hist_sel:
-        df_hist = buscar_historico(loja_hist_sel, data_ini, data_fim)
-        if not df_hist.empty:
-            st.dataframe(df_hist, use_container_width=True, hide_index=True)
-        else:
-            st.warning("Nenhum histórico encontrado para o filtro selecionado.")
+    df_lojas_menu = buscar_dados_dashboard()
+
+    if not df_lojas_menu.empty:
+        # Aplica o filtro de busca se preenchido
+        if termo_busca_hist:
+            df_lojas_menu = df_lojas_menu[
+                df_lojas_menu["Nome da Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False) |
+                df_lojas_menu["Rede"].astype(str).str.contains(termo_busca_hist, case=False, na=False) |
+                df_lojas_menu["Rede/Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False)
+            ].reset_index(drop=True)
+
+        # Agrupa os logs pelo código da Rede (o que vem antes da '/')
+        grupos_hist = df_lojas_menu.groupby("Rede", sort=False)
+
+        for idx, (rede_codigo, df_grupo) in enumerate(grupos_hist):
+            # Inicia RECOLHIDO por padrão (expanded=False)
+            with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
+                lojas_da_rede = dict(zip(df_grupo["Rede/Loja"], df_grupo["Nome da Loja"]))
+                
+                # Permite trocar de loja se a Rede tiver mais de uma
+                if len(lojas_da_rede) > 1:
+                    loja_sel_fmt = st.selectbox(
+                        f"Selecione a loja da Rede {rede_codigo}:", 
+                        options=list(lojas_da_rede.keys()),
+                        key=f"sel_loja_hist_{rede_codigo}_{idx}"
+                    )
+                    loja_alvo = lojas_da_rede[loja_sel_fmt]
+                else:
+                    loja_alvo = list(lojas_da_rede.values())[0]
+                    st.caption(f"📍 Exibindo histórico de: **{list(lojas_da_rede.keys())[0]}**")
+
+                # Busca o histórico do banco para a loja selecionada
+                df_hist = buscar_historico(loja_alvo, data_ini, data_fim)
+                if not df_hist.empty:
+                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
+                else:
+                    st.info(f"Nenhum registro encontrado para {loja_alvo} no período selecionado.")
+    else:
+        st.info("Nenhuma loja encontrada para exibir o histórico.")
