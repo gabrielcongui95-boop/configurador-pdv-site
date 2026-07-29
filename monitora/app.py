@@ -74,11 +74,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- CONFIGURAÇÃO DO BANCO ---
-# DICA DE SEGURANÇA: Mantenha senhas apenas no st.secrets no ambiente de produção
 DB_HOST = st.secrets.get("DB_HOST", "mysql-71db31c-gabriel-8279.g.aivencloud.com")
 DB_PORT = int(st.secrets.get("DB_PORT", 14801))
 DB_USER = st.secrets.get("DB_USER", "avnadmin")
-DB_PASS = st.secrets.get("DB_PASS", "") # Preencha via st.secrets
+DB_PASS = st.secrets.get("DB_PASS", "")
 DB_NAME = st.secrets.get("DB_NAME", "monitoramento_pdv")
 
 def conectar_banco():
@@ -257,7 +256,7 @@ def renderizar_grid_lojas(df_subset, tab_key):
         df_subset.style.map(destacar_status, subset=['Status']),
         use_container_width=True,
         hide_index=True,
-        height=380, # Altura ligeiramente ajustada para evitar excesso de scroll no celular
+        height=380,
         on_select="rerun",
         selection_mode="multi-row",
         key=f"tabela_lojas_{tab_key}"
@@ -280,7 +279,6 @@ def renderizar_grid_lojas(df_subset, tab_key):
 def renderizar_tabela_dashboard():
     df_lojas = buscar_dados_dashboard()
     
-    # Organização responsiva do cabeçalho
     col_t, col_r = st.columns([2, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
@@ -295,7 +293,6 @@ def renderizar_tabela_dashboard():
         key="campo_busca_lojas"
     )
 
-    # JavaScript para forçar a busca em tempo real
     components.html(
         """
         <script>
@@ -324,7 +321,6 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # ABAS DE NAVEGAÇÃO
         tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
             "🟢 Online", 
             "🔴 Offline", 
@@ -355,8 +351,8 @@ def renderizar_tabela_dashboard():
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- COMPONENTE DE AÇÕES RÁPIDAS (EXCLUSIVO PARA PRATICIDADE NO MOBILE) ---
-def renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes):
+# --- COMPONENTE DE AÇÕES RÁPIDAS (COM PREFIXO DE KEY PARA EVITAR DUPLICAÇÃO) ---
+def renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes, prefix=""):
     if lojas_selecionadas:
         st.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
     else:
@@ -364,32 +360,31 @@ def renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes):
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("▶️ Iniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_start"):
+        if st.button("▶️ Iniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_start"):
             executar_comando_remoto(lojas_selecionadas, "START")
-        if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_pausa"):
+        if st.button("⏸️ Pausar", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_pausa"):
             alterar_pausa(lojas_selecionadas, True)
-        if st.button("✅ Ativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_ar_on"):
+        if st.button("✅ Ativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_ar_on"):
             alterar_auto_restart(lojas_selecionadas, True)
 
     with col2:
-        if st.button("🔄 Reiniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_restart"):
+        if st.button("🔄 Reiniciar Pedidos", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_restart"):
             reiniciar_lojas(lojas_selecionadas)
-        if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_retomar"):
+        if st.button("▶️ Retomar", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_retomar"):
             alterar_pausa(lojas_selecionadas, False)
-        if st.button("❌ Desativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_ar_off"):
+        if st.button("❌ Desativar Auto-Restart", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_ar_off"):
             alterar_auto_restart(lojas_selecionadas, False)
 
     st.markdown("---")
     col_danger1, col_danger2 = st.columns(2)
     with col_danger1:
-        if st.button("🗑️ Rem. Monitor", disabled=desabilitar_botoes, use_container_width=True, key="m_btn_uninst"):
+        if st.button("🗑️ Rem. Monitor", disabled=desabilitar_botoes, use_container_width=True, key=f"{prefix}_btn_uninst"):
             executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
     with col_danger2:
-        if st.button("🚨 Apagar Lojas", disabled=desabilitar_botoes, type="primary", use_container_width=True, key="m_btn_del"):
+        if st.button("🚨 Apagar Lojas", disabled=desabilitar_botoes, type="primary", use_container_width=True, key=f"{prefix}_btn_del"):
             excluir_lojas(lojas_selecionadas)
             st.session_state["lojas_selecionadas"] = []
             st.rerun()
-
 
 # --- INTERFACE WEB PRINCIPAL ---
 st.title("Lojas")
@@ -400,14 +395,14 @@ if "lojas_selecionadas" not in st.session_state:
 lojas_selecionadas = st.session_state["lojas_selecionadas"]
 desabilitar_botoes = len(lojas_selecionadas) == 0
 
-# BARRA LATERAL (SIDEBAR - Para Desktop)
+# BARRA LATERAL (PREFIX = "sidebar")
 with st.sidebar:
     st.header("🖥️ PAINEL OPERACIONAL")
-    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes)
+    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes, prefix="sidebar")
 
-# EXPANDER DE COMANDOS NA TELA PRINCIPAL (Especialmente útil no Mobile)
+# EXPANDER DA TELA PRINCIPAL (PREFIX = "main")
 with st.expander("🛠️ **Painel de Comandos Remotos** (Clique para abrir)", expanded=not desabilitar_botoes):
-    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes)
+    renderizar_painel_comandos(lojas_selecionadas, desabilitar_botoes, prefix="main")
 
 # ABA PRINCIPAL DE NAVEGAÇÃO
 tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
