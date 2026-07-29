@@ -834,12 +834,9 @@
             const total = state.cart.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
             totalDisplay.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
 
-<<<<<<< HEAD
             marketDisplay.innerText = state.marketName ? `: ${state.marketName}` : "";
             cartCount.innerText = state.cart.length;
 
-=======
->>>>>>> 423ea9e2e8c27f28d4eaa286fb3220eec38a02a1
             if (state.cart.length === 0) {
                 cartList.innerHTML = `
                     <div class="empty-cart">
