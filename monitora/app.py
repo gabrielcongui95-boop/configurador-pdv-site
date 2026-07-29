@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilização CSS para ajustar a navegação horizontal e layout mobile
+# Estilização CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
 st.markdown("""
     <style>
         /* Reduz o espaçamento entre elementos e botões na barra lateral */
@@ -121,7 +121,7 @@ def buscar_dados_dashboard():
                 "Nome da Loja": nome_loja,
                 "Rede": cod_rede,
                 "Status": status_calc,
-                "Monitoramento": status_monitoramento,  # Nova Coluna solicitada
+                "Monitoramento": status_monitoramento,
                 "Auto Reinício": "✅ SIM" if a_restart == 1 else "❌ NÃO",
                 "Última Atualização": ultima_att_local,
                 "Comando Pendente": comando_banco or "-"
@@ -368,28 +368,32 @@ def renderizar_tabela_dashboard():
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # NAVEGAÇÃO POR STATUS VIA RADIO HORIZONTAL (Atualiza a sessão dinamicamente)
-        aba_opcao = st.radio(
-            "Navegação de Status:",
-            ["🟢 Online", "🔴 Offline", "⏸️ Pausadas", "⚪ Desligadas", "📋 Todas"],
-            horizontal=True,
-            key="aba_ativa",
-            label_visibility="collapsed"
-        )
+        # RETORNO ÀS ABAS NATIVAS COM ANIMAÇÃO FLUIDA
+        tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
+            "🟢 Online", 
+            "🔴 Offline", 
+            "⏸️ Pausadas", 
+            "⚪ Desligadas",
+            "📋 Todas"
+        ])
 
-        if aba_opcao == "🟢 Online":
+        with tab_online:
             df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "online")
-        elif aba_opcao == "🔴 Offline":
+
+        with tab_offline:
             df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "offline")
-        elif aba_opcao == "⏸️ Pausadas":
+
+        with tab_pausado:
             df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "pausado")
-        elif aba_opcao == "⚪ Desligadas":
+
+        with tab_desligado:
             df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
             renderizar_grid_lojas(df_sub, "desligado")
-        else:
+
+        with tab_todas:
             renderizar_grid_lojas(df_exibicao, "todas")
             
     else:
@@ -401,16 +405,19 @@ st.title("Lojas")
 if "lojas_selecionadas" not in st.session_state:
     st.session_state["lojas_selecionadas"] = []
 
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "🟢 Online"
-
 lojas_selecionadas = st.session_state["lojas_selecionadas"]
-aba_atual = st.session_state["aba_ativa"]
-
 desabilitar_geral = len(lojas_selecionadas) == 0
 
-# REGRA DE SEGURANÇA: Inativa Iniciar/Reiniciar se estiver nas abas 'Pausadas' ou 'Desligadas'
-desabilitar_iniciar_reiniciar = desabilitar_geral or (aba_atual in ["⏸️ Pausadas", "⚪ Desligadas"])
+# REGRA DE SEGURANÇA INTELIGENTE:
+# Inativa os botões "Iniciar" e "Reiniciar" caso alguma loja selecionada esteja PAUSADA ou DESLIGADA
+desabilitar_iniciar_reiniciar = desabilitar_geral
+
+if not desabilitar_geral:
+    df_todas_lojas = buscar_dados_dashboard()
+    if not df_todas_lojas.empty:
+        status_das_selecionadas = df_todas_lojas[df_todas_lojas["Nome da Loja"].isin(lojas_selecionadas)]["Status"].tolist()
+        if any(s in ["PAUSADO", "DESLIGADO"] for s in status_das_selecionadas):
+            desabilitar_iniciar_reiniciar = True
 
 # --- BARRA LATERAL (PAINEL OPERACIONAL) ---
 st.sidebar.header("🖥️ PAINEL OPERACIONAL")
@@ -432,8 +439,8 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Reiniciar Pedidos Web"):
         reiniciar_lojas(lojas_selecionadas)
 
-if aba_atual in ["⏸️ Pausadas", "⚪ Desligadas"]:
-    st.sidebar.caption("⚠️ Comandos 'Iniciar' e 'Reiniciar' estão inativos para abas Pausadas / Desligadas.")
+if desabilitar_iniciar_reiniciar and not desabilitar_geral:
+    st.sidebar.caption("")
 
 # 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
