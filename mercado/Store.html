@@ -433,8 +433,6 @@
 </head>
 <body>
 
-
-
     <div class="container">
         <!-- Banner de Total -->
         <div class="total-banner">
@@ -448,6 +446,7 @@
         <!-- Ações Principais -->
         <div class="main-actions">
             <button class="btn btn-primary" onclick="openCatalogModal()">✏️ Fazer Lista</button>
+            <button class="btn btn-secondary" onclick="forceRefresh()">🔄 Atualizar</button>
             <button class="btn btn-danger" onclick="showSummaryBeforeReset()">🔄 Zerar Lista</button>
         </div>
 
@@ -1107,6 +1106,44 @@
             state.marketName = "";
             saveState();
             closeSummaryModal();
+        }
+
+        // Função de Atualização e Limpeza Completa (PWA / Web)
+        async function forceRefresh() {
+            if (confirm("Deseja recarregar para buscar novas atualizações?")) {
+                try {
+                    // 1. Limpa Cookies
+                    document.cookie.split(";").forEach((c) => {
+                        document.cookie = c
+                            .replace(/^ +/, "")
+                            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                    });
+
+                    // 2. Limpa LocalStorage e SessionStorage
+                    localStorage.clear();
+                    sessionStorage.clear();
+
+                    // 3. Remove os Service Workers do PWA para desbaixar arquivos velhos
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {
+                            await registration.unregister();
+                        }
+                    }
+
+                    // 4. Limpa o Cache Storage do PWA/Navegador
+                    if ('caches' in window) {
+                        const cacheKeys = await caches.keys();
+                        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+                    }
+
+                    // 5. Recarrega a página ignorando o cache
+                    window.location.reload(true);
+                } catch (error) {
+                    console.error("Erro ao limpar dados:", error);
+                    window.location.reload();
+                }
+            }
         }
     </script>
 </body>
