@@ -705,7 +705,7 @@
             { id: 124, name: "Torrada", category: "Padaria e Matinais", emoji: "🍞" },
             { id: 125, name: "Broa de Milho", category: "Padaria e Matinais", emoji: "🌽" },
             { id: 126, name: "Croissant / Salgado de Padaria", category: "Padaria e Matinais", emoji: "🥐" },
-            { id: 127, name: "Bolo de Rolo / Bolo Caseiro", category: "Padaria e Matinais", emoji: "🍰" },
+            { id: 127, name: "Massa de bolo", category: "Padaria e Matinais", emoji: "🍰" },
             { id: 128, name: "Geleia de Frutas", category: "Padaria e Matinais", emoji: "🫐" },
             { id: 129, name: "Mel", category: "Padaria e Matinais", emoji: "🍯" },
             { id: 130, name: "Açúcar Mascavo / Demerara", category: "Alimentos", emoji: "🧂" },
@@ -833,9 +833,6 @@
 
             const total = state.cart.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
             totalDisplay.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
-
-            marketDisplay.innerText = state.marketName ? `📍 Mercado: ${state.marketName}` : "📍 Clique para informar o Mercado";
-            cartCount.innerText = state.cart.length;
 
             if (state.cart.length === 0) {
                 cartList.innerHTML = `
