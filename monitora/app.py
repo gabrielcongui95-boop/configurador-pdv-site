@@ -136,7 +136,7 @@ def buscar_logs_auditoria(data_alvo):
         logs_formatados = []
         for log_id, dt_hora, usuario, acao, detalhes in logs:
             if isinstance(dt_hora, datetime):
-                str_data_hora = dt_hora.strftime('%d/%m/%Y %H:%M:%S')
+                str_data_hora = dt_hora.strftime('%d/%m/%y %H:%M:%S')
             elif dt_hora:
                 str_data_hora = str(dt_hora)
             else:
@@ -164,8 +164,8 @@ def limpar_logs_auditoria_banco(data_alvo):
             cursor.execute("DELETE FROM logs_auditoria WHERE DATE(data_hora) = %s", (str_data,))
         conn.commit()
         conn.close()
-        st.success(f"Logs do dia {data_alvo.strftime('%d/%m/%Y')} limpos com sucesso!")
-        registrar_log_auditoria(st.session_state["usuario_logado"], "LIMPAR_AUDITORIA", f"Limpou logs do dia {data_alvo.strftime('%d/%m/%Y')}")
+        st.success(f"Logs do dia {data_alvo.strftime('%d/%m/%y')} limpos com sucesso!")
+        registrar_log_auditoria(st.session_state["usuario_logado"], "LIMPAR_AUDITORIA", f"Limpou logs do dia {data_alvo.strftime('%d/%m/%y')}")
     except Exception as e:
         st.error(f"Erro ao limpar logs de auditoria: {e}")
 
@@ -179,6 +179,10 @@ if "usuario_editando" not in st.session_state:
     st.session_state["usuario_editando"] = None
 if "view_admin" not in st.session_state:
     st.session_state["view_admin"] = None
+
+def navegar_para(view_name):
+    """Gerenciador suave de navegação para evitar bugs e repetições na tela."""
+    st.session_state["view_admin"] = view_name
 
 def autenticar_usuario(user, password):
     try:
@@ -255,7 +259,7 @@ def buscar_dados_dashboard():
 
             if ultima_att:
                 ultima_att_utc = ultima_att.replace(tzinfo=ZoneInfo("UTC")) if ultima_att.tzinfo is None else ultima_att
-                ultima_att_local = ultima_att_utc.astimezone(FUSO_BRASILIA).strftime('%d/%m/%Y %H:%M:%S')
+                ultima_att_local = ultima_att_utc.astimezone(FUSO_BRASILIA).strftime('%d/%m/%y %H:%M:%S')
             else:
                 ultima_att_local = "-"
 
@@ -384,7 +388,7 @@ def buscar_historico(nome_loja):
             if i + 1 < len(res):
                 data_prox = res[i + 1][1]
                 dt_fim = data_prox.replace(tzinfo=ZoneInfo("UTC")).astimezone(FUSO_BRASILIA) if isinstance(data_prox, datetime) and data_prox.tzinfo is None else agora_br
-                fim_data_str = dt_fim.strftime('%d/%m/%Y %H:%M:%S')
+                fim_data_str = dt_fim.strftime('%d/%m/%y %H:%M:%S')
                 fim_hora_str = dt_fim.strftime('%H:%M:%S')
             else:
                 fim_data_str = "Em andamento"
@@ -400,7 +404,7 @@ def buscar_historico(nome_loja):
                 "Status": status_com_cor,
                 "Nome da Máquina": maquina or "Desconhecido",
                 "Período Horário": f"{dt_inicio.strftime('%H:%M:%S')} até {fim_hora_str}",
-                "Início": dt_inicio.strftime('%d/%m/%Y %H:%M:%S'),
+                "Início": dt_inicio.strftime('%d/%m/%y %H:%M:%S'),
                 "Término": fim_data_str
             })
 
@@ -551,13 +555,14 @@ def renderizar_tela_logs_auditoria():
         data_filtro = st.date_input(
             "📅 Selecione a Data:", 
             value=datetime.now(FUSO_BRASILIA).date(),
+            format="DD/MM/YY",
             key="input_data_auditoria"
         )
         
     with col_d2:
         st.write(" ")
         st.write(" ")
-        if st.button(f"🚨 Apagar Logs do Dia {data_filtro.strftime('%d/%m/%Y')}", type="primary", use_container_width=True):
+        if st.button(f"🚨 Apagar Logs do Dia {data_filtro.strftime('%d/%m/%y')}", type="primary", use_container_width=True):
             limpar_logs_auditoria_banco(data_filtro)
             st.rerun()
 
@@ -579,7 +584,7 @@ def renderizar_tela_logs_auditoria():
             hide_index=True
         )
     else:
-        st.info(f"Nenhum log de auditoria encontrado para o dia {data_filtro.strftime('%d/%m/%Y')}.")
+        st.info(f"Nenhum log de auditoria encontrado para o dia {data_filtro.strftime('%d/%m/%y')}.")
 
 # --- RENDERIZADOR DE TABELA DE LOJAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
@@ -635,7 +640,7 @@ def renderizar_tabela_dashboard():
     col_t, col_r = st.columns([3, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa ({agora}) ")
+        st.caption(f"⚡ Atualização automática ativa ({agora})")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
@@ -728,13 +733,19 @@ if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
     
-    if st.sidebar.button("👥 Gerenciar Usuários", use_container_width=True):
-        st.session_state["view_admin"] = "usuarios" if st.session_state.get("view_admin") != "usuarios" else None
-        st.rerun()
+    st.sidebar.button(
+        "👥 Gerenciar Usuários", 
+        use_container_width=True, 
+        on_click=navegar_para, 
+        args=("usuarios" if st.session_state.get("view_admin") != "usuarios" else None,)
+    )
 
-    if st.sidebar.button("🛡️ Logs de Auditoria", use_container_width=True):
-        st.session_state["view_admin"] = "auditoria" if st.session_state.get("view_admin") != "auditoria" else None
-        st.rerun()
+    st.sidebar.button(
+        "🛡️ Logs de Auditoria", 
+        use_container_width=True, 
+        on_click=navegar_para, 
+        args=("auditoria" if st.session_state.get("view_admin") != "auditoria" else None,)
+    )
 
     if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
         executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
@@ -761,9 +772,7 @@ if view_admin == "usuarios":
         st.title("👥 Gerenciamento de Usuários e Acessos")
     with col_hdr2:
         st.write("")
-        if st.button("⬅️ Voltar ao Painel", use_container_width=True):
-            st.session_state["view_admin"] = None
-            st.rerun()
+        st.button("⬅️ Voltar ao Painel", use_container_width=True, on_click=navegar_para, args=(None,))
     st.markdown("---")
     renderizar_tela_gerenciar_usuarios()
 
@@ -773,9 +782,7 @@ elif view_admin == "auditoria":
         st.title("🛡️ Logs de Auditoria do Sistema")
     with col_hdr2:
         st.write("")
-        if st.button("⬅️ Voltar ao Painel", use_container_width=True):
-            st.session_state["view_admin"] = None
-            st.rerun()
+        st.button("⬅️ Voltar ao Painel", use_container_width=True, on_click=navegar_para, args=(None,))
     st.markdown("---")
     renderizar_tela_logs_auditoria()
 
