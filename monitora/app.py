@@ -11,7 +11,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento",
+    page_title="Monitoramento PDV",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -78,6 +78,11 @@ def inicializar_e_migrar_banco():
             
             try:
                 cursor.execute("ALTER TABLE status_lojas ADD COLUMN maquina VARCHAR(255)")
+            except Exception:
+                pass
+
+            try:
+                cursor.execute("ALTER TABLE historico_status ADD COLUMN maquina VARCHAR(255)")
             except Exception:
                 pass
 
@@ -355,20 +360,26 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            query = "SELECT status, data_evento FROM historico_status WHERE nome_loja = %s"
+            # Busca status e data do histórico + nome da máquina associada
+            query = """
+                SELECT h.status, h.data_evento, COALESCE(s.maquina, 'Desconhecido') as maquina
+                FROM historico_status h
+                LEFT JOIN status_lojas s ON h.nome_loja = s.nome_loja
+                WHERE h.nome_loja = %s
+            """
             params = [nome_loja]
             
             if data_inicio and data_fim:
-                query += " AND DATE(data_evento) BETWEEN %s AND %s"
+                query += " AND DATE(h.data_evento) BETWEEN %s AND %s"
                 params.extend([data_inicio, data_fim])
             elif data_inicio:
-                query += " AND DATE(data_evento) >= %s"
+                query += " AND DATE(h.data_evento) >= %s"
                 params.append(data_inicio)
             elif data_fim:
-                query += " AND DATE(data_evento) <= %s"
+                query += " AND DATE(h.data_evento) <= %s"
                 params.append(data_fim)
                 
-            query += " ORDER BY data_evento ASC"
+            query += " ORDER BY h.data_evento ASC"
             cursor.execute(query, tuple(params))
             res = cursor.fetchall()
         conn.close()
@@ -379,7 +390,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         agora_br = datetime.now(FUSO_BRASILIA)
 
         for i in range(len(res)):
-            status, data_evento = res[i]
+            status, data_evento, maquina = res[i]
             if isinstance(data_evento, datetime):
                 dt_inicio = data_evento.replace(tzinfo=ZoneInfo("UTC")).astimezone(FUSO_BRASILIA) if data_evento.tzinfo is None else data_evento.astimezone(FUSO_BRASILIA)
             else:
@@ -402,6 +413,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
 
             dados_formatados.append({
                 "Status": status_com_cor,
+                "Nome da Máquina": maquina or "Desconhecido",
                 "Período Horário": f"{dt_inicio.strftime('%H:%M:%S')} até {fim_hora_str}",
                 "Início": dt_inicio.strftime('%d/%m/%Y %H:%M:%S'),
                 "Término": fim_data_str
@@ -463,8 +475,11 @@ def renderizar_grid_lojas(df_subset, tab_key):
 
     for idx, (rede_codigo, df_grupo) in enumerate(grupos):
         with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
+            # Remove a coluna "Rede" para exibição limpa na tela inicial
+            df_exibicao = df_grupo.drop(columns=["Rede"], errors="ignore")
+
             event = st.dataframe(
-                df_grupo.style.map(destacar_estilos, subset=['Status', 'Monitoramento']),
+                df_exibicao.style.map(destacar_estilos, subset=['Status', 'Monitoramento']),
                 use_container_width=True,
                 hide_index=True,
                 on_select="rerun",
@@ -613,23 +628,16 @@ guias = st.tabs(abas_principais)
 with guias[0]:
     renderizar_tabela_dashboard()
 
-# TAB 2: LOGS DE OPERAÇÃO DAS LOJAS (AGRUPADO POR REDE IGUAL À TELA INICIAL)
+# TAB 2: LOGS DE OPERAÇÃO DAS LOJAS
 with guias[1]:
     st.subheader("📜 Histórico e Logs de Operação das Lojas")
     
     loja_foco = st.session_state.get("loja_direcionada_log", None)
-    if loja_foco:
-        st.info(f"🎯 Exibindo histórico direcionado para: **{loja_foco}**")
 
     df_lojas_menu = buscar_dados_dashboard()
     if not df_lojas_menu.empty:
-        # Ordena as lojas agrupando por Rede e Nome da Loja
         df_lojas_menu = df_lojas_menu.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
-        
-        # Mapeia o nome real da loja para o formato exibido (Rede/Loja - Nome da Loja)
         mapa_nome_para_fmt = dict(zip(df_lojas_menu["Nome da Loja"], df_lojas_menu["Rede/Loja"]))
-        
-        # Agrupa por Rede assim como na Tela Inicial
         grupos_logs = df_lojas_menu.groupby("Rede", sort=False)
 
         for idx, (rede_codigo, df_grupo) in enumerate(grupos_logs):
@@ -649,7 +657,6 @@ with guias[1]:
                         key=f"sel_loja_hist_{rede_codigo}_{idx}"
                     )
                 
-                # ADM pode apagar os logs da loja selecionada na rede
                 if st.session_state["nivel_acesso"] == "ADM":
                     with col_del:
                         st.write(" ")
@@ -662,7 +669,7 @@ with guias[1]:
                 if not df_hist.empty:
                     st.dataframe(df_hist, use_container_width=True, hide_index=True)
                 else:
-                    st.info("Nenhum histórico registrado para esta loja.")
+                    st.info("Nenum histórico registrado para esta loja.")
             
         if st.session_state["nivel_acesso"] == "ADM":
             st.markdown("---")
@@ -675,7 +682,6 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
     with guias[2]:
         st.subheader("👥 Gerenciamento de Usuários e Acessos")
         
-        # FORMULÁRIO COMPACTO DE CADASTRO
         with st.form("form_novo_usuario"):
             st.write("### ➕ Criar Novo Usuário")
             novo_usr = st.text_input("Nome do Usuário:")
@@ -699,7 +705,6 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
 
         st.markdown("---")
         
-        # FORMULÁRIO DE EDIÇÃO SE ALGUM USUÁRIO FOI SELECIONADO PARA EDITAR
         if st.session_state["usuario_editando"]:
             u_edit = st.session_state["usuario_editando"]
             st.warning(f"✏️ **Editando Usuário ID #{u_edit['id']} - ({u_edit['usuario']})**")
