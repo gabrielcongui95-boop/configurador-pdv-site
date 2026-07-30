@@ -243,7 +243,7 @@ def autenticar_usuario(user, password):
         st.error(f"Erro de autenticação: {e}")
     return False
 
-# TELA DE LOGIN (SEM FLUTUAÇÕES OU FADE OUT INDESEJADO)
+# TELA DE LOGIN
 if not st.session_state["usuario_logado"]:
     st.title("🔐 Autenticação - Painel de Monitoramento 🌍")
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
@@ -494,6 +494,7 @@ def modal_gerenciar_usuarios():
     with st.form("form_novo_usuario_modal"):
         st.write("### ➕ Criar Novo Usuário")
         
+        # CAMPOS EXIBIDOS UM AO LADO DO OUTRO
         col_u1, col_u2, col_u3, col_u4 = st.columns([2.5, 2.5, 2, 2])
         with col_u1:
             novo_usr = st.text_input("Nome do Usuário:")
@@ -572,7 +573,7 @@ def modal_gerenciar_usuarios():
         conn.close()
 
         if usuarios_db:
-            col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2.5, 1.5, 2])
+            col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
             col_h1.write("**ID**")
             col_h2.write("**Usuário**")
             col_h3.write("**Senha**")
@@ -581,23 +582,14 @@ def modal_gerenciar_usuarios():
             st.markdown("---")
 
             for u_id, u_nome, u_senha, u_nivel, u_criado in usuarios_db:
-                c1, c2, c3, c4, c5 = st.columns([1, 2, 2.5, 1.5, 2])
+                c1, c2, c3, c4, c5 = st.columns([1, 2, 2, 1.5, 2])
                 c1.write(f"#{u_id}")
                 c2.write(f"**{u_nome}**")
 
                 exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
+                senha_display = u_senha if exibir_esta_senha else "••••••••"
                 
-                # CAMPO DE SENHA COM TIPO PASSWORD OU TEXT (USANDO O MESMO PADRÃO REQUISITADO)
-                with c3:
-                    st.text_input(
-                        "Senha", 
-                        value=u_senha, 
-                        type="default" if exibir_esta_senha else "password", 
-                        key=f"input_pwd_vis_{u_id}", 
-                        label_visibility="collapsed", 
-                        disabled=True
-                    )
-
+                c3.write(f"`{senha_display}`")
                 c4.write(f"🗝 {u_nivel}")
 
                 col_b1, col_b2, col_b3 = c5.columns(3)
@@ -635,8 +627,10 @@ def modal_gerenciar_usuarios():
 def modal_logs_auditoria():
     st.caption("Registros das ações efetuadas por todos os usuários do painel (Horário de Brasília).")
 
+    # HOJE NO FUSO DE BRASÍLIA
     hoje_brasilia = datetime.now(FUSO_BRASILIA).date()
 
+    # FILTROS DE DATA E LIMPEZA
     col_d1, col_d2, col_d3 = st.columns([2, 2, 2])
     with col_d1:
         data_selecionada = st.date_input("📅 Data do Log:", value=hoje_brasilia, format="DD/MM/YYYY")
@@ -719,6 +713,9 @@ def renderizar_grid_lojas(df_subset, tab_key):
                 
                 if cur_sel:
                     st.session_state["loja_direcionada_log"] = df_grupo.iloc[cur_sel[0]]["Nome da Loja"]
+                
+                # Garante que nenhuma modal administrativa abra ao selecionar lojas
+                st.session_state["modal_ativa"] = None
                 st.rerun()
 
 # --- FRAGMENTO DO DASHBOARD ---
@@ -729,7 +726,7 @@ def renderizar_tabela_dashboard():
     col_t, col_r = st.columns([3, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa ({agora}) | Usuário: **{st.session_state['usuario_logado']}** ({st.session_state['nivel_acesso']})")
+        st.caption(f"⚡ Atualização automática ativa ({agora}) | 👤 Usuário: **{st.session_state['usuario_logado']}** ({st.session_state['nivel_acesso']})")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
@@ -763,10 +760,6 @@ def renderizar_tabela_dashboard():
         st.info("Nenhuma loja encontrada.")
 
 # --- BARRA LATERAL ---
-st.sidebar.header(f"👤 {st.session_state['usuario_logado']}")
-if st.session_state["nivel_acesso"] == "ADM":
-    st.sidebar.caption(f"Nível de Acesso: **{st.session_state['nivel_acesso']}**")
-st.sidebar.markdown("---")
 
 st.sidebar.subheader("🖥️ PAINEL OPERACIONAL")
 
