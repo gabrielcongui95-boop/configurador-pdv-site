@@ -716,13 +716,13 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
                     
                     c3.write(f"`{senha_display}`")
 
-                    c4.write(f"🏷️ {u_nivel}")
+                    c4.write(f"🗝 {u_nivel}")
 
                     # Botões de Ação na mesma linha
                     col_b1, col_b2, col_b3 = c5.columns(3)
                     
                     # Olho (Ver / Ocultar)
-                    lbl_olho = "🙈" if exibir_esta_senha else "👁️"
+                    lbl_olho = "👁️" if exibir_esta_senha else "👁‍🗨"
                     if col_b1.button(lbl_olho, key=f"btn_olho_{u_id}", help="Mostrar/Ocultar Senha"):
                         if exibir_esta_senha:
                             st.session_state["exibir_senha_ids"].remove(u_id)
