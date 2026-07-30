@@ -11,7 +11,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
-    page_title="Monitoramento PDV",
+    page_title="Monitoramento",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -554,13 +554,15 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_geral, use_container_width=True):
         reiniciar_lojas(lojas_selecionadas)
 
-col_cmd3, col_cmd4 = st.sidebar.columns(2)
-with col_cmd3:
-    if st.button("🛑 Encerrar Web", disabled=desabilitar_geral, use_container_width=True, help="Encerra o processo uma vez"):
-        executar_comando_remoto(lojas_selecionadas, "ENCERRAR")
-with col_cmd4:
-    if st.button("🔒 Bloquear Web", disabled=desabilitar_geral, use_container_width=True, help="Mata e impede a reabertura"):
-        executar_comando_remoto(lojas_selecionadas, "BLOQUEAR")
+# --- BOTÕES ENCERRAR E BLOQUEAR OCULTOS PARA USUÁRIOS QUE NÃO SÃO ADM ---
+if st.session_state["nivel_acesso"] == "ADM":
+    col_cmd3, col_cmd4 = st.sidebar.columns(2)
+    with col_cmd3:
+        if st.button("🛑 Encerrar Web", disabled=desabilitar_geral, use_container_width=True, help="Encerra o processo uma vez"):
+            executar_comando_remoto(lojas_selecionadas, "ENCERRAR")
+    with col_cmd4:
+        if st.button("🔒 Bloquear Web", disabled=desabilitar_geral, use_container_width=True, help="Mata e impede a reabertura"):
+            executar_comando_remoto(lojas_selecionadas, "BLOQUEAR")
 
 # MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
@@ -611,7 +613,7 @@ guias = st.tabs(abas_principais)
 with guias[0]:
     renderizar_tabela_dashboard()
 
-# TAB 2: LOGS DE OPERAÇÃO DAS LOJAS
+# TAB 2: LOGS DE OPERAÇÃO DAS LOJAS (AGRUPADO POR REDE IGUAL À TELA INICIAL)
 with guias[1]:
     st.subheader("📜 Histórico e Logs de Operação das Lojas")
     
@@ -626,33 +628,41 @@ with guias[1]:
         
         # Mapeia o nome real da loja para o formato exibido (Rede/Loja - Nome da Loja)
         mapa_nome_para_fmt = dict(zip(df_lojas_menu["Nome da Loja"], df_lojas_menu["Rede/Loja"]))
-        lista_lojas = df_lojas_menu["Nome da Loja"].unique().tolist()
         
-        idx_padrao = lista_lojas.index(loja_foco) if loja_foco in lista_lojas else 0
-        
-        col_sel, col_del = st.columns([2, 1])
-        with col_sel:
-            loja_selecionada_log = st.selectbox(
-                "Selecione a Loja para Visualizar:", 
-                options=lista_lojas, 
-                index=idx_padrao,
-                format_func=lambda x: mapa_nome_para_fmt.get(x, x)
-            )
-        
-        # ADM pode apagar os logs das lojas
-        if st.session_state["nivel_acesso"] == "ADM":
-            with col_del:
-                st.write(" ")
-                st.write(" ")
-                if st.button("🗑️ Apagar Logs desta Loja", key="btn_del_log_unica"):
-                    limpar_historico_loja_banco(loja_selecionada_log)
-                    st.rerun()
+        # Agrupa por Rede assim como na Tela Inicial
+        grupos_logs = df_lojas_menu.groupby("Rede", sort=False)
 
-        df_hist = buscar_historico(loja_selecionada_log)
-        if not df_hist.empty:
-            st.dataframe(df_hist, use_container_width=True, hide_index=True)
-        else:
-            st.info("Nenhum histórico registrado para esta loja.")
+        for idx, (rede_codigo, df_grupo) in enumerate(grupos_logs):
+            lojas_do_grupo = df_grupo["Nome da Loja"].unique().tolist()
+            contem_loja_foco = loja_foco in lojas_do_grupo if loja_foco else False
+
+            with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=contem_loja_foco):
+                idx_padrao = lojas_do_grupo.index(loja_foco) if contem_loja_foco else 0
+                
+                col_sel, col_del = st.columns([2, 1])
+                with col_sel:
+                    loja_selecionada_log = st.selectbox(
+                        "Selecione a Loja para Visualizar:", 
+                        options=lojas_do_grupo, 
+                        index=idx_padrao,
+                        format_func=lambda x: mapa_nome_para_fmt.get(x, x),
+                        key=f"sel_loja_hist_{rede_codigo}_{idx}"
+                    )
+                
+                # ADM pode apagar os logs da loja selecionada na rede
+                if st.session_state["nivel_acesso"] == "ADM":
+                    with col_del:
+                        st.write(" ")
+                        st.write(" ")
+                        if st.button("🗑️ Apagar Logs desta Loja", key=f"btn_del_log_{rede_codigo}_{idx}"):
+                            limpar_historico_loja_banco(loja_selecionada_log)
+                            st.rerun()
+
+                df_hist = buscar_historico(loja_selecionada_log)
+                if not df_hist.empty:
+                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Nenhum histórico registrado para esta loja.")
             
         if st.session_state["nivel_acesso"] == "ADM":
             st.markdown("---")
