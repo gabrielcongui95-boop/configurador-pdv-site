@@ -17,15 +17,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==============================================================================
-# --- INÍCIO USUÁRIO ADM PADRÃO (REMOVER APÓS CRIAR O PRIMEIRO ADM NO BANCO) ---
-# ==============================================================================
-USUARIO_ADM_PADRAO = "admin"
-SENHA_ADM_PADRAO = "admin123"
-# ==============================================================================
-# --- FIM USUÁRIO ADM PADRÃO (APAGAR ATÉ AQUI) ---
-# ==============================================================================
-
 # --- CORREÇÃO DE CSS: LARGURA COMPACTA DOS CAMPOS E LAYOUT ---
 st.markdown("""
     <style>
@@ -167,13 +158,13 @@ def autenticar_usuario(user, password):
 
 # TELA DE LOGIN
 if not st.session_state["usuario_logado"]:
-    st.title("🔐 Autenticação - Monitoramento PDV")
+    st.title("🔐 Autenticação - Painel de Monitoramento 🌍")
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
         with st.form("form_login"):
             usuario_input = st.text_input("Usuário:")
             senha_input = st.text_input("Senha:", type="password")
-            btn_entrar = st.form_submit_button("🚀 Entrar no Sistema", use_container_width=True)
+            btn_entrar = st.form_submit_button(" Entrar no Sistema", use_container_width=True)
             if btn_entrar:
                 if autenticar_usuario(usuario_input, senha_input):
                     st.success("Acesso autorizado!")
@@ -552,7 +543,7 @@ with col_ar2:
     if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, False)
 
-# MANUTENÇÃO (APENAS PARA ADM)
+# MANUTENÇÃO (APENAS PARA )
 if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
