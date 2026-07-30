@@ -12,7 +12,7 @@ FUSO_BRASILIA = ZoneInfo("America/Sao_Paulo")
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Monitoramento PDV",
-    page_icon="🖥️",
+    page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -26,16 +26,28 @@ SENHA_ADM_PADRAO = "admin123"
 # --- FIM USUÁRIO ADM PADRÃO (APAGAR ATÉ AQUI) ---
 # ==============================================================================
 
-# --- CORREÇÃO DE CSS: CORTE DE LAYOUT E ROLAGEM ---
+# --- CORREÇÃO DE CSS: LARGURA COMPACTA DOS CAMPOS E LAYOUT ---
 st.markdown("""
     <style>
-        /* Correção para corte do container de rolagem */
+        /* Restringe a largura de inputs e selectbox a no máximo ~50 caracteres */
+        .stTextInput > div > div > input, 
+        .stSelectbox > div > div,
+        .stDateInput > div > div > input {
+            max-width: 380px !important;
+        }
+        
+        /* Restringe a largura máxima dos formulários */
+        [data-testid="stForm"] {
+            max-width: 480px !important;
+        }
+
+        /* Correção para o container principal não cortar conteúdos inferiores */
         .main .block-container {
             max-width: 98% !important;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
             padding-top: 1rem !important;
-            padding-bottom: 5rem !important;
+            padding-bottom: 6rem !important;
         }
         
         .st-key-btn_reset_tab_hidden { display: none !important; }
@@ -46,14 +58,6 @@ st.markdown("""
         [data-testid="stSidebar"] .stButton > button {
             width: 100% !important;
             margin-bottom: 2px !important;
-        }
-        
-        @media (max-width: 768px) {
-            .stButton > button {
-                width: 100% !important;
-                height: 3em !important;
-                font-size: 16px !important;
-            }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -71,11 +75,23 @@ def conectar_banco():
         ssl={'ssl': True}, connect_timeout=5
     )
 
-def criar_tabelas_autenticacao():
-    """Cria tabelas de usuários e auditoria se não existirem."""
+def inicializar_e_migrar_banco():
+    """Garante que as tabelas existam e migra colunas faltantes em tabelas antigas."""
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
+            # Migração: adiciona colunas 'loja' e 'maquina' na tabela 'status_lojas' se não existirem
+            try:
+                cursor.execute("ALTER TABLE status_lojas ADD COLUMN loja VARCHAR(50)")
+            except Exception:
+                pass
+            
+            try:
+                cursor.execute("ALTER TABLE status_lojas ADD COLUMN maquina VARCHAR(255)")
+            except Exception:
+                pass
+
+            # Criação das tabelas de autenticação e auditoria
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS usuarios (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,9 +113,9 @@ def criar_tabelas_autenticacao():
         conn.commit()
         conn.close()
     except Exception as e:
-        st.error(f"Erro ao inicializar tabelas de controle de acesso: {e}")
+        st.error(f"Erro ao inicializar/migrar banco de dados: {e}")
 
-criar_tabelas_autenticacao()
+inicializar_e_migrar_banco()
 
 def registrar_log_auditoria(usuario, acao, detalhes=""):
     try:
@@ -118,14 +134,17 @@ def registrar_log_auditoria(usuario, acao, detalhes=""):
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
     st.session_state["nivel_acesso"] = None
+if "exibir_senha_ids" not in st.session_state:
+    st.session_state["exibir_senha_ids"] = set()
+if "usuario_editando" not in st.session_state:
+    st.session_state["usuario_editando"] = None
 
 def autenticar_usuario(user, password):
-    # Checagem do usuário fallback hardcoded (se existente)
     try:
         if 'USUARIO_ADM_PADRAO' in globals() and user == USUARIO_ADM_PADRAO and password == SENHA_ADM_PADRAO:
             st.session_state["usuario_logado"] = user
             st.session_state["nivel_acesso"] = "ADM"
-            registrar_log_auditoria(user, "LOGIN", "Login realizado via credencial inicial ADM")
+            registrar_log_auditoria(user, "LOGIN", "Login via credencial temporária ADM")
             return True
     except NameError:
         pass
@@ -146,9 +165,9 @@ def autenticar_usuario(user, password):
         st.error(f"Erro de autenticação: {e}")
     return False
 
-# SCREEN DE LOGIN
+# TELA DE LOGIN
 if not st.session_state["usuario_logado"]:
-    st.title("🔐 Autenticação de Acesso - Monitoramento PDV")
+    st.title("🔐 Autenticação - Monitoramento PDV")
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
         with st.form("form_login"):
@@ -163,7 +182,7 @@ if not st.session_state["usuario_logado"]:
                     st.error("Usuário ou senha incorretos.")
     st.stop()
 
-# --- DADOS E FUNÇÕES DO DASHBOARD ---
+# --- FUNÇÕES DE BUSCA E COMANDOS ---
 def buscar_dados_dashboard():
     try:
         conn = conectar_banco()
@@ -206,7 +225,6 @@ def buscar_dados_dashboard():
             else:
                 ultima_att_local = "-"
 
-            # Trata Exibição de Rede/Loja com compatibilidade
             if rede_cod and loja_cod:
                 cod_rede = str(rede_cod).strip()
                 rede_loja_fmt = f"{rede_cod}/{loja_cod} - {nome_loja}"
@@ -244,16 +262,14 @@ def executar_comando_remoto(lojas, comando):
         conn.commit()
         conn.close()
         
-        # Log de Auditoria
-        usr = st.session_state["usuario_logado"]
-        registrar_log_auditoria(usr, f"COMANDO_{comando}", f"Lojas afetadas: {', '.join(lojas)}")
-        st.toast(f"Comando '{comando}' enviado com sucesso!", icon="🚀")
+        registrar_log_auditoria(st.session_state["usuario_logado"], f"COMANDO_{comando}", f"Lojas: {', '.join(lojas)}")
+        st.toast(f"Comando '{comando}' enviado para {len(lojas)} loja(s)!", icon="🚀")
     except Exception as e:
         st.error(f"Erro ao enviar comando: {e}")
 
 def reiniciar_lojas(lojas):
     executar_comando_remoto(lojas, "STOP")
-    st.toast("Comando STOP enviado! Aguardando para reabrir...", icon="⏳")
+    st.toast("Comando STOP enviado! Aguardando 10 segundos para reabrir...", icon="⏳")
     with st.spinner("🔄 Encerrando o monitor... Aguardando para enviar comando START..."):
         time.sleep(10)
     executar_comando_remoto(lojas, "START")
@@ -265,7 +281,6 @@ def alterar_pausa(lojas, pausar):
             format_strings = ', '.join(['%s'] * len(lojas))
             novo_m_ativo = 0 if pausar else 1
             novo_status = 'PAUSADO' if pausar else 'ONLINE'
-            
             cursor.execute(f"UPDATE status_lojas SET monitoramento_ativo = %s, status = %s, ultima_atualizacao = NOW() WHERE nome_loja IN ({format_strings})", (novo_m_ativo, novo_status) + tuple(lojas))
         conn.commit()
         conn.close()
@@ -337,7 +352,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
 
         for i in range(len(res)):
             status, data_evento = res[i]
-            
             if isinstance(data_evento, datetime):
                 dt_inicio = data_evento.replace(tzinfo=ZoneInfo("UTC")).astimezone(FUSO_BRASILIA) if data_evento.tzinfo is None else data_evento.astimezone(FUSO_BRASILIA)
             else:
@@ -370,6 +384,36 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
     except Exception as e:
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
+
+def limpar_historico_loja_banco(nome_loja=None):
+    """Permite ao ADM apagar logs da loja do banco de dados."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            if nome_loja:
+                cursor.execute("DELETE FROM historico_status WHERE nome_loja = %s", (nome_loja,))
+                msg = f"Histórico da loja '{nome_loja}' foi apagado."
+            else:
+                cursor.execute("TRUNCATE TABLE historico_status")
+                msg = "Todo o histórico de logs de todas as lojas foi apagado."
+        conn.commit()
+        conn.close()
+        registrar_log_auditoria(st.session_state["usuario_logado"], "LIMPAR_LOGS_LOJA", msg)
+        st.success(msg)
+    except Exception as e:
+        st.error(f"Erro ao apagar histórico: {e}")
+
+def limpar_logs_auditoria_banco():
+    """Permite ao ADM apagar logs de auditoria dos usuários."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("TRUNCATE TABLE logs_auditoria")
+        conn.commit()
+        conn.close()
+        st.success("Todos os logs de auditoria de usuários foram limpos!")
+    except Exception as e:
+        st.error(f"Erro ao limpar logs de auditoria: {e}")
 
 # --- RENDERIZADOR DE TABELA DE LOJAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
@@ -411,12 +455,11 @@ def renderizar_grid_lojas(df_subset, tab_key):
                 outras_lojas = [l for l in st.session_state.get("lojas_selecionadas", []) if l not in df_grupo["Nome da Loja"].tolist()]
                 st.session_state["lojas_selecionadas"] = outras_lojas + novas_selecionadas
                 
-                # SELECIONA A LOJA PARA VISUALIZAÇÃO RÁPIDA DOS LOGS
                 if cur_sel:
                     st.session_state["loja_direcionada_log"] = df_grupo.iloc[cur_sel[0]]["Nome da Loja"]
                 st.rerun()
 
-# --- FRAGMENTO DE REFRESH DO DASHBOARD ---
+# --- FRAGMENTO DO DASHBOARD ---
 @st.fragment(run_every="15s")
 def renderizar_tabela_dashboard():
     df_lojas = buscar_dados_dashboard()
@@ -430,7 +473,7 @@ def renderizar_tabela_dashboard():
             st.rerun()
 
     termo_busca = st.text_input(
-        "🔍 Filtrar por Rede/Loja ou Nome da Maquina:", 
+        "🔍 Filtrar por Rede/Loja ou Nome da Máquina:", 
         placeholder="Ex: 927/12, Loja Centro, DESKTOP-PDV...",
         key="campo_busca_lojas"
     )
@@ -457,15 +500,12 @@ def renderizar_tabela_dashboard():
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- BARRA LATERAL (PAINEL OPERACIONAL E USUÁRIO) ---
+# --- BARRA LATERAL (TOPO APENAS O NOME DO USUÁRIO) ---
 st.sidebar.header(f"👤 {st.session_state['usuario_logado']}")
-if st.sidebar.button("🚪 Sair (Logout)", use_container_width=True):
-    registrar_log_auditoria(st.session_state['usuario_logado'], "LOGOUT", "Sessão encerrada")
-    st.session_state["usuario_logado"] = None
-    st.rerun()
-
+st.sidebar.caption(f"Nível de Acesso: **{st.session_state['nivel_acesso']}**")
 st.sidebar.markdown("---")
-st.sidebar.header("🖥️ PAINEL OPERACIONAL")
+
+st.sidebar.subheader("🖥️ PAINEL OPERACIONAL")
 
 lojas_selecionadas = st.session_state.get("lojas_selecionadas", [])
 if lojas_selecionadas:
@@ -475,7 +515,7 @@ else:
 
 desabilitar_geral = len(lojas_selecionadas) == 0
 
-# 1. COMANDOS REMOTOS (INCLUINDO NOVOS COMANDOS)
+# COMANDOS REMOTOS
 st.sidebar.subheader("🕹️ Comandos Remotos")
 col_cmd1, col_cmd2 = st.sidebar.columns(2)
 with col_cmd1:
@@ -487,13 +527,13 @@ with col_cmd2:
 
 col_cmd3, col_cmd4 = st.sidebar.columns(2)
 with col_cmd3:
-    if st.button("🛑 Encerrar Web", disabled=desabilitar_geral, use_container_width=True, help="Mata o processo do Pedidos WEB uma vez"):
+    if st.button("🛑 Encerrar Web", disabled=desabilitar_geral, use_container_width=True, help="Encerra o processo uma vez"):
         executar_comando_remoto(lojas_selecionadas, "ENCERRAR")
 with col_cmd4:
-    if st.button("🔒 Bloquear Web", disabled=desabilitar_geral, use_container_width=True, help="Mata o processo e impede a reabertura a cada 5s"):
+    if st.button("🔒 Bloquear Web", disabled=desabilitar_geral, use_container_width=True, help="Mata e impede a reabertura"):
         executar_comando_remoto(lojas_selecionadas, "BLOQUEAR")
 
-# 2. MONITORAMENTO E AUTO REINÍCIO
+# MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
 col_p1, col_p2 = st.sidebar.columns(2)
 with col_p1:
@@ -512,10 +552,9 @@ with col_ar2:
     if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, False)
 
-st.sidebar.markdown("---")
-
-# 3. MANUTENÇÃO (APENAS PARA ADM)
+# MANUTENÇÃO (APENAS PARA ADM)
 if st.session_state["nivel_acesso"] == "ADM":
+    st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
     if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
         executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
@@ -525,7 +564,14 @@ if st.session_state["nivel_acesso"] == "ADM":
         st.session_state["lojas_selecionadas"] = []
         st.rerun()
 
-# --- ESTRUTURA DE ABAS PRINCIPAIS DA TELA ---
+# --- BOTÃO DE SAIR / LOGOUT FIXADO NO FINAL DA SIDEBAR ---
+st.sidebar.markdown("---")
+if st.sidebar.button("🚪 Sair (Logout)", use_container_width=True):
+    registrar_log_auditoria(st.session_state['usuario_logado'], "LOGOUT", "Sessão encerrada")
+    st.session_state["usuario_logado"] = None
+    st.rerun()
+
+# --- ABAS PRINCIPAIS NAVEGÁVEIS ---
 abas_principais = ["📊 Painel Geral", "📜 Logs de Operação"]
 if st.session_state["nivel_acesso"] == "ADM":
     abas_principais.extend(["👥 Gerenciar Usuários", "🛡️ Logs de Auditoria"])
@@ -536,37 +582,56 @@ guias = st.tabs(abas_principais)
 with guias[0]:
     renderizar_tabela_dashboard()
 
-# TAB 2: LOGS DAS LOJAS
+# TAB 2: LOGS DE OPERAÇÃO DAS LOJAS
 with guias[1]:
     st.subheader("📜 Histórico e Logs de Operação das Lojas")
     
     loja_foco = st.session_state.get("loja_direcionada_log", None)
     if loja_foco:
-        st.info(f"🎯 Exibindo histórico direcionado para a loja: **{loja_foco}**")
+        st.info(f"🎯 Exibindo histórico direcionado para: **{loja_foco}**")
 
     df_lojas_menu = buscar_dados_dashboard()
     if not df_lojas_menu.empty:
         lista_lojas = df_lojas_menu["Nome da Loja"].unique().tolist()
         idx_padrao = lista_lojas.index(loja_foco) if loja_foco in lista_lojas else 0
         
-        loja_selecionada_log = st.selectbox("Selecione a Loja para Visualizar o Histórico:", options=lista_lojas, index=idx_padrao)
+        col_sel, col_del = st.columns([2, 1])
+        with col_sel:
+            loja_selecionada_log = st.selectbox("Selecione a Loja para Visualizar:", options=lista_lojas, index=idx_padrao)
+        
+        # ADM pode apagar os logs das lojas
+        if st.session_state["nivel_acesso"] == "ADM":
+            with col_del:
+                st.write(" ")
+                st.write(" ")
+                if st.button("🗑️ Apagar Logs desta Loja", key="btn_del_log_unica"):
+                    limpar_historico_loja_banco(loja_selecionada_log)
+                    st.rerun()
+
         df_hist = buscar_historico(loja_selecionada_log)
         if not df_hist.empty:
             st.dataframe(df_hist, use_container_width=True, hide_index=True)
         else:
             st.info("Nenhum histórico registrado para esta loja.")
+            
+        if st.session_state["nivel_acesso"] == "ADM":
+            st.markdown("---")
+            if st.button("🚨 Apagar Histórico de TODOS os Logs de TODAS as Lojas", type="primary"):
+                limpar_historico_loja_banco(nome_loja=None)
+                st.rerun()
 
 # TAB 3: GERENCIAMENTO DE USUÁRIOS (APENAS ADM)
 if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
     with guias[2]:
-        st.subheader("👥 Gerenciamento de Usuários do Painel")
+        st.subheader("👥 Gerenciamento de Usuários e Acessos")
         
+        # FORMULÁRIO COMPACTO DE CADASTRO
         with st.form("form_novo_usuario"):
-            st.write("### Criar Novo Usuário")
+            st.write("### ➕ Criar Novo Usuário")
             novo_usr = st.text_input("Nome do Usuário:")
             nova_pwd = st.text_input("Senha:", type="password")
             novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
-            btn_criar_usr = st.form_submit_button("➕ Criar Usuário")
+            btn_criar_usr = st.form_submit_button("Criar Usuário")
             
             if btn_criar_usr:
                 if novo_usr and nova_pwd:
@@ -576,29 +641,136 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
                             cursor.execute("INSERT INTO usuarios (usuario, senha, nivel) VALUES (%s, %s, %s)", (novo_usr, nova_pwd, novo_nvl))
                         conn.commit()
                         conn.close()
-                        registrar_log_auditoria(st.session_state["usuario_logado"], "CRIAR_USUARIO", f"Usuário criado: {novo_usr} ({novo_nvl})")
+                        registrar_log_auditoria(st.session_state["usuario_logado"], "CRIAR_USUARIO", f"Criado: {novo_usr} ({novo_nvl})")
                         st.success(f"Usuário {novo_usr} criado com sucesso!")
+                        st.rerun()
                     except Exception as e:
-                        st.error(f"Erro ao criar usuário (Pode já existir): {e}")
+                        st.error(f"Erro ao criar usuário (Nome pode já existir): {e}")
 
         st.markdown("---")
-        st.write("### Usuários Cadastrados")
+        
+        # FORMULÁRIO DE EDIÇÃO SE ALGUM USUÁRIO FOI SELECIONADO PARA EDITAR
+        if st.session_state["usuario_editando"]:
+            u_edit = st.session_state["usuario_editando"]
+            st.warning(f"✏️ **Editando Usuário ID #{u_edit['id']} - ({u_edit['usuario']})**")
+            
+            with st.form("form_editar_usuario"):
+                e_usuario = st.text_input("Usuário:", value=u_edit['usuario'])
+                e_senha = st.text_input("Nova Senha:", value=u_edit['senha'], type="password")
+                e_nivel = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"], index=0 if u_edit['nivel'] == 'COMUM' else 1)
+                
+                col_e1, col_e2 = st.columns(2)
+                with col_e1:
+                    btn_salvar_edit = st.form_submit_button("💾 Salvar Alterações")
+                with col_e2:
+                    btn_cancela_edit = st.form_submit_button("❌ Cancelar")
+
+                if btn_salvar_edit:
+                    try:
+                        conn = conectar_banco()
+                        with conn.cursor() as cursor:
+                            cursor.execute(
+                                "UPDATE usuarios SET usuario = %s, senha = %s, nivel = %s WHERE id = %s",
+                                (e_usuario, e_senha, e_nivel, u_edit['id'])
+                            )
+                        conn.commit()
+                        conn.close()
+                        registrar_log_auditoria(st.session_state["usuario_logado"], "EDITAR_USUARIO", f"Editado ID #{u_edit['id']}")
+                        st.session_state["usuario_editando"] = None
+                        st.success("Usuário atualizado com sucesso!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao atualizar usuário: {e}")
+                        
+                if btn_cancela_edit:
+                    st.session_state["usuario_editando"] = None
+                    st.rerun()
+
+        st.write("### 📋 Usuários Cadastrados")
+        
         try:
             conn = conectar_banco()
-            df_usrs = pd.read_sql("SELECT id, usuario, nivel, criado_em FROM usuarios", conn)
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id, usuario, senha, nivel, criado_em FROM usuarios ORDER BY id ASC")
+                usuarios_db = cursor.fetchall()
             conn.close()
-            st.dataframe(df_usrs, use_container_width=True, hide_index=True)
+
+            if usuarios_db:
+                # Cabeçalhos da Tabela Interativa de Usuários
+                col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
+                col_h1.write("**ID**")
+                col_h2.write("**Usuário**")
+                col_h3.write("**Senha**")
+                col_h4.write("**Nível**")
+                col_h5.write("**Ações**")
+                st.markdown("---")
+
+                for u_id, u_nome, u_senha, u_nivel, u_criado in usuarios_db:
+                    c1, c2, c3, c4, c5 = st.columns([1, 2, 2, 1.5, 2])
+                    c1.write(f"#{u_id}")
+                    c2.write(f"**{u_nome}**")
+
+                    # Lógica do ícone de Olho para visualizar a senha uma por vez
+                    exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
+                    senha_display = u_senha if exibir_esta_senha else "••••••••"
+                    
+                    c3.write(f"`{senha_display}`")
+
+                    c4.write(f"🏷️ {u_nivel}")
+
+                    # Botões de Ação na mesma linha
+                    col_b1, col_b2, col_b3 = c5.columns(3)
+                    
+                    # Olho (Ver / Ocultar)
+                    lbl_olho = "🙈" if exibir_esta_senha else "👁️"
+                    if col_b1.button(lbl_olho, key=f"btn_olho_{u_id}", help="Mostrar/Ocultar Senha"):
+                        if exibir_esta_senha:
+                            st.session_state["exibir_senha_ids"].remove(u_id)
+                        else:
+                            st.session_state["exibir_senha_ids"].add(u_id)
+                        st.rerun()
+
+                    # Editar
+                    if col_b2.button("✏️", key=f"btn_edit_{u_id}", help="Editar Usuário"):
+                        st.session_state["usuario_editando"] = {
+                            "id": u_id, "usuario": u_nome, "senha": u_senha, "nivel": u_nivel
+                        }
+                        st.rerun()
+
+                    # Apagar
+                    if col_b3.button("🗑️", key=f"btn_del_usr_{u_id}", help="Apagar Usuário"):
+                        try:
+                            conn = conectar_banco()
+                            with conn.cursor() as cursor:
+                                cursor.execute("DELETE FROM usuarios WHERE id = %s", (u_id,))
+                            conn.commit()
+                            conn.close()
+                            registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_USUARIO", f"Apagado usuário: {u_nome}")
+                            st.success(f"Usuário {u_nome} removido!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao remover usuário: {e}")
+            else:
+                st.info("Nenhum usuário cadastrado no banco de dados ainda.")
+
         except Exception as e:
-            st.error(f"Erro ao listar usuários: {e}")
+            st.error(f"Erro ao carregar lista de usuários: {e}")
 
 # TAB 4: LOGS DE AUDITORIA (APENAS ADM)
 if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 3:
     with guias[3]:
         st.subheader("🛡️ Logs de Auditoria do Sistema (Acessos e Comandos)")
+        
+        col_a1, col_a2 = st.columns([3, 1])
+        with col_a2:
+            if st.button("🗑️ Limpar Logs de Auditoria", type="primary", use_container_width=True):
+                limpar_logs_auditoria_banco()
+                st.rerun()
+
         try:
             conn = conectar_banco()
-            df_aud = pd.read_sql("SELECT usuario, acao, detalhes, data_hora FROM logs_auditoria ORDER BY data_hora DESC LIMIT 200", conn)
+            df_aud = pd.read_sql("SELECT usuario as 'Usuário', acao as 'Ação', detalhes as 'Detalhes', data_hora as 'Data/Hora' FROM logs_auditoria ORDER BY data_hora DESC LIMIT 200", conn)
             conn.close()
             st.dataframe(df_aud, use_container_width=True, hide_index=True)
         except Exception as e:
-            st.error(f"Erro ao carregar auditoria: {e}")
+            st.error(f"Erro ao carregar logs de auditoria: {e}")
