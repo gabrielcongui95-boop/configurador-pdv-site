@@ -137,7 +137,6 @@ def buscar_logs_auditoria(data_filtro=None):
         logs_formatados = []
         for log_id, dt_hora, usuario, acao, detalhes in logs:
             if dt_hora:
-                # Trata timezone e converte explicitamente para Brasília (UTC-3)
                 if dt_hora.tzinfo is None:
                     dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC"))
                 else:
@@ -145,7 +144,6 @@ def buscar_logs_auditoria(data_filtro=None):
                 
                 dt_br = dt_utc.astimezone(FUSO_BRASILIA)
                 
-                # Se houver filtro por data, ignora registros fora da data
                 if data_filtro and dt_br.date() != data_filtro:
                     continue
 
@@ -245,7 +243,7 @@ def autenticar_usuario(user, password):
         st.error(f"Erro de autenticação: {e}")
     return False
 
-# TELA DE LOGIN
+# TELA DE LOGIN (SEM FLUTUAÇÕES OU FADE OUT INDESEJADO)
 if not st.session_state["usuario_logado"]:
     st.title("🔐 Autenticação - Painel de Monitoramento 🌍")
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
@@ -496,7 +494,6 @@ def modal_gerenciar_usuarios():
     with st.form("form_novo_usuario_modal"):
         st.write("### ➕ Criar Novo Usuário")
         
-        # CAMPOS EXIBIDOS UM AO LADO DO OUTRO
         col_u1, col_u2, col_u3, col_u4 = st.columns([2.5, 2.5, 2, 2])
         with col_u1:
             novo_usr = st.text_input("Nome do Usuário:")
@@ -575,7 +572,7 @@ def modal_gerenciar_usuarios():
         conn.close()
 
         if usuarios_db:
-            col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
+            col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2.5, 1.5, 2])
             col_h1.write("**ID**")
             col_h2.write("**Usuário**")
             col_h3.write("**Senha**")
@@ -584,14 +581,23 @@ def modal_gerenciar_usuarios():
             st.markdown("---")
 
             for u_id, u_nome, u_senha, u_nivel, u_criado in usuarios_db:
-                c1, c2, c3, c4, c5 = st.columns([1, 2, 2, 1.5, 2])
+                c1, c2, c3, c4, c5 = st.columns([1, 2, 2.5, 1.5, 2])
                 c1.write(f"#{u_id}")
                 c2.write(f"**{u_nome}**")
 
                 exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
-                senha_display = u_senha if exibir_esta_senha else "••••••••"
                 
-                c3.write(f"`{senha_display}`")
+                # CAMPO DE SENHA COM TIPO PASSWORD OU TEXT (USANDO O MESMO PADRÃO REQUISITADO)
+                with c3:
+                    st.text_input(
+                        "Senha", 
+                        value=u_senha, 
+                        type="default" if exibir_esta_senha else "password", 
+                        key=f"input_pwd_vis_{u_id}", 
+                        label_visibility="collapsed", 
+                        disabled=True
+                    )
+
                 c4.write(f"🗝 {u_nivel}")
 
                 col_b1, col_b2, col_b3 = c5.columns(3)
@@ -629,10 +635,8 @@ def modal_gerenciar_usuarios():
 def modal_logs_auditoria():
     st.caption("Registros das ações efetuadas por todos os usuários do painel (Horário de Brasília).")
 
-    # HOJE NO FUSO DE BRASÍLIA
     hoje_brasilia = datetime.now(FUSO_BRASILIA).date()
 
-    # FILTROS DE DATA E LIMPEZA
     col_d1, col_d2, col_d3 = st.columns([2, 2, 2])
     with col_d1:
         data_selecionada = st.date_input("📅 Data do Log:", value=hoje_brasilia, format="DD/MM/YYYY")
