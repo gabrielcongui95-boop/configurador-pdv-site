@@ -71,7 +71,6 @@ def inicializar_e_migrar_banco():
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            # Migração: adiciona colunas 'loja' e 'maquina' na tabela 'status_lojas' se não existirem
             try:
                 cursor.execute("ALTER TABLE status_lojas ADD COLUMN loja VARCHAR(50)")
             except Exception:
@@ -109,17 +108,56 @@ def inicializar_e_migrar_banco():
 inicializar_e_migrar_banco()
 
 def registrar_log_auditoria(usuario, acao, detalhes=""):
+    """Registra log garantindo o fuso horário oficial de Brasília (UTC-3)."""
     try:
+        agora_brasilia = datetime.now(FUSO_BRASILIA)
         conn = conectar_banco()
         with conn.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO logs_auditoria (usuario, acao, detalhes, data_hora) VALUES (%s, %s, %s, NOW())",
-                (usuario, acao, detalhes)
+                "INSERT INTO logs_auditoria (usuario, acao, detalhes, data_hora) VALUES (%s, %s, %s, %s)",
+                (usuario, acao, detalhes, agora_brasilia)
             )
         conn.commit()
         conn.close()
     except Exception:
         pass
+
+def buscar_logs_auditoria():
+    """Busca logs de auditoria e formata data/hora no padrão BR (DD/MM/YYYY HH:MM:SS)."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, data_hora, usuario, acao, detalhes FROM logs_auditoria ORDER BY id DESC")
+            logs = cursor.fetchall()
+        conn.close()
+
+        if not logs:
+            return pd.DataFrame()
+
+        logs_formatados = []
+        for log_id, dt_hora, usuario, acao, detalhes in logs:
+            if dt_hora:
+                if dt_hora.tzinfo is None:
+                    dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC"))
+                    dt_br = dt_utc.astimezone(FUSO_BRASILIA)
+                else:
+                    dt_br = dt_hora.astimezone(FUSO_BRASILIA)
+                str_data_hora = dt_br.strftime('%d/%m/%Y %H:%M:%S')
+            else:
+                str_data_hora = "-"
+
+            logs_formatados.append({
+                "ID": f"#{log_id}",
+                "Data / Hora": str_data_hora,
+                "Usuário": usuario,
+                "Ação Executada": acao,
+                "Detalhes": detalhes or "-"
+            })
+
+        return pd.DataFrame(logs_formatados)
+    except Exception as e:
+        st.error(f"Erro ao buscar logs de auditoria: {e}")
+        return pd.DataFrame()
 
 # --- AUTENTICAÇÃO ---
 if "usuario_logado" not in st.session_state:
@@ -543,7 +581,7 @@ with col_ar2:
     if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, False)
 
-# MANUTENÇÃO (APENAS PARA )
+# MANUTENÇÃO (APENAS PARA ADM)
 if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
@@ -687,7 +725,6 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
             conn.close()
 
             if usuarios_db:
-                # Cabeçalhos da Tabela Interativa de Usuários
                 col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
                 col_h1.write("**ID**")
                 col_h2.write("**Usuário**")
@@ -701,18 +738,14 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
                     c1.write(f"#{u_id}")
                     c2.write(f"**{u_nome}**")
 
-                    # Lógica do ícone de Olho para visualizar a senha uma por vez
                     exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
                     senha_display = u_senha if exibir_esta_senha else "••••••••"
                     
                     c3.write(f"`{senha_display}`")
-
                     c4.write(f"🗝 {u_nivel}")
 
-                    # Botões de Ação na mesma linha
                     col_b1, col_b2, col_b3 = c5.columns(3)
                     
-                    # Olho (Ver / Ocultar)
                     lbl_olho = "👁️" if exibir_esta_senha else "👁‍🗨"
                     if col_b1.button(lbl_olho, key=f"btn_olho_{u_id}", help="Mostrar/Ocultar Senha"):
                         if exibir_esta_senha:
@@ -721,14 +754,12 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
                             st.session_state["exibir_senha_ids"].add(u_id)
                         st.rerun()
 
-                    # Editar
                     if col_b2.button("✏️", key=f"btn_edit_{u_id}", help="Editar Usuário"):
                         st.session_state["usuario_editando"] = {
                             "id": u_id, "usuario": u_nome, "senha": u_senha, "nivel": u_nivel
                         }
                         st.rerun()
 
-                    # Apagar
                     if col_b3.button("🗑️", key=f"btn_del_usr_{u_id}", help="Apagar Usuário"):
                         try:
                             conn = conectar_banco()
@@ -736,32 +767,42 @@ if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
                                 cursor.execute("DELETE FROM usuarios WHERE id = %s", (u_id,))
                             conn.commit()
                             conn.close()
-                            registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_USUARIO", f"Apagado usuário: {u_nome}")
-                            st.success(f"Usuário {u_nome} removido!")
+                            registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_USUARIO", f"Apagado ID #{u_id} ({u_nome})")
+                            st.success("Usuário removido!")
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Erro ao remover usuário: {e}")
-            else:
-                st.info("Nenhum usuário cadastrado no banco de dados ainda.")
-
+                            st.error(f"Erro ao excluir usuário: {e}")
         except Exception as e:
             st.error(f"Erro ao carregar lista de usuários: {e}")
 
-# TAB 4: LOGS DE AUDITORIA (APENAS ADM)
+# TAB 4: LOGS DE AUDITORIA DE USUÁRIOS (APENAS ADM)
 if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 3:
     with guias[3]:
-        st.subheader("🛡️ Logs de Auditoria do Sistema (Acessos e Comandos)")
-        
-        col_a1, col_a2 = st.columns([3, 1])
-        with col_a2:
-            if st.button("🗑️ Limpar Logs de Auditoria", type="primary", use_container_width=True):
+        st.subheader("🛡️ Logs de Auditoria do Sistema")
+        st.caption("Registros das ações efetuadas por todos os usuários do painel.")
+
+        col_f1, col_f2 = st.columns([3, 1])
+        with col_f2:
+            if st.button("🚨 Limpar Todos os Logs de Auditoria", type="primary", use_container_width=True):
                 limpar_logs_auditoria_banco()
                 st.rerun()
 
-        try:
-            conn = conectar_banco()
-            df_aud = pd.read_sql("SELECT usuario as 'Usuário', acao as 'Ação', detalhes as 'Detalhes', data_hora as 'Data/Hora' FROM logs_auditoria ORDER BY data_hora DESC LIMIT 200", conn)
-            conn.close()
-            st.dataframe(df_aud, use_container_width=True, hide_index=True)
-        except Exception as e:
-            st.error(f"Erro ao carregar logs de auditoria: {e}")
+        df_audit = buscar_logs_auditoria()
+        
+        if not df_audit.empty:
+            termo_audit = st.text_input("🔍 Filtrar logs por usuário, ação ou detalhe:", placeholder="Ex: LOGIN, EXCLUIR, admin...")
+            
+            if termo_audit:
+                df_audit = df_audit[
+                    df_audit["Usuário"].astype(str).str.contains(termo_audit, case=False, na=False) |
+                    df_audit["Ação Executada"].astype(str).str.contains(termo_audit, case=False, na=False) |
+                    df_audit["Detalhes"].astype(str).str.contains(termo_audit, case=False, na=False)
+                ].reset_index(drop=True)
+
+            st.dataframe(
+                df_audit,
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("Nenhum log de auditoria encontrado.")
