@@ -132,7 +132,7 @@ def buscar_logs_auditoria():
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, data_hora, usuario, acao, detalhes FROM logs_auditoria ORDER BY id DESC")
+            cursor.execute("SELECT usuario, usuario, acao, data_hora, detalhes FROM logs_auditoria ORDER BY id DESC")
             logs = cursor.fetchall()
         conn.close()
 
@@ -140,7 +140,7 @@ def buscar_logs_auditoria():
             return pd.DataFrame()
 
         logs_formatados = []
-        for log_id, dt_hora, usuario, acao, detalhes in logs:
+        for usuario, usuario, acao, dt_hora, detalhes in logs:
             if dt_hora:
                 if dt_hora.tzinfo is None:
                     dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC"))
