@@ -555,7 +555,7 @@ def renderizar_tela_logs_auditoria():
         data_filtro = st.date_input(
             "📅 Selecione a Data:", 
             value=datetime.now(FUSO_BRASILIA).date(),
-            format="DD/MM/YY",
+            format="dd/MM/yy",
             key="input_data_auditoria"
         )
         
@@ -640,7 +640,7 @@ def renderizar_tabela_dashboard():
     col_t, col_r = st.columns([3, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa ({agora})")
+        st.caption(f"⚡ Atualização automática ativa ({agora}) | Usuário: **{st.session_state['usuario_logado']}** ({st.session_state['nivel_acesso']})")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
