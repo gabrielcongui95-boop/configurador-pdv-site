@@ -14,18 +14,32 @@ st.set_page_config(
     page_title="Monitoramento PDV",
     page_icon="🖥️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Estilização CSS para otimização visual no Celular e Espaçamento Reduzido nos Botões
+# ==============================================================================
+# --- INÍCIO USUÁRIO ADM PADRÃO (REMOVER APÓS CRIAR O PRIMEIRO ADM NO BANCO) ---
+# ==============================================================================
+USUARIO_ADM_PADRAO = "admin"
+SENHA_ADM_PADRAO = "admin123"
+# ==============================================================================
+# --- FIM USUÁRIO ADM PADRÃO (APAGAR ATÉ AQUI) ---
+# ==============================================================================
+
+# --- CORREÇÃO DE CSS: CORTE DE LAYOUT E ROLAGEM ---
 st.markdown("""
     <style>
-        /* Oculta o botão auxiliar de reset das abas */
-        .st-key-btn_reset_tab_hidden {
-            display: none !important;
+        /* Correção para corte do container de rolagem */
+        .main .block-container {
+            max-width: 98% !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-top: 1rem !important;
+            padding-bottom: 5rem !important;
         }
+        
+        .st-key-btn_reset_tab_hidden { display: none !important; }
 
-        /* Reduz o espaçamento entre elementos e botões na barra lateral */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] > div {
             gap: 0.3rem !important;
         }
@@ -34,23 +48,17 @@ st.markdown("""
             margin-bottom: 2px !important;
         }
         
-        /* Ajustes para telas pequenas (Celulares) */
         @media (max-width: 768px) {
             .stButton > button {
                 width: 100% !important;
                 height: 3em !important;
                 font-size: 16px !important;
             }
-            .block-container {
-                padding-left: 0.8rem !important;
-                padding-right: 0.8rem !important;
-                padding-top: 1rem !important;
-            }
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONFIGURAÇÃO DO BANCO ---
+# --- BANCO DE DADOS ---
 DB_HOST = st.secrets.get("DB_HOST", "mysql-71db31c-gabriel-8279.g.aivencloud.com")
 DB_PORT = int(st.secrets.get("DB_PORT", 14801))
 DB_USER = st.secrets.get("DB_USER", "avnadmin")
@@ -63,7 +71,99 @@ def conectar_banco():
         ssl={'ssl': True}, connect_timeout=5
     )
 
-# --- FUNÇÕES DE BANCO ---
+def criar_tabelas_autenticacao():
+    """Cria tabelas de usuários e auditoria se não existirem."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    usuario VARCHAR(50) UNIQUE NOT NULL,
+                    senha VARCHAR(100) NOT NULL,
+                    nivel VARCHAR(20) NOT NULL DEFAULT 'COMUM',
+                    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS logs_auditoria (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    usuario VARCHAR(50) NOT NULL,
+                    acao VARCHAR(100) NOT NULL,
+                    detalhes TEXT,
+                    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"Erro ao inicializar tabelas de controle de acesso: {e}")
+
+criar_tabelas_autenticacao()
+
+def registrar_log_auditoria(usuario, acao, detalhes=""):
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO logs_auditoria (usuario, acao, detalhes, data_hora) VALUES (%s, %s, %s, NOW())",
+                (usuario, acao, detalhes)
+            )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+# --- AUTENTICAÇÃO ---
+if "usuario_logado" not in st.session_state:
+    st.session_state["usuario_logado"] = None
+    st.session_state["nivel_acesso"] = None
+
+def autenticar_usuario(user, password):
+    # Checagem do usuário fallback hardcoded (se existente)
+    try:
+        if 'USUARIO_ADM_PADRAO' in globals() and user == USUARIO_ADM_PADRAO and password == SENHA_ADM_PADRAO:
+            st.session_state["usuario_logado"] = user
+            st.session_state["nivel_acesso"] = "ADM"
+            registrar_log_auditoria(user, "LOGIN", "Login realizado via credencial inicial ADM")
+            return True
+    except NameError:
+        pass
+
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT usuario, nivel FROM usuarios WHERE usuario = %s AND senha = %s", (user, password))
+            res = cursor.fetchone()
+            if res:
+                st.session_state["usuario_logado"] = res[0]
+                st.session_state["nivel_acesso"] = res[1]
+                registrar_log_auditoria(res[0], "LOGIN", "Login realizado com sucesso")
+                conn.close()
+                return True
+        conn.close()
+    except Exception as e:
+        st.error(f"Erro de autenticação: {e}")
+    return False
+
+# SCREEN DE LOGIN
+if not st.session_state["usuario_logado"]:
+    st.title("🔐 Autenticação de Acesso - Monitoramento PDV")
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        with st.form("form_login"):
+            usuario_input = st.text_input("Usuário:")
+            senha_input = st.text_input("Senha:", type="password")
+            btn_entrar = st.form_submit_button("🚀 Entrar no Sistema", use_container_width=True)
+            if btn_entrar:
+                if autenticar_usuario(usuario_input, senha_input):
+                    st.success("Acesso autorizado!")
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha incorretos.")
+    st.stop()
+
+# --- DADOS E FUNÇÕES DO DASHBOARD ---
 def buscar_dados_dashboard():
     try:
         conn = conectar_banco()
@@ -71,13 +171,18 @@ def buscar_dados_dashboard():
             cursor.execute("SELECT NOW()")
             db_now = cursor.fetchone()[0]
 
-            query = "SELECT nome_loja, rede, status, ultima_atualizacao, monitoramento_ativo, COALESCE(auto_restart, 0), comando FROM status_lojas ORDER BY rede ASC, nome_loja ASC"
+            query = """
+                SELECT nome_loja, rede, loja, status, ultima_atualizacao, monitoramento_ativo, 
+                       COALESCE(auto_restart, 0), comando, maquina 
+                FROM status_lojas 
+                ORDER BY rede ASC, nome_loja ASC
+            """
             cursor.execute(query)
             dados = cursor.fetchall()
         
         lista_temp = []
         for row in dados:
-            nome_loja, rede_nome, status_banco, ultima_att, m_ativo, a_restart, comando_banco = row
+            nome_loja, rede_cod, loja_cod, status_banco, ultima_att, m_ativo, a_restart, comando_banco, nome_maquina = row
             
             delta_seconds = (db_now - ultima_att).total_seconds() if ultima_att else 999999
 
@@ -86,7 +191,6 @@ def buscar_dados_dashboard():
             elif delta_seconds > 75:
                 status_calc = 'DESLIGADO'
             else:
-                # REGRA: Converte erros ERR 401 e ERR 403 para ONLINE
                 status_str = str(status_banco).upper() if status_banco else ""
                 if any(err in status_str for err in ["401", "403", "ERR"]):
                     status_calc = 'ONLINE'
@@ -102,29 +206,22 @@ def buscar_dados_dashboard():
             else:
                 ultima_att_local = "-"
 
-            # EXTRAÇÃO INTELIGENTE DA REDE (ANTES DA BARRA '/')
-            raw_rede = str(rede_nome).strip() if rede_nome else ""
-            raw_loja = str(nome_loja).strip() if nome_loja else ""
-
-            if "/" in raw_rede:
-                cod_rede = raw_rede.split("/")[0].strip()
-            elif "/" in raw_loja:
-                cod_rede = raw_loja.split("/")[0].strip()
+            # Trata Exibição de Rede/Loja com compatibilidade
+            if rede_cod and loja_cod:
+                cod_rede = str(rede_cod).strip()
+                rede_loja_fmt = f"{rede_cod}/{loja_cod} - {nome_loja}"
             else:
-                cod_rede = raw_rede if raw_rede else "Sem Rede"
+                raw_rede = str(rede_cod).strip() if rede_cod else "Sem Rede"
+                cod_rede = raw_rede.split("/")[0] if "/" in raw_rede else raw_rede
+                rede_loja_fmt = f"{raw_rede} - {nome_loja}" if raw_rede != "Sem Rede" else nome_loja
 
-            if raw_rede and raw_rede != "-":
-                rede_loja_fmt = f"{raw_rede} - {nome_loja}"
-            else:
-                rede_loja_fmt = nome_loja
-
-            # Status de Monitoramento (Ativo / Suspenso)
             status_monitoramento = "Ativo" if m_ativo == 1 else "Suspenso"
 
             lista_temp.append({
                 "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
                 "Rede": cod_rede,
+                "Rodando em": nome_maquina or "Desconhecido",
                 "Status": status_calc,
                 "Monitoramento": status_monitoramento,
                 "Auto Reinício": "✅ SIM" if a_restart == 1 else "❌ NÃO",
@@ -135,7 +232,7 @@ def buscar_dados_dashboard():
         conn.close()
         return pd.DataFrame(lista_temp)
     except Exception as e:
-        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        st.error(f"Erro ao carregar dados do banco: {e}")
         return pd.DataFrame()
 
 def executar_comando_remoto(lojas, comando):
@@ -146,15 +243,19 @@ def executar_comando_remoto(lojas, comando):
             cursor.execute(f"UPDATE status_lojas SET comando = %s WHERE nome_loja IN ({format_strings})", (comando,) + tuple(lojas))
         conn.commit()
         conn.close()
-        st.toast(f"Comando '{comando}' enviado para {len(lojas)} loja(s)!", icon="🚀")
+        
+        # Log de Auditoria
+        usr = st.session_state["usuario_logado"]
+        registrar_log_auditoria(usr, f"COMANDO_{comando}", f"Lojas afetadas: {', '.join(lojas)}")
+        st.toast(f"Comando '{comando}' enviado com sucesso!", icon="🚀")
     except Exception as e:
         st.error(f"Erro ao enviar comando: {e}")
 
 def reiniciar_lojas(lojas):
     executar_comando_remoto(lojas, "STOP")
-    st.toast("Comando STOP enviado! Aguardando 15 segundos para reabrir...", icon="⏳")
-    with st.spinner("🔄 Encerrando o monitor... Aguardando 15 segundos para enviar o comando de reabrir (START)..."):
-        time.sleep(15)
+    st.toast("Comando STOP enviado! Aguardando para reabrir...", icon="⏳")
+    with st.spinner("🔄 Encerrando o monitor... Aguardando para enviar comando START..."):
+        time.sleep(10)
     executar_comando_remoto(lojas, "START")
 
 def alterar_pausa(lojas, pausar):
@@ -168,6 +269,9 @@ def alterar_pausa(lojas, pausar):
             cursor.execute(f"UPDATE status_lojas SET monitoramento_ativo = %s, status = %s, ultima_atualizacao = NOW() WHERE nome_loja IN ({format_strings})", (novo_m_ativo, novo_status) + tuple(lojas))
         conn.commit()
         conn.close()
+        
+        acao = "PAUSAR" if pausar else "ATIVAR"
+        registrar_log_auditoria(st.session_state["usuario_logado"], f"MONITORAMENTO_{acao}", f"Lojas: {', '.join(lojas)}")
         st.toast("Status de monitoramento atualizado!", icon="🔄")
     except Exception as e:
         st.error(f"Erro na alteração de pausa: {e}")
@@ -178,12 +282,12 @@ def alterar_auto_restart(lojas, ativar):
         with conn.cursor() as cursor:
             format_strings = ', '.join(['%s'] * len(lojas))
             novo_auto_restart = 1 if ativar else 0
-            cursor.execute(
-                f"UPDATE status_lojas SET auto_restart = %s WHERE nome_loja IN ({format_strings})",
-                (novo_auto_restart,) + tuple(lojas)
-            )
+            cursor.execute(f"UPDATE status_lojas SET auto_restart = %s WHERE nome_loja IN ({format_strings})", (novo_auto_restart,) + tuple(lojas))
         conn.commit()
         conn.close()
+        
+        acao = "ATIVAR_AUTORESTART" if ativar else "DESATIVAR_AUTORESTART"
+        registrar_log_auditoria(st.session_state["usuario_logado"], acao, f"Lojas: {', '.join(lojas)}")
         st.toast("Auto reinício atualizado com sucesso!", icon="🔁")
     except Exception as e:
         st.error(f"Erro ao alterar auto reinício: {e}")
@@ -195,8 +299,11 @@ def excluir_lojas(lojas):
             format_strings = ', '.join(['%s'] * len(lojas))
             cursor.execute(f"DELETE FROM historico_status WHERE nome_loja IN ({format_strings})", tuple(lojas))
             cursor.execute(f"DELETE FROM status_lojas WHERE nome_loja IN ({format_strings})", tuple(lojas))
+            cursor.execute(f"DELETE FROM maquinas_lojas WHERE nome_loja IN ({format_strings})", tuple(lojas))
         conn.commit()
         conn.close()
+        
+        registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_LOJAS", f"Lojas removidas: {', '.join(lojas)}")
         st.toast("Lojas removidas com sucesso!", icon="🗑️")
     except Exception as e:
         st.error(f"Erro ao excluir lojas: {e}")
@@ -223,8 +330,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
             res = cursor.fetchall()
         conn.close()
 
-        if not res:
-            return pd.DataFrame()
+        if not res: return pd.DataFrame()
 
         dados_formatados = []
         agora_br = datetime.now(FUSO_BRASILIA)
@@ -233,47 +339,29 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
             status, data_evento = res[i]
             
             if isinstance(data_evento, datetime):
-                if data_evento.tzinfo is None:
-                    data_evento = data_evento.replace(tzinfo=ZoneInfo("UTC"))
-                dt_inicio = data_evento.astimezone(FUSO_BRASILIA)
+                dt_inicio = data_evento.replace(tzinfo=ZoneInfo("UTC")).astimezone(FUSO_BRASILIA) if data_evento.tzinfo is None else data_evento.astimezone(FUSO_BRASILIA)
             else:
                 dt_inicio = agora_br
 
             if i + 1 < len(res):
                 data_prox = res[i + 1][1]
-                if isinstance(data_prox, datetime):
-                    if data_prox.tzinfo is None:
-                        data_prox = data_prox.replace(tzinfo=ZoneInfo("UTC"))
-                    dt_fim = data_prox.astimezone(FUSO_BRASILIA)
-                else:
-                    dt_fim = agora_br
+                dt_fim = data_prox.replace(tzinfo=ZoneInfo("UTC")).astimezone(FUSO_BRASILIA) if isinstance(data_prox, datetime) and data_prox.tzinfo is None else agora_br
                 fim_data_str = dt_fim.strftime('%d/%m/%Y %H:%M:%S')
                 fim_hora_str = dt_fim.strftime('%H:%M:%S')
             else:
                 fim_data_str = "Em andamento"
                 fim_hora_str = "Atual"
 
-            inicio_data_str = dt_inicio.strftime('%d/%m/%Y %H:%M:%S')
-            inicio_hora_str = dt_inicio.strftime('%H:%M:%S')
-
             st_upper = str(status).upper()
-            if "ONLINE" in st_upper:
-                status_com_cor = f"🟢 {status}"
-            elif "OFFLINE" in st_upper:
-                status_com_cor = f"🔴 {status}"
-            elif "PAUSADO" in st_upper:
-                status_com_cor = f"🔵 {status}"
-            elif "DESLIGADO" in st_upper:
-                status_com_cor = f"⚪ {status}"
-            else:
-                status_com_cor = f"🟡 {status}"
-
-            periodo_formatado = f"{inicio_hora_str} até {fim_hora_str}"
+            if "ONLINE" in st_upper: status_com_cor = f"🟢 {status}"
+            elif "OFFLINE" in st_upper: status_com_cor = f"🔴 {status}"
+            elif "PAUSADO" in st_upper: status_com_cor = f"🔵 {status}"
+            else: status_com_cor = f"🟡 {status}"
 
             dados_formatados.append({
                 "Status": status_com_cor,
-                "Período Horário": periodo_formatado,
-                "Início": inicio_data_str,
+                "Período Horário": f"{dt_inicio.strftime('%H:%M:%S')} até {fim_hora_str}",
+                "Início": dt_inicio.strftime('%d/%m/%Y %H:%M:%S'),
                 "Término": fim_data_str
             })
 
@@ -283,7 +371,7 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         st.error(f"Erro ao buscar histórico: {e}")
         return pd.DataFrame()
 
-# --- HELPER DE RENDERIZAÇÃO DAS TABELAS (SEMPRE AGRUPADO POR REDE E RECOLHIDO) ---
+# --- RENDERIZADOR DE TABELA DE LOJAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
     if df_subset.empty:
         st.info("Nenhuma loja encontrada neste status.")
@@ -299,9 +387,8 @@ def renderizar_grid_lojas(df_subset, tab_key):
         return ''
 
     df_ordenado = df_subset.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
-
-    # AGRUPAMENTO FIXO POR REDE - RECOLHIDO POR PADRÃO (expanded=False)
     grupos = df_ordenado.groupby("Rede", sort=False)
+
     for idx, (rede_codigo, df_grupo) in enumerate(grupos):
         with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
             event = st.dataframe(
@@ -323,9 +410,13 @@ def renderizar_grid_lojas(df_subset, tab_key):
                 novas_selecionadas = df_grupo.iloc[cur_sel]["Nome da Loja"].tolist() if cur_sel else []
                 outras_lojas = [l for l in st.session_state.get("lojas_selecionadas", []) if l not in df_grupo["Nome da Loja"].tolist()]
                 st.session_state["lojas_selecionadas"] = outras_lojas + novas_selecionadas
+                
+                # SELECIONA A LOJA PARA VISUALIZAÇÃO RÁPIDA DOS LOGS
+                if cur_sel:
+                    st.session_state["loja_direcionada_log"] = df_grupo.iloc[cur_sel[0]]["Nome da Loja"]
                 st.rerun()
 
-# --- FRAGMENTO COM AUTO-REFRESH A CADA 15 SEGUNDOS ---
+# --- FRAGMENTO DE REFRESH DO DASHBOARD ---
 @st.fragment(run_every="15s")
 def renderizar_tabela_dashboard():
     df_lojas = buscar_dados_dashboard()
@@ -333,14 +424,14 @@ def renderizar_tabela_dashboard():
     col_t, col_r = st.columns([3, 1])
     with col_t:
         agora = datetime.now(FUSO_BRASILIA).strftime("%H:%M:%S")
-        st.caption(f"⚡ Atualização automática ativa (Última: {agora} - Brasília)")
+        st.caption(f"⚡ Atualização automática ativa ({agora}) | Usuário: **{st.session_state['usuario_logado']}** ({st.session_state['nivel_acesso']})")
     with col_r:
         if st.button("🔄 Atualizar Agora", use_container_width=True):
             st.rerun()
 
     termo_busca = st.text_input(
-        "🔍 Filtrar por Rede/Loja ou Nome:", 
-        placeholder="Ex: 927/12, 999/1, Loja teste...",
+        "🔍 Filtrar por Rede/Loja ou Nome da Maquina:", 
+        placeholder="Ex: 927/12, Loja Centro, DESKTOP-PDV...",
         key="campo_busca_lojas"
     )
 
@@ -349,137 +440,58 @@ def renderizar_tabela_dashboard():
             df_exibicao = df_lojas[
                 df_lojas["Nome da Loja"].astype(str).str.contains(termo_busca, case=False, na=False) |
                 df_lojas["Rede"].astype(str).str.contains(termo_busca, case=False, na=False) |
-                df_lojas["Rede/Loja"].astype(str).str.contains(termo_busca, case=False, na=False)
+                df_lojas["Rodando em"].astype(str).str.contains(termo_busca, case=False, na=False)
             ].reset_index(drop=True)
         else:
             df_exibicao = df_lojas.reset_index(drop=True)
 
-        # RETORNO ÀS ABAS NATIVAS COM ANIMAÇÃO FLUIDA
         tab_online, tab_offline, tab_pausado, tab_desligado, tab_todas = st.tabs([
-            "🟢 Online", 
-            "🔴 Offline", 
-            "⏸️ Pausadas", 
-            "⚪ Desligadas",
-            "📋 Todas"
+            "🟢 Online", "🔴 Offline", "⏸️ Pausadas", "⚪ Desligadas", "📋 Todas"
         ])
 
-        with tab_online:
-            df_sub = df_exibicao[df_exibicao["Status"] == "ONLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "online")
-
-        with tab_offline:
-            df_sub = df_exibicao[df_exibicao["Status"] == "OFFLINE"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "offline")
-
-        with tab_pausado:
-            df_sub = df_exibicao[df_exibicao["Status"] == "PAUSADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "pausado")
-
-        with tab_desligado:
-            df_sub = df_exibicao[df_exibicao["Status"] == "DESLIGADO"].reset_index(drop=True)
-            renderizar_grid_lojas(df_sub, "desligado")
-
-        with tab_todas:
-            renderizar_grid_lojas(df_exibicao, "todas")
-            
+        with tab_online: renderizar_grid_lojas(df_exibicao[df_exibicao["Status"] == "ONLINE"], "online")
+        with tab_offline: renderizar_grid_lojas(df_exibicao[df_exibicao["Status"] == "OFFLINE"], "offline")
+        with tab_pausado: renderizar_grid_lojas(df_exibicao[df_exibicao["Status"] == "PAUSADO"], "pausado")
+        with tab_desligado: renderizar_grid_lojas(df_exibicao[df_exibicao["Status"] == "DESLIGADO"], "desligado")
+        with tab_todas: renderizar_grid_lojas(df_exibicao, "todas")
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- INTERFACE WEB PRINCIPAL ---
-
-if "lojas_selecionadas" not in st.session_state:
-    st.session_state["lojas_selecionadas"] = []
-
-# Botão invisível acionado via JS para desmarcar lojas ao trocar de aba
-if st.button("ResetTabs", key="btn_reset_tab_hidden"):
-    st.session_state["lojas_selecionadas"] = []
-    keys_para_remover = [k for k in st.session_state.keys() if k.startswith("last_sel_") or k.startswith("tabela_lojas_")]
-    for k in keys_para_remover:
-        del st.session_state[k]
+# --- BARRA LATERAL (PAINEL OPERACIONAL E USUÁRIO) ---
+st.sidebar.header(f"👤 {st.session_state['usuario_logado']}")
+if st.sidebar.button("🚪 Sair (Logout)", use_container_width=True):
+    registrar_log_auditoria(st.session_state['usuario_logado'], "LOGOUT", "Sessão encerrada")
+    st.session_state["usuario_logado"] = None
     st.rerun()
 
-tem_lojas_selecionadas = "true" if len(st.session_state.get("lojas_selecionadas", [])) > 0 else "false"
-
-components.html(
-    f"""
-    <script>
-    const doc = window.parent.document;
-    doc.body.dataset.temLojasSelecionadas = "{tem_lojas_selecionadas}";
-
-    // Live search nos inputs de busca
-    const inputs = doc.querySelectorAll('div[data-testid="stTextInput"] input');
-    inputs.forEach(input => {{
-        if (!input.dataset.liveSearch) {{
-            input.dataset.liveSearch = "true";
-            input.addEventListener('input', () => {{
-                input.dispatchEvent(new Event('change', {{ bubbles: true }}));
-            }});
-        }}
-    }});
-
-    // Escuta cliques nas abas para desmarcar lojas se houver seleção ativa
-    const attachTabListeners = () => {{
-        const tabs = doc.querySelectorAll('button[role="tab"], [data-baseweb="tab"], [data-testid="stTab"]');
-        tabs.forEach(tab => {{
-            if (!tab.dataset.unselectBound) {{
-                tab.dataset.unselectBound = "true";
-                tab.addEventListener('click', () => {{
-                    if (doc.body.dataset.temLojasSelecionadas === "true") {{
-                        const resetBtn = doc.querySelector('.st-key-btn_reset_tab_hidden button');
-                        if (resetBtn) {{
-                            resetBtn.click();
-                        }}
-                    }}
-                }});
-            }}
-        }});
-    }};
-
-    attachTabListeners();
-    const observer = new MutationObserver(attachTabListeners);
-    observer.observe(doc.body, {{ childList: true, subtree: true }});
-    </script>
-    """,
-    height=0,
-    width=0
-)
-
-lojas_selecionadas = st.session_state["lojas_selecionadas"]
-desabilitar_geral = len(lojas_selecionadas) == 0
-
-# REGRA DE SEGURANÇA INTELIGENTE:
-# Inativa os botões "Iniciar" e "Reiniciar" caso alguma loja selecionada esteja PAUSADA ou DESLIGADA
-desabilitar_iniciar_reiniciar = desabilitar_geral
-
-if not desabilitar_geral:
-    df_todas_lojas = buscar_dados_dashboard()
-    if not df_todas_lojas.empty:
-        status_das_selecionadas = df_todas_lojas[df_todas_lojas["Nome da Loja"].isin(lojas_selecionadas)]["Status"].tolist()
-        if any(s in ["PAUSADO", "DESLIGADO"] for s in status_das_selecionadas):
-            desabilitar_iniciar_reiniciar = True
-
-# --- BARRA LATERAL (PAINEL OPERACIONAL) ---
+st.sidebar.markdown("---")
 st.sidebar.header("🖥️ PAINEL OPERACIONAL")
 
+lojas_selecionadas = st.session_state.get("lojas_selecionadas", [])
 if lojas_selecionadas:
     st.sidebar.success(f"📌 {len(lojas_selecionadas)} loja(s) selecionada(s)")
 else:
     st.sidebar.info("Selecione lojas para acionar os comandos.")
 
-st.sidebar.markdown("---")
+desabilitar_geral = len(lojas_selecionadas) == 0
 
-# 1. COMANDOS REMOTOS
+# 1. COMANDOS REMOTOS (INCLUINDO NOVOS COMANDOS)
 st.sidebar.subheader("🕹️ Comandos Remotos")
 col_cmd1, col_cmd2 = st.sidebar.columns(2)
 with col_cmd1:
-    if st.button("▶️ Iniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Iniciar Pedidos Web"):
+    if st.button("▶️ Iniciar", disabled=desabilitar_geral, use_container_width=True):
         executar_comando_remoto(lojas_selecionadas, "START")
 with col_cmd2:
-    if st.button("🔄 Reiniciar", disabled=desabilitar_iniciar_reiniciar, use_container_width=True, help="Reiniciar Pedidos Web"):
+    if st.button("🔄 Reiniciar", disabled=desabilitar_geral, use_container_width=True):
         reiniciar_lojas(lojas_selecionadas)
 
-if desabilitar_iniciar_reiniciar and not desabilitar_geral:
-    st.sidebar.caption("")
+col_cmd3, col_cmd4 = st.sidebar.columns(2)
+with col_cmd3:
+    if st.button("🛑 Encerrar Web", disabled=desabilitar_geral, use_container_width=True, help="Mata o processo do Pedidos WEB uma vez"):
+        executar_comando_remoto(lojas_selecionadas, "ENCERRAR")
+with col_cmd4:
+    if st.button("🔒 Bloquear Web", disabled=desabilitar_geral, use_container_width=True, help="Mata o processo e impede a reabertura a cada 5s"):
+        executar_comando_remoto(lojas_selecionadas, "BLOQUEAR")
 
 # 2. MONITORAMENTO E AUTO REINÍCIO
 st.sidebar.subheader("⏸️ Monitoramento")
@@ -494,79 +506,99 @@ with col_p2:
 st.sidebar.subheader("🔁 Auto Reinício")
 col_ar1, col_ar2 = st.sidebar.columns(2)
 with col_ar1:
-    if st.button("✅ Ativar", disabled=desabilitar_geral, use_container_width=True, key="btn_ar_ativar"):
+    if st.button("✅ Ativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, True)
 with col_ar2:
-    if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True, key="btn_ar_desativar"):
+    if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, False)
 
 st.sidebar.markdown("---")
 
-# 3. MANUTENÇÃO E AÇÕES CRÍTICAS
-st.sidebar.subheader("⚠️ Sistema & Manutenção")
-if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
-    executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
+# 3. MANUTENÇÃO (APENAS PARA ADM)
+if st.session_state["nivel_acesso"] == "ADM":
+    st.sidebar.subheader("⚠️ Ações de Administração")
+    if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
+        executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
 
-if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_geral, type="primary", use_container_width=True):
-    excluir_lojas(lojas_selecionadas)
-    st.session_state["lojas_selecionadas"] = []
-    st.rerun()
+    if st.sidebar.button("🚨 Apagar Lojas do Banco", disabled=desabilitar_geral, type="primary", use_container_width=True):
+        excluir_lojas(lojas_selecionadas)
+        st.session_state["lojas_selecionadas"] = []
+        st.rerun()
 
-# ABA PRINCIPAL DE NAVEGAÇÃO (DASHBOARD vs LOGS)
-tab_dash, tab_hist = st.tabs(["📊 Painel Geral", "📜 Logs"])
+# --- ESTRUTURA DE ABAS PRINCIPAIS DA TELA ---
+abas_principais = ["📊 Painel Geral", "📜 Logs de Operação"]
+if st.session_state["nivel_acesso"] == "ADM":
+    abas_principais.extend(["👥 Gerenciar Usuários", "🛡️ Logs de Auditoria"])
 
-# ABA 1: DASHBOARD
-with tab_dash:
+guias = st.tabs(abas_principais)
+
+# TAB 1: PAINEL GERAL
+with guias[0]:
     renderizar_tabela_dashboard()
 
-# ABA 2: HISTÓRICO / LOGS (SEMPRE AGRUPADO E RECOLHIDO)
-with tab_hist:
-    st.subheader("📜 Histórico de Monitoramento")
+# TAB 2: LOGS DAS LOJAS
+with guias[1]:
+    st.subheader("📜 Histórico e Logs de Operação das Lojas")
     
-    col_h1, col_h2 = st.columns([2, 1])
-    with col_h1:
-        termo_busca_hist = st.text_input(
-            "🔍 Filtrar Rede ou Loja nos Logs:", 
-            placeholder="Ex: 927, 999/1, Loja teste...", 
-            key="busca_hist"
-        )
-    with col_h2:
-        periodo = st.date_input("📅 Filtrar por período:", value=(), format="DD/MM/YYYY", key="periodo_hist")
-
-    data_ini = periodo[0] if len(periodo) > 0 else None
-    data_fim = periodo[1] if len(periodo) > 1 else None
+    loja_foco = st.session_state.get("loja_direcionada_log", None)
+    if loja_foco:
+        st.info(f"🎯 Exibindo histórico direcionado para a loja: **{loja_foco}**")
 
     df_lojas_menu = buscar_dados_dashboard()
-
     if not df_lojas_menu.empty:
-        if termo_busca_hist:
-            df_lojas_menu = df_lojas_menu[
-                df_lojas_menu["Nome da Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False) |
-                df_lojas_menu["Rede"].astype(str).str.contains(termo_busca_hist, case=False, na=False) |
-                df_lojas_menu["Rede/Loja"].astype(str).str.contains(termo_busca_hist, case=False, na=False)
-            ].reset_index(drop=True)
+        lista_lojas = df_lojas_menu["Nome da Loja"].unique().tolist()
+        idx_padrao = lista_lojas.index(loja_foco) if loja_foco in lista_lojas else 0
+        
+        loja_selecionada_log = st.selectbox("Selecione a Loja para Visualizar o Histórico:", options=lista_lojas, index=idx_padrao)
+        df_hist = buscar_historico(loja_selecionada_log)
+        if not df_hist.empty:
+            st.dataframe(df_hist, use_container_width=True, hide_index=True)
+        else:
+            st.info("Nenhum histórico registrado para esta loja.")
 
-        grupos_hist = df_lojas_menu.groupby("Rede", sort=False)
+# TAB 3: GERENCIAMENTO DE USUÁRIOS (APENAS ADM)
+if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
+    with guias[2]:
+        st.subheader("👥 Gerenciamento de Usuários do Painel")
+        
+        with st.form("form_novo_usuario"):
+            st.write("### Criar Novo Usuário")
+            novo_usr = st.text_input("Nome do Usuário:")
+            nova_pwd = st.text_input("Senha:", type="password")
+            novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
+            btn_criar_usr = st.form_submit_button("➕ Criar Usuário")
+            
+            if btn_criar_usr:
+                if novo_usr and nova_pwd:
+                    try:
+                        conn = conectar_banco()
+                        with conn.cursor() as cursor:
+                            cursor.execute("INSERT INTO usuarios (usuario, senha, nivel) VALUES (%s, %s, %s)", (novo_usr, nova_pwd, novo_nvl))
+                        conn.commit()
+                        conn.close()
+                        registrar_log_auditoria(st.session_state["usuario_logado"], "CRIAR_USUARIO", f"Usuário criado: {novo_usr} ({novo_nvl})")
+                        st.success(f"Usuário {novo_usr} criado com sucesso!")
+                    except Exception as e:
+                        st.error(f"Erro ao criar usuário (Pode já existir): {e}")
 
-        for idx, (rede_codigo, df_grupo) in enumerate(grupos_hist):
-            with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
-                lojas_da_rede = dict(zip(df_grupo["Rede/Loja"], df_grupo["Nome da Loja"]))
-                
-                if len(lojas_da_rede) > 1:
-                    loja_sel_fmt = st.selectbox(
-                        f"Selecione a loja da Rede {rede_codigo}:", 
-                        options=list(lojas_da_rede.keys()),
-                        key=f"sel_loja_hist_{rede_codigo}_{idx}"
-                    )
-                    loja_alvo = lojas_da_rede[loja_sel_fmt]
-                else:
-                    loja_alvo = list(lojas_da_rede.values())[0]
-                    st.caption(f"📍 Exibindo histórico de: **{list(lojas_da_rede.keys())[0]}**")
+        st.markdown("---")
+        st.write("### Usuários Cadastrados")
+        try:
+            conn = conectar_banco()
+            df_usrs = pd.read_sql("SELECT id, usuario, nivel, criado_em FROM usuarios", conn)
+            conn.close()
+            st.dataframe(df_usrs, use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.error(f"Erro ao listar usuários: {e}")
 
-                df_hist = buscar_historico(loja_alvo, data_ini, data_fim)
-                if not df_hist.empty:
-                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
-                else:
-                    st.info(f"Nenhum registro encontrado para {loja_alvo} no período selecionado.")
-    else:
-        st.info("Nenhuma loja encontrada para exibir o histórico.")
+# TAB 4: LOGS DE AUDITORIA (APENAS ADM)
+if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 3:
+    with guias[3]:
+        st.subheader("🛡️ Logs de Auditoria do Sistema (Acessos e Comandos)")
+        try:
+            conn = conectar_banco()
+            df_aud = pd.read_sql("SELECT usuario, acao, detalhes, data_hora FROM logs_auditoria ORDER BY data_hora DESC LIMIT 200", conn)
+            conn.close()
+            st.dataframe(df_aud, use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.error(f"Erro ao carregar auditoria: {e}")
