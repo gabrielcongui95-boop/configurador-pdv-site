@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 import pymysql
 import pandas as pd
 import time
-from datetime import datetime
+from datetime import datetime, date
 from zoneinfo import ZoneInfo
 
 # Define o fuso horário oficial de Brasília (UTC-3)
@@ -20,16 +20,11 @@ st.set_page_config(
 # --- CORREÇÃO DE CSS: LARGURA COMPACTA DOS CAMPOS E LAYOUT ---
 st.markdown("""
     <style>
-        /* Restringe a largura de inputs e selectbox a no máximo ~50 caracteres */
+        /* Restringe a largura de inputs e selectbox a no máximo ~50 caracteres em formulários comuns */
         .stTextInput > div > div > input, 
         .stSelectbox > div > div,
         .stDateInput > div > div > input {
-            max-width: 380px !important;
-        }
-        
-        /* Restringe a largura máxima dos formulários */
-        [data-testid="stForm"] {
-            max-width: 480px !important;
+            max-width: 100% !important;
         }
 
         /* Correção para o container principal não cortar conteúdos inferiores */
@@ -113,22 +108,22 @@ def inicializar_e_migrar_banco():
 inicializar_e_migrar_banco()
 
 def registrar_log_auditoria(usuario, acao, detalhes=""):
-    """Registra log garantindo o fuso horário oficial de Brasília (UTC-3)."""
+    """Registra log no banco utilizando TIMESTAMP UTC padronizado."""
     try:
-        agora_brasilia = datetime.now(FUSO_BRASILIA)
+        agora_utc = datetime.now(ZoneInfo("UTC"))
         conn = conectar_banco()
         with conn.cursor() as cursor:
             cursor.execute(
                 "INSERT INTO logs_auditoria (usuario, acao, detalhes, data_hora) VALUES (%s, %s, %s, %s)",
-                (usuario, acao, detalhes, agora_brasilia)
+                (usuario, acao, detalhes, agora_utc)
             )
         conn.commit()
         conn.close()
     except Exception:
         pass
 
-def buscar_logs_auditoria():
-    """Busca logs de auditoria e reordena colunas: ID / Usuário / Ação / Data e Hora / Detalhes."""
+def buscar_logs_auditoria(data_filtro=None):
+    """Busca logs de auditoria e ajusta explicitamente para o fuso horário de Brasília (UTC-3)."""
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
@@ -142,13 +137,22 @@ def buscar_logs_auditoria():
         logs_formatados = []
         for log_id, dt_hora, usuario, acao, detalhes in logs:
             if dt_hora:
+                # Trata timezone e converte explicitamente para Brasília (UTC-3)
                 if dt_hora.tzinfo is None:
                     dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC"))
-                    dt_br = dt_utc.astimezone(FUSO_BRASILIA)
                 else:
-                    dt_br = dt_hora.astimezone(FUSO_BRASILIA)
+                    dt_utc = dt_hora
+                
+                dt_br = dt_utc.astimezone(FUSO_BRASILIA)
+                
+                # Se houver filtro por data, ignora registros fora da data
+                if data_filtro and dt_br.date() != data_filtro:
+                    continue
+
                 str_data_hora = dt_br.strftime('%d/%m/%Y %H:%M:%S')
             else:
+                if data_filtro:
+                    continue
                 str_data_hora = "-"
 
             logs_formatados.append({
@@ -163,6 +167,46 @@ def buscar_logs_auditoria():
     except Exception as e:
         st.error(f"Erro ao buscar logs de auditoria: {e}")
         return pd.DataFrame()
+
+def apagar_logs_auditoria_por_data(data_alvo):
+    """Apaga os logs de auditoria correspondentes à data selecionada no fuso de Brasília."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, data_hora FROM logs_auditoria")
+            logs = cursor.fetchall()
+
+            ids_para_deletar = []
+            for log_id, dt_hora in logs:
+                if dt_hora:
+                    dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC")) if dt_hora.tzinfo is None else dt_hora
+                    dt_br = dt_utc.astimezone(FUSO_BRASILIA)
+                    if dt_br.date() == data_alvo:
+                        ids_para_deletar.append(log_id)
+
+            if ids_para_deletar:
+                format_strings = ', '.join(['%s'] * len(ids_para_deletar))
+                cursor.execute(f"DELETE FROM logs_auditoria WHERE id IN ({format_strings})", tuple(ids_para_deletar))
+                conn.commit()
+                st.success(f"Foram removidos {len(ids_para_deletar)} log(s) do dia {data_alvo.strftime('%d/%m/%Y')}.")
+            else:
+                st.warning("Nenhum log encontrado para a data selecionada.")
+
+        conn.close()
+    except Exception as e:
+        st.error(f"Erro ao apagar logs por data: {e}")
+
+def limpar_logs_auditoria_banco():
+    """Permite ao ADM apagar TODOS os logs de auditoria."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("TRUNCATE TABLE logs_auditoria")
+        conn.commit()
+        conn.close()
+        st.success("Todos os logs de auditoria de usuários foram limpos!")
+    except Exception as e:
+        st.error(f"Erro ao limpar logs de auditoria: {e}")
 
 # --- AUTENTICAÇÃO ---
 if "usuario_logado" not in st.session_state:
@@ -444,18 +488,6 @@ def limpar_historico_loja_banco(nome_loja=None):
     except Exception as e:
         st.error(f"Erro ao apagar histórico: {e}")
 
-def limpar_logs_auditoria_banco():
-    """Permite ao ADM apagar logs de auditoria dos usuários."""
-    try:
-        conn = conectar_banco()
-        with conn.cursor() as cursor:
-            cursor.execute("TRUNCATE TABLE logs_auditoria")
-        conn.commit()
-        conn.close()
-        st.success("Todos os logs de auditoria de usuários foram limpos!")
-    except Exception as e:
-        st.error(f"Erro ao limpar logs de auditoria: {e}")
-
 # --- DIÁLOGOS DE ADMINISTRAÇÃO (MODAIS DA BARRA LATERAL) ---
 @st.dialog("👥 Gerenciamento de Usuários e Acessos", width="large")
 def modal_gerenciar_usuarios():
@@ -463,10 +495,19 @@ def modal_gerenciar_usuarios():
     
     with st.form("form_novo_usuario_modal"):
         st.write("### ➕ Criar Novo Usuário")
-        novo_usr = st.text_input("Nome do Usuário:")
-        nova_pwd = st.text_input("Senha:", type="password")
-        novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
-        btn_criar_usr = st.form_submit_button("Criar Usuário")
+        
+        # CAMPOS EXIBIDOS UM AO LADO DO OUTRO
+        col_u1, col_u2, col_u3, col_u4 = st.columns([2.5, 2.5, 2, 2])
+        with col_u1:
+            novo_usr = st.text_input("Nome do Usuário:")
+        with col_u2:
+            nova_pwd = st.text_input("Senha:", type="password")
+        with col_u3:
+            novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
+        with col_u4:
+            st.write(" ")
+            st.write(" ")
+            btn_criar_usr = st.form_submit_button("Criar Usuário", use_container_width=True)
         
         if btn_criar_usr:
             if novo_usr and nova_pwd:
@@ -489,15 +530,19 @@ def modal_gerenciar_usuarios():
         st.warning(f"✏️ **Editando Usuário ID #{u_edit['id']} - ({u_edit['usuario']})**")
         
         with st.form("form_editar_usuario_modal"):
-            e_usuario = st.text_input("Usuário:", value=u_edit['usuario'])
-            e_senha = st.text_input("Nova Senha:", value=u_edit['senha'], type="password")
-            e_nivel = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"], index=0 if u_edit['nivel'] == 'COMUM' else 1)
-            
-            col_e1, col_e2 = st.columns(2)
+            col_e1, col_e2, col_e3 = st.columns([3, 3, 2])
             with col_e1:
-                btn_salvar_edit = st.form_submit_button("💾 Salvar Alterações")
+                e_usuario = st.text_input("Usuário:", value=u_edit['usuario'])
             with col_e2:
-                btn_cancela_edit = st.form_submit_button("❌ Cancelar")
+                e_senha = st.text_input("Nova Senha:", value=u_edit['senha'], type="password")
+            with col_e3:
+                e_nivel = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"], index=0 if u_edit['nivel'] == 'COMUM' else 1)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                btn_salvar_edit = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
+            with col_btn2:
+                btn_cancela_edit = st.form_submit_button("❌ Cancelar", use_container_width=True)
 
             if btn_salvar_edit:
                 try:
@@ -582,15 +627,31 @@ def modal_gerenciar_usuarios():
 
 @st.dialog("🛡️ Logs de Auditoria do Sistema", width="large")
 def modal_logs_auditoria():
-    st.caption("Registros das ações efetuadas por todos os usuários do painel.")
+    st.caption("Registros das ações efetuadas por todos os usuários do painel (Horário de Brasília).")
 
-    col_f1, col_f2 = st.columns([3, 1])
-    with col_f2:
-        if st.button("🚨 Limpar Logs de Auditoria", type="primary", use_container_width=True, key="btn_limpar_audit_modal"):
+    # HOJE NO FUSO DE BRASÍLIA
+    hoje_brasilia = datetime.now(FUSO_BRASILIA).date()
+
+    # FILTROS DE DATA E LIMPEZA
+    col_d1, col_d2, col_d3 = st.columns([2, 2, 2])
+    with col_d1:
+        data_selecionada = st.date_input("📅 Data do Log:", value=hoje_brasilia, format="DD/MM/YYYY")
+    
+    with col_d2:
+        st.write(" ")
+        st.write(" ")
+        if st.button("🗑️ Apagar Logs deste Dia", type="secondary", use_container_width=True, key="btn_del_dia_audit"):
+            apagar_logs_auditoria_por_data(data_selecionada)
+            st.rerun()
+
+    with col_d3:
+        st.write(" ")
+        st.write(" ")
+        if st.button("🚨 Limpar TUDO", type="primary", use_container_width=True, key="btn_limpar_audit_modal"):
             limpar_logs_auditoria_banco()
             st.rerun()
 
-    df_audit = buscar_logs_auditoria()
+    df_audit = buscar_logs_auditoria(data_filtro=data_selecionada)
     
     if not df_audit.empty:
         termo_audit = st.text_input("🔍 Filtrar logs por usuário, ação ou detalhe:", placeholder="Ex: LOGIN, EXCLUIR, admin...", key="campo_busca_audit_modal")
@@ -608,7 +669,7 @@ def modal_logs_auditoria():
             hide_index=True
         )
     else:
-        st.info("Nenhum log de auditoria encontrado.")
+        st.info(f"Nenhum log de auditoria encontrado para o dia {data_selecionada.strftime('%d/%m/%Y')}.")
 
 # --- RENDERIZADOR DE TABELA DE LOJAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
@@ -757,7 +818,6 @@ if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
     
-    # REALOCAÇÃO DOS BOTÕES PARA A BARRA LATERAL
     if st.sidebar.button("👥 Gerenciar Usuários", use_container_width=True):
         st.session_state["modal_ativa"] = "usuarios"
 
