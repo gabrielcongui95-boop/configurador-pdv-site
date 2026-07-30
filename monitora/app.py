@@ -29,7 +29,7 @@ st.markdown("""
         
         /* Restringe a largura máxima dos formulários */
         [data-testid="stForm"] {
-            max-width: 480px !important;
+            max-width: 800px !important;
         }
 
         /* Correção para o container principal não cortar conteúdos inferiores */
@@ -71,20 +71,14 @@ def inicializar_e_migrar_banco():
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            try:
-                cursor.execute("ALTER TABLE status_lojas ADD COLUMN loja VARCHAR(50)")
-            except Exception:
-                pass
+            try: cursor.execute("ALTER TABLE status_lojas ADD COLUMN loja VARCHAR(50)")
+            except Exception: pass
             
-            try:
-                cursor.execute("ALTER TABLE status_lojas ADD COLUMN maquina VARCHAR(255)")
-            except Exception:
-                pass
+            try: cursor.execute("ALTER TABLE status_lojas ADD COLUMN maquina VARCHAR(255)")
+            except Exception: pass
 
-            try:
-                cursor.execute("ALTER TABLE historico_status ADD COLUMN maquina VARCHAR(255)")
-            except Exception:
-                pass
+            try: cursor.execute("ALTER TABLE historico_status ADD COLUMN maquina VARCHAR(255)")
+            except Exception: pass
 
             # Criação das tabelas de autenticação e auditoria
             cursor.execute("""
@@ -127,12 +121,15 @@ def registrar_log_auditoria(usuario, acao, detalhes=""):
     except Exception:
         pass
 
-def buscar_logs_auditoria():
-    """Busca logs de auditoria e reordena colunas: ID / Usuário / Ação / Data e Hora / Detalhes."""
+def buscar_logs_auditoria(data_alvo):
+    """Busca logs filtrando por data e ordena do mais novo pro mais velho."""
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, data_hora, usuario, acao, detalhes FROM logs_auditoria ORDER BY id DESC")
+            cursor.execute(
+                "SELECT id, data_hora, usuario, acao, detalhes FROM logs_auditoria WHERE DATE(data_hora) = %s ORDER BY id DESC",
+                (data_alvo,)
+            )
             logs = cursor.fetchall()
         conn.close()
 
@@ -164,6 +161,19 @@ def buscar_logs_auditoria():
         st.error(f"Erro ao buscar logs de auditoria: {e}")
         return pd.DataFrame()
 
+def limpar_logs_auditoria_banco(data_alvo):
+    """Apaga logs de auditoria de uma data específica."""
+    try:
+        conn = conectar_banco()
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM logs_auditoria WHERE DATE(data_hora) = %s", (data_alvo,))
+        conn.commit()
+        conn.close()
+        st.success(f"Logs de auditoria do dia {data_alvo.strftime('%d/%m/%Y')} limpos com sucesso!")
+        registrar_log_auditoria(st.session_state["usuario_logado"], "LIMPAR_AUDITORIA", f"Limpou logs do dia {data_alvo}")
+    except Exception as e:
+        st.error(f"Erro ao limpar logs de auditoria: {e}")
+
 # --- AUTENTICAÇÃO ---
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
@@ -171,7 +181,9 @@ if "usuario_logado" not in st.session_state:
 if "exibir_senha_ids" not in st.session_state:
     st.session_state["exibir_senha_ids"] = set()
 if "usuario_editando" not in st.session_state:
-    st.session_state["usuario_editando"] = None
+    st.session_state["usuario_editando"] = None # Agora salva apenas o ID do usuário
+if "modal_ativa" not in st.session_state:
+    st.session_state["modal_ativa"] = None
 
 def autenticar_usuario(user, password):
     try:
@@ -235,7 +247,6 @@ def buscar_dados_dashboard():
         lista_temp = []
         for row in dados:
             nome_loja, rede_cod, loja_cod, status_banco, ultima_att, m_ativo, a_restart, comando_banco, nome_maquina = row
-            
             delta_seconds = (db_now - ultima_att).total_seconds() if ultima_att else 999999
 
             if m_ativo == 0:
@@ -244,16 +255,11 @@ def buscar_dados_dashboard():
                 status_calc = 'DESLIGADO'
             else:
                 status_str = str(status_banco).upper() if status_banco else ""
-                if any(err in status_str for err in ["401", "403", "ERR"]):
-                    status_calc = 'ONLINE'
-                else:
-                    status_calc = status_banco
+                if any(err in status_str for err in ["401", "403", "ERR"]): status_calc = 'ONLINE'
+                else: status_calc = status_banco
 
             if ultima_att:
-                if ultima_att.tzinfo is None:
-                    ultima_att_utc = ultima_att.replace(tzinfo=ZoneInfo("UTC"))
-                else:
-                    ultima_att_utc = ultima_att
+                ultima_att_utc = ultima_att.replace(tzinfo=ZoneInfo("UTC")) if ultima_att.tzinfo is None else ultima_att
                 ultima_att_local = ultima_att_utc.astimezone(FUSO_BRASILIA).strftime('%d/%m/%Y %H:%M:%S')
             else:
                 ultima_att_local = "-"
@@ -266,15 +272,13 @@ def buscar_dados_dashboard():
                 cod_rede = raw_rede.split("/")[0] if "/" in raw_rede else raw_rede
                 rede_loja_fmt = f"{raw_rede} - {nome_loja}" if raw_rede != "Sem Rede" else nome_loja
 
-            status_monitoramento = "Ativo" if m_ativo == 1 else "Suspenso"
-
             lista_temp.append({
                 "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
                 "Rede": cod_rede,
                 "Rodando em": nome_maquina or "Desconhecido",
                 "Status": status_calc,
-                "Monitoramento": status_monitoramento,
+                "Monitoramento": "Ativo" if m_ativo == 1 else "Suspenso",
                 "Auto Reinício": "✅ SIM" if a_restart == 1 else "❌ NÃO",
                 "Última Atualização": ultima_att_local,
                 "Comando Pendente": comando_banco or "-"
@@ -294,7 +298,6 @@ def executar_comando_remoto(lojas, comando):
             cursor.execute(f"UPDATE status_lojas SET comando = %s WHERE nome_loja IN ({format_strings})", (comando,) + tuple(lojas))
         conn.commit()
         conn.close()
-        
         registrar_log_auditoria(st.session_state["usuario_logado"], f"COMANDO_{comando}", f"Lojas: {', '.join(lojas)}")
         st.toast(f"Comando '{comando}' enviado para {len(lojas)} loja(s)!", icon="🚀")
     except Exception as e:
@@ -425,7 +428,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
         return pd.DataFrame()
 
 def limpar_historico_loja_banco(nome_loja=None):
-    """Permite ao ADM apagar logs da loja do banco de dados."""
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
@@ -442,17 +444,171 @@ def limpar_historico_loja_banco(nome_loja=None):
     except Exception as e:
         st.error(f"Erro ao apagar histórico: {e}")
 
-def limpar_logs_auditoria_banco():
-    """Permite ao ADM apagar logs de auditoria dos usuários."""
+# --- DIÁLOGOS DE ADMINISTRAÇÃO (MODAIS DA BARRA LATERAL) ---
+@st.dialog("👥 Gerenciamento de Usuários e Acessos", width="large")
+def modal_gerenciar_usuarios():
+    st.caption("Cadastre, edite ou remova acessos ao painel.")
+    
+    with st.form("form_novo_usuario_modal"):
+        st.write("### ➕ Criar Novo Usuário")
+        
+        # Colunas horizontais para criar o usuário
+        col_n1, col_n2, col_n3, col_n4 = st.columns([3, 3, 2, 2])
+        with col_n1:
+            novo_usr = st.text_input("Usuário:")
+        with col_n2:
+            nova_pwd = st.text_input("Senha:", type="password")
+        with col_n3:
+            novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
+        with col_n4:
+            st.write("") # Espaço para alinhar o botão
+            st.write("") 
+            btn_criar_usr = st.form_submit_button("Criar Usuário", use_container_width=True)
+            
+        if btn_criar_usr:
+            if novo_usr and nova_pwd:
+                try:
+                    conn = conectar_banco()
+                    with conn.cursor() as cursor:
+                        cursor.execute("INSERT INTO usuarios (usuario, senha, nivel) VALUES (%s, %s, %s)", (novo_usr, nova_pwd, novo_nvl))
+                    conn.commit()
+                    conn.close()
+                    registrar_log_auditoria(st.session_state["usuario_logado"], "CRIAR_USUARIO", f"Criado: {novo_usr} ({novo_nvl})")
+                    st.success(f"Usuário {novo_usr} criado com sucesso!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao criar usuário (Nome pode já existir): {e}")
+            else:
+                st.error("Preencha todos os campos!")
+
+    st.write("### 📋 Usuários Cadastrados")
+    
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            cursor.execute("TRUNCATE TABLE logs_auditoria")
-        conn.commit()
+            cursor.execute("SELECT id, usuario, senha, nivel FROM usuarios ORDER BY id ASC")
+            usuarios_db = cursor.fetchall()
         conn.close()
-        st.success("Todos os logs de auditoria de usuários foram limpos!")
+
+        if usuarios_db:
+            col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
+            col_h1.write("**ID**")
+            col_h2.write("**Usuário**")
+            col_h3.write("**Senha**")
+            col_h4.write("**Nível**")
+            col_h5.write("**Ações**")
+            st.markdown("---")
+
+            for u_id, u_nome, u_senha, u_nivel in usuarios_db:
+                c1, c2, c3, c4, c5 = st.columns([1, 2, 2, 1.5, 2])
+                c1.write(f"#{u_id}")
+
+                editando_agora = (st.session_state.get("usuario_editando") == u_id)
+                
+                if editando_agora:
+                    # Renderiza os inputs para edição em linha
+                    e_nome = c2.text_input("User", value=u_nome, label_visibility="collapsed", key=f"edit_nome_{u_id}")
+                    e_senha = c3.text_input("Senha", value=u_senha, type="password", label_visibility="collapsed", key=f"edit_senha_{u_id}")
+                    e_nivel = c4.selectbox("Nivel", ["COMUM", "ADM"], index=0 if u_nivel == 'COMUM' else 1, label_visibility="collapsed", key=f"edit_nivel_{u_id}")
+                    
+                    b_salvar, b_cancelar = c5.columns(2)
+                    if b_salvar.button("💾", key=f"btn_salvar_{u_id}", help="Salvar Alterações"):
+                        try:
+                            conn = conectar_banco()
+                            with conn.cursor() as cursor:
+                                cursor.execute(
+                                    "UPDATE usuarios SET usuario = %s, senha = %s, nivel = %s WHERE id = %s",
+                                    (e_nome, e_senha, e_nivel, u_id)
+                                )
+                            conn.commit()
+                            conn.close()
+                            registrar_log_auditoria(st.session_state["usuario_logado"], "EDITAR_USUARIO", f"Editado ID #{u_id}")
+                            st.session_state["usuario_editando"] = None
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
+                            
+                    if b_cancelar.button("❌", key=f"btn_cancela_{u_id}", help="Cancelar Edição"):
+                        st.session_state["usuario_editando"] = None
+                        st.rerun()
+                else:
+                    # Renderiza visualização normal
+                    c2.write(f"**{u_nome}**")
+
+                    exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
+                    senha_display = u_senha if exibir_esta_senha else "••••••••"
+                    c3.write(f"`{senha_display}`")
+                    
+                    c4.write(f"🗝 {u_nivel}")
+
+                    col_b1, col_b2, col_b3 = c5.columns(3)
+                    lbl_olho = "👁️" if exibir_esta_senha else "👁‍🗨"
+                    
+                    if col_b1.button(lbl_olho, key=f"btn_olho_{u_id}", help="Mostrar/Ocultar Senha"):
+                        if exibir_esta_senha:
+                            st.session_state["exibir_senha_ids"].remove(u_id)
+                        else:
+                            st.session_state["exibir_senha_ids"].add(u_id)
+                        st.rerun()
+
+                    if col_b2.button("✏️", key=f"btn_edit_{u_id}", help="Editar Usuário"):
+                        st.session_state["usuario_editando"] = u_id
+                        st.rerun()
+
+                    if col_b3.button("🗑️", key=f"btn_del_usr_{u_id}", help="Apagar Usuário"):
+                        try:
+                            conn = conectar_banco()
+                            with conn.cursor() as cursor:
+                                cursor.execute("DELETE FROM usuarios WHERE id = %s", (u_id,))
+                            conn.commit()
+                            conn.close()
+                            registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_USUARIO", f"Apagado ID #{u_id} ({u_nome})")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao excluir usuário: {e}")
     except Exception as e:
-        st.error(f"Erro ao limpar logs de auditoria: {e}")
+        st.error(f"Erro ao carregar lista de usuários: {e}")
+
+@st.dialog("🛡️ Logs de Auditoria do Sistema", width="large")
+def modal_logs_auditoria():
+    st.caption("Registros das ações efetuadas por todos os usuários do painel.")
+
+    col_d1, col_d2 = st.columns([1, 1])
+    
+    # Filtro por data, padrão: dia atual
+    with col_d1:
+        data_filtro = st.date_input(
+            "📅 Selecione a Data:", 
+            value=datetime.now(FUSO_BRASILIA).date(),
+            key="input_data_auditoria"
+        )
+        
+    with col_d2:
+        st.write(" ")
+        st.write(" ")
+        if st.button(f"🚨 Apagar Logs de {data_filtro.strftime('%d/%m/%Y')}", type="primary", use_container_width=True):
+            limpar_logs_auditoria_banco(data_filtro)
+            st.rerun()
+
+    df_audit = buscar_logs_auditoria(data_filtro)
+    
+    if not df_audit.empty:
+        termo_audit = st.text_input("🔍 Filtrar dentro da data por usuário, ação ou detalhe:", placeholder="Ex: LOGIN, EXCLUIR, admin...")
+        
+        if termo_audit:
+            df_audit = df_audit[
+                df_audit["Usuário"].astype(str).str.contains(termo_audit, case=False, na=False) |
+                df_audit["Ação Executada"].astype(str).str.contains(termo_audit, case=False, na=False) |
+                df_audit["Detalhes"].astype(str).str.contains(termo_audit, case=False, na=False)
+            ].reset_index(drop=True)
+
+        st.dataframe(
+            df_audit,
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("Nenhum log de auditoria encontrado para a data selecionada.")
 
 # --- RENDERIZADOR DE TABELA DE LOJAS ---
 def renderizar_grid_lojas(df_subset, tab_key):
@@ -541,7 +697,7 @@ def renderizar_tabela_dashboard():
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- BARRA LATERAL (TOPO APENAS O NOME DO USUÁRIO OU ADM) ---
+# --- BARRA LATERAL ---
 st.sidebar.header(f"👤 {st.session_state['usuario_logado']}")
 if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.caption(f"Nível de Acesso: **{st.session_state['nivel_acesso']}**")
@@ -567,7 +723,7 @@ with col_cmd2:
     if st.button("🔄 Reiniciar", disabled=desabilitar_geral, use_container_width=True):
         reiniciar_lojas(lojas_selecionadas)
 
-# --- BOTÕES ENCERRAR E BLOQUEAR OCULTOS PARA USUÁRIOS QUE NÃO SÃO ADM ---
+# BOTÕES ENCERRAR E BLOQUEAR (SOMENTE ADM)
 if st.session_state["nivel_acesso"] == "ADM":
     col_cmd3, col_cmd4 = st.sidebar.columns(2)
     with col_cmd3:
@@ -596,10 +752,17 @@ with col_ar2:
     if st.button("❌ Desativar", disabled=desabilitar_geral, use_container_width=True):
         alterar_auto_restart(lojas_selecionadas, False)
 
-# MANUTENÇÃO (APENAS PARA ADM)
+# MANUTENÇÃO E AÇÕES DE ADMINISTRAÇÃO (APENAS ADM)
 if st.session_state["nivel_acesso"] == "ADM":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚠️ Ações de Administração")
+    
+    if st.sidebar.button("👥 Gerenciar Usuários", use_container_width=True):
+        st.session_state["modal_ativa"] = "usuarios"
+
+    if st.sidebar.button("🛡️ Logs de Auditoria", use_container_width=True):
+        st.session_state["modal_ativa"] = "auditoria"
+
     if st.sidebar.button("🗑️ Remover Monitor (Uninstall)", disabled=desabilitar_geral, use_container_width=True):
         executar_comando_remoto(lojas_selecionadas, "UNINSTALL")
 
@@ -608,19 +771,22 @@ if st.session_state["nivel_acesso"] == "ADM":
         st.session_state["lojas_selecionadas"] = []
         st.rerun()
 
-# --- BOTÃO DE SAIR / LOGOUT FIXADO NO FINAL DA SIDEBAR ---
+# EXIBIÇÃO AUTOMÁTICA DAS MODAIS DE ADMINISTRAÇÃO
+if st.session_state.get("modal_ativa") == "usuarios":
+    modal_gerenciar_usuarios()
+elif st.session_state.get("modal_ativa") == "auditoria":
+    modal_logs_auditoria()
+
+# BOTÃO DE SAIR / LOGOUT FIXADO NO FINAL DA SIDEBAR
 st.sidebar.markdown("---")
 if st.sidebar.button("🚪 Sair (Logout)", use_container_width=True):
     registrar_log_auditoria(st.session_state['usuario_logado'], "LOGOUT", "Sessão encerrada")
     st.session_state["usuario_logado"] = None
+    st.session_state["modal_ativa"] = None
     st.rerun()
 
 # --- ABAS PRINCIPAIS NAVEGÁVEIS ---
-abas_principais = ["📊 Painel Geral", "📜 Logs de Operação"]
-if st.session_state["nivel_acesso"] == "ADM":
-    abas_principais.extend(["👥 Gerenciar Usuários", "🛡️ Logs de Auditoria"])
-
-guias = st.tabs(abas_principais)
+guias = st.tabs(["📊 Painel Geral", "📜 Logs de Operação"])
 
 # TAB 1: PAINEL GERAL
 with guias[0]:
@@ -674,159 +840,3 @@ with guias[1]:
             if st.button("🚨 Apagar Histórico de TODOS os Logs de TODAS as Lojas", type="primary"):
                 limpar_historico_loja_banco(nome_loja=None)
                 st.rerun()
-
-# TAB 3: GERENCIAMENTO DE USUÁRIOS (APENAS ADM)
-if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 2:
-    with guias[2]:
-        st.subheader("👥 Gerenciamento de Usuários e Acessos")
-        
-        with st.form("form_novo_usuario"):
-            st.write("### ➕ Criar Novo Usuário")
-            novo_usr = st.text_input("Nome do Usuário:")
-            nova_pwd = st.text_input("Senha:", type="password")
-            novo_nvl = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"])
-            btn_criar_usr = st.form_submit_button("Criar Usuário")
-            
-            if btn_criar_usr:
-                if novo_usr and nova_pwd:
-                    try:
-                        conn = conectar_banco()
-                        with conn.cursor() as cursor:
-                            cursor.execute("INSERT INTO usuarios (usuario, senha, nivel) VALUES (%s, %s, %s)", (novo_usr, nova_pwd, novo_nvl))
-                        conn.commit()
-                        conn.close()
-                        registrar_log_auditoria(st.session_state["usuario_logado"], "CRIAR_USUARIO", f"Criado: {novo_usr} ({novo_nvl})")
-                        st.success(f"Usuário {novo_usr} criado com sucesso!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao criar usuário (Nome pode já existir): {e}")
-
-        st.markdown("---")
-        
-        if st.session_state["usuario_editando"]:
-            u_edit = st.session_state["usuario_editando"]
-            st.warning(f"✏️ **Editando Usuário ID #{u_edit['id']} - ({u_edit['usuario']})**")
-            
-            with st.form("form_editar_usuario"):
-                e_usuario = st.text_input("Usuário:", value=u_edit['usuario'])
-                e_senha = st.text_input("Nova Senha:", value=u_edit['senha'], type="password")
-                e_nivel = st.selectbox("Nível de Acesso:", options=["COMUM", "ADM"], index=0 if u_edit['nivel'] == 'COMUM' else 1)
-                
-                col_e1, col_e2 = st.columns(2)
-                with col_e1:
-                    btn_salvar_edit = st.form_submit_button("💾 Salvar Alterações")
-                with col_e2:
-                    btn_cancela_edit = st.form_submit_button("❌ Cancelar")
-
-                if btn_salvar_edit:
-                    try:
-                        conn = conectar_banco()
-                        with conn.cursor() as cursor:
-                            cursor.execute(
-                                "UPDATE usuarios SET usuario = %s, senha = %s, nivel = %s WHERE id = %s",
-                                (e_usuario, e_senha, e_nivel, u_edit['id'])
-                            )
-                        conn.commit()
-                        conn.close()
-                        registrar_log_auditoria(st.session_state["usuario_logado"], "EDITAR_USUARIO", f"Editado ID #{u_edit['id']}")
-                        st.session_state["usuario_editando"] = None
-                        st.success("Usuário atualizado com sucesso!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao atualizar usuário: {e}")
-                        
-                if btn_cancela_edit:
-                    st.session_state["usuario_editando"] = None
-                    st.rerun()
-
-        st.write("### 📋 Usuários Cadastrados")
-        
-        try:
-            conn = conectar_banco()
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT id, usuario, senha, nivel, criado_em FROM usuarios ORDER BY id ASC")
-                usuarios_db = cursor.fetchall()
-            conn.close()
-
-            if usuarios_db:
-                col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1, 2, 2, 1.5, 2])
-                col_h1.write("**ID**")
-                col_h2.write("**Usuário**")
-                col_h3.write("**Senha**")
-                col_h4.write("**Nível**")
-                col_h5.write("**Ações**")
-                st.markdown("---")
-
-                for u_id, u_nome, u_senha, u_nivel, u_criado in usuarios_db:
-                    c1, c2, c3, c4, c5 = st.columns([1, 2, 2, 1.5, 2])
-                    c1.write(f"#{u_id}")
-                    c2.write(f"**{u_nome}**")
-
-                    exibir_esta_senha = u_id in st.session_state["exibir_senha_ids"]
-                    senha_display = u_senha if exibir_esta_senha else "••••••••"
-                    
-                    c3.write(f"`{senha_display}`")
-                    c4.write(f"🗝 {u_nivel}")
-
-                    col_b1, col_b2, col_b3 = c5.columns(3)
-                    
-                    lbl_olho = "👁️" if exibir_esta_senha else "👁‍🗨"
-                    if col_b1.button(lbl_olho, key=f"btn_olho_{u_id}", help="Mostrar/Ocultar Senha"):
-                        if exibir_esta_senha:
-                            st.session_state["exibir_senha_ids"].remove(u_id)
-                        else:
-                            st.session_state["exibir_senha_ids"].add(u_id)
-                        st.rerun()
-
-                    if col_b2.button("✏️", key=f"btn_edit_{u_id}", help="Editar Usuário"):
-                        st.session_state["usuario_editando"] = {
-                            "id": u_id, "usuario": u_nome, "senha": u_senha, "nivel": u_nivel
-                        }
-                        st.rerun()
-
-                    if col_b3.button("🗑️", key=f"btn_del_usr_{u_id}", help="Apagar Usuário"):
-                        try:
-                            conn = conectar_banco()
-                            with conn.cursor() as cursor:
-                                cursor.execute("DELETE FROM usuarios WHERE id = %s", (u_id,))
-                            conn.commit()
-                            conn.close()
-                            registrar_log_auditoria(st.session_state["usuario_logado"], "EXCLUIR_USUARIO", f"Apagado ID #{u_id} ({u_nome})")
-                            st.success("Usuário removido!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao excluir usuário: {e}")
-        except Exception as e:
-            st.error(f"Erro ao carregar lista de usuários: {e}")
-
-# TAB 4: LOGS DE AUDITORIA DE USUÁRIOS (APENAS ADM)
-if st.session_state["nivel_acesso"] == "ADM" and len(guias) > 3:
-    with guias[3]:
-        st.subheader("🛡️ Logs de Auditoria do Sistema")
-        st.caption("Registros das ações efetuadas por todos os usuários do painel.")
-
-        col_f1, col_f2 = st.columns([3, 1])
-        with col_f2:
-            if st.button("🚨 Limpar Todos os Logs de Auditoria", type="primary", use_container_width=True):
-                limpar_logs_auditoria_banco()
-                st.rerun()
-
-        df_audit = buscar_logs_auditoria()
-        
-        if not df_audit.empty:
-            termo_audit = st.text_input("🔍 Filtrar logs por usuário, ação ou detalhe:", placeholder="Ex: LOGIN, EXCLUIR, admin...")
-            
-            if termo_audit:
-                df_audit = df_audit[
-                    df_audit["Usuário"].astype(str).str.contains(termo_audit, case=False, na=False) |
-                    df_audit["Ação Executada"].astype(str).str.contains(termo_audit, case=False, na=False) |
-                    df_audit["Detalhes"].astype(str).str.contains(termo_audit, case=False, na=False)
-                ].reset_index(drop=True)
-
-            st.dataframe(
-                df_audit,
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.info("Nenhum log de auditoria encontrado.")
