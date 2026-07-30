@@ -132,7 +132,7 @@ def buscar_logs_auditoria():
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT usuario, usuario, acao, data_hora, detalhes FROM logs_auditoria ORDER BY id DESC")
+            cursor.execute("SELECT id, data_hora, usuario, acao, detalhes FROM logs_auditoria ORDER BY id DESC")
             logs = cursor.fetchall()
         conn.close()
 
@@ -140,7 +140,7 @@ def buscar_logs_auditoria():
             return pd.DataFrame()
 
         logs_formatados = []
-        for usuario, usuario, acao, dt_hora, detalhes in logs:
+        for log_id, dt_hora, usuario, acao, detalhes in logs:
             if dt_hora:
                 if dt_hora.tzinfo is None:
                     dt_utc = dt_hora.replace(tzinfo=ZoneInfo("UTC"))
@@ -153,9 +153,9 @@ def buscar_logs_auditoria():
 
             logs_formatados.append({
                 "ID": f"#{log_id}",
-                "Data / Hora": str_data_hora,
                 "Usuário": usuario,
                 "Ação Executada": acao,
+                "Data / Hora": str_data_hora,
                 "Detalhes": detalhes or "-"
             })
 
@@ -271,7 +271,6 @@ def buscar_dados_dashboard():
             lista_temp.append({
                 "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
-                "Rede": cod_rede,
                 "Rodando em": nome_maquina or "Desconhecido",
                 "Status": status_calc,
                 "Monitoramento": status_monitoramento,
