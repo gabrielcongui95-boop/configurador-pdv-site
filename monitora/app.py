@@ -205,7 +205,6 @@ if not st.session_state["usuario_logado"]:
             btn_entrar = st.form_submit_button(" Entrar no Sistema", use_container_width=True)
             if btn_entrar:
                 if autenticar_usuario(usuario_input, senha_input):
-                    st.success("Acesso autorizado!")
                     st.rerun()
                 else:
                     st.error("Usuário ou senha incorretos.")
@@ -529,9 +528,10 @@ def renderizar_tabela_dashboard():
     else:
         st.info("Nenhuma loja encontrada.")
 
-# --- BARRA LATERAL (TOPO APENAS O NOME DO USUÁRIO) ---
+# --- BARRA LATERAL (TOPO APENAS O NOME DO USUÁRIO OU ADM) ---
 st.sidebar.header(f"👤 {st.session_state['usuario_logado']}")
-st.sidebar.caption(f"Nível de Acesso: **{st.session_state['nivel_acesso']}**")
+if st.session_state["nivel_acesso"] == "ADM":
+    st.sidebar.caption(f"Nível de Acesso: **{st.session_state['nivel_acesso']}**")
 st.sidebar.markdown("---")
 
 st.sidebar.subheader("🖥️ PAINEL OPERACIONAL")
@@ -621,12 +621,23 @@ with guias[1]:
 
     df_lojas_menu = buscar_dados_dashboard()
     if not df_lojas_menu.empty:
+        # Ordena as lojas agrupando por Rede e Nome da Loja
+        df_lojas_menu = df_lojas_menu.sort_values(by=["Rede", "Nome da Loja"]).reset_index(drop=True)
+        
+        # Mapeia o nome real da loja para o formato exibido (Rede/Loja - Nome da Loja)
+        mapa_nome_para_fmt = dict(zip(df_lojas_menu["Nome da Loja"], df_lojas_menu["Rede/Loja"]))
         lista_lojas = df_lojas_menu["Nome da Loja"].unique().tolist()
+        
         idx_padrao = lista_lojas.index(loja_foco) if loja_foco in lista_lojas else 0
         
         col_sel, col_del = st.columns([2, 1])
         with col_sel:
-            loja_selecionada_log = st.selectbox("Selecione a Loja para Visualizar:", options=lista_lojas, index=idx_padrao)
+            loja_selecionada_log = st.selectbox(
+                "Selecione a Loja para Visualizar:", 
+                options=lista_lojas, 
+                index=idx_padrao,
+                format_func=lambda x: mapa_nome_para_fmt.get(x, x)
+            )
         
         # ADM pode apagar os logs das lojas
         if st.session_state["nivel_acesso"] == "ADM":
