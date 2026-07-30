@@ -128,7 +128,7 @@ def registrar_log_auditoria(usuario, acao, detalhes=""):
         pass
 
 def buscar_logs_auditoria():
-    """Busca logs de auditoria e formata data/hora no padrão BR (DD/MM/YYYY HH:MM:SS)."""
+    """Busca logs de auditoria e reordena colunas: ID / Usuário / Ação / Data e Hora / Detalhes."""
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
@@ -271,6 +271,7 @@ def buscar_dados_dashboard():
             lista_temp.append({
                 "Rede/Loja": rede_loja_fmt,
                 "Nome da Loja": nome_loja,
+                "Rede": cod_rede,
                 "Rodando em": nome_maquina or "Desconhecido",
                 "Status": status_calc,
                 "Monitoramento": status_monitoramento,
@@ -359,7 +360,6 @@ def buscar_historico(nome_loja, data_inicio=None, data_fim=None):
     try:
         conn = conectar_banco()
         with conn.cursor() as cursor:
-            # Busca status e data do histórico + nome da máquina associada
             query = """
                 SELECT h.status, h.data_evento, COALESCE(s.maquina, 'Desconhecido') as maquina
                 FROM historico_status h
@@ -474,7 +474,6 @@ def renderizar_grid_lojas(df_subset, tab_key):
 
     for idx, (rede_codigo, df_grupo) in enumerate(grupos):
         with st.expander(f"🏢 Rede: {rede_codigo} ({len(df_grupo)} loja(s))", expanded=False):
-            # Remove a coluna "Rede" para exibição limpa na tela inicial
             df_exibicao = df_grupo.drop(columns=["Rede"], errors="ignore")
 
             event = st.dataframe(
@@ -668,7 +667,7 @@ with guias[1]:
                 if not df_hist.empty:
                     st.dataframe(df_hist, use_container_width=True, hide_index=True)
                 else:
-                    st.info("Nenum histórico registrado para esta loja.")
+                    st.info("Nenhum histórico registrado para esta loja.")
             
         if st.session_state["nivel_acesso"] == "ADM":
             st.markdown("---")
