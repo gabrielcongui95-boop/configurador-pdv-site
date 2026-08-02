@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
+    <!-- Configurações PWA -->
+    <link rel="manifest" href="manifest-mercado.json">
+    <meta name="theme-color" content="#2e7d32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mercado">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
 
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
-    <!-- Configurações PWA (Mercado) -->
-<link rel="manifest" href="manifest-mercado.json">
-<meta name="theme-color" content="#2e7d32">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mercado">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
-
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw-mercado.js');
-  }
-</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw-mercado.js');
+      }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mercado</title>
@@ -42,24 +42,14 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
         }
 
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
-            padding-bottom: 40px;
+            padding-bottom: 80px;
             -webkit-tap-highlight-color: transparent;
-        }
-
-        header {
-            background-color: #1b2e1e;
-            color: var(--text-main);
-            padding: 16px;
-            text-align: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
 
         .container {
@@ -76,7 +66,7 @@
             margin-bottom: 16px;
         }
 
-        /* Banner de Total */
+        /* Banner de Total com Ícone */
         .total-banner {
             background: linear-gradient(135deg, #1b5e20, #003300);
             color: #ffffff;
@@ -86,6 +76,33 @@
             margin-bottom: 16px;
             border: 1px solid #2e7d32;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-edit-banner {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            z-index: 2;
+        }
+
+        .btn-edit-banner:active {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(0.92);
         }
 
         .total-banner span {
@@ -96,17 +113,40 @@
         }
 
         .total-banner h1 {
-            font-size: 2.6rem;
+            font-size: 2.5rem;
             margin-top: 4px;
             color: #ffffff;
             font-weight: 700;
         }
 
-        .market-info {
-            font-size: 0.95rem;
-            margin-top: 6px;
-            color: #c8e6c9;
-            font-style: italic;
+        .budget-editor {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .budget-editor input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: #fff;
+            width: 140px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .btn-sm-save {
+            background: var(--primary-accent);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         /* Botões Principais */
@@ -136,29 +176,12 @@
             opacity: 0.85;
         }
 
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-danger:hover { background-color: var(--danger); color: #fff; }
 
-        .btn-secondary {
-            background-color: var(--bg-input);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-        }
-
-        .btn-danger {
-            background-color: transparent;
-            color: var(--danger);
-            border: 1px solid var(--danger);
-        }
-
-        .btn-danger:hover {
-            background-color: var(--danger);
-            color: #fff;
-        }
-
-        /* Lista Ativa */
+        /* Lista Ativa e Carrinho */
         .cart-header {
             display: flex;
             justify-content: space-between;
@@ -177,9 +200,7 @@
             cursor: pointer;
         }
 
-        .cart-item:last-child {
-            border-bottom: none;
-        }
+        .cart-item:last-child { border-bottom: none; }
 
         .item-info {
             display: flex;
@@ -188,24 +209,9 @@
             flex: 1;
         }
 
-        .item-title {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text-main);
-        }
-
-        .item-sub {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .item-obs {
-            font-size: 0.8rem;
-            color: #81c784;
-            font-style: italic;
-            margin-top: 2px;
-        }
+        .item-title { font-weight: 600; font-size: 1rem; color: var(--text-main); }
+        .item-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+        .item-obs { font-size: 0.8rem; color: #81c784; font-style: italic; margin-top: 2px; }
 
         .btn-remove {
             background: none;
@@ -224,6 +230,38 @@
             line-height: 1.5;
         }
 
+        /* Ícone Flutuante do Carrinho */
+        .floating-cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-accent);
+            color: #000;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            cursor: pointer;
+            z-index: 90;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            border: 2px solid var(--bg-body);
+        }
+
         /* Modais */
         .modal {
             position: fixed;
@@ -236,9 +274,7 @@
             z-index: 100;
         }
 
-        .modal.hidden {
-            display: none;
-        }
+        .modal.hidden { display: none; }
 
         .modal-content {
             background: var(--bg-modal);
@@ -270,7 +306,6 @@
             margin-bottom: 14px;
         }
 
-        /* Busca no Catálogo + Botão Adicionar Customizado */
         .search-bar-container {
             display: flex;
             gap: 8px;
@@ -288,25 +323,17 @@
             outline: none;
         }
 
-        .search-bar-container input:focus {
-            border-color: var(--primary-accent);
-        }
-
         .btn-add-custom {
             background-color: var(--primary-accent);
             color: #000;
-            width: 46px;
-            font-size: 1.5rem;
+            padding: 0 14px;
+            font-size: 1rem;
             font-weight: bold;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        /* Categorias e Itens do Catálogo */
         .category-header {
             color: var(--primary-accent);
             font-size: 0.85rem;
@@ -318,10 +345,6 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .category-header:first-child {
-            margin-top: 0;
-        }
-
         .catalog-row {
             display: flex;
             align-items: center;
@@ -331,40 +354,17 @@
             border-radius: 8px;
             margin-bottom: 6px;
             cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .catalog-row:active {
-            border-color: var(--primary-accent);
         }
 
         .catalog-row input[type="checkbox"] {
             width: 20px;
             height: 20px;
             accent-color: var(--primary-accent);
-            cursor: pointer;
         }
 
-        .catalog-row-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-        }
-
-        /* Formulários gerais em Modais */
-        .form-group {
-            margin-bottom: 14px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.88rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .form-group input {
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.88rem; color: var(--text-muted); margin-bottom: 6px; }
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
             background-color: var(--bg-input);
@@ -375,100 +375,110 @@
             outline: none;
         }
 
-        .form-group input:focus {
-            border-color: var(--primary-accent);
-        }
-
-        .qty-control {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
+        .qty-control { display: flex; align-items: center; gap: 16px; }
         .btn-qty {
             background: var(--primary-light);
             color: var(--primary-accent);
             border: 1px solid var(--primary);
-            width: 44px;
-            height: 44px;
+            width: 44px; height: 44px;
             border-radius: 10px;
             font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        .qty-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            width: 40px;
-            text-align: center;
+        /* Teclado Virtual Nativo HTML */
+        .virtual-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .keypad-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
             color: var(--text-main);
-        }
-
-        /* Resumo Final */
-        .summary-list {
-            list-style: none;
-            margin: 10px 0;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px dashed var(--border);
-            font-size: 0.95rem;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+            font-weight: bold;
+            padding: 14px;
+            border-radius: 10px;
             cursor: pointer;
+            text-align: center;
         }
+
+        .keypad-btn:active { background: var(--border); }
+        .keypad-btn-danger { color: var(--danger); }
+
+        .close-btn { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+        .summary-list { list-style: none; margin: 10px 0; }
+        .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 0.95rem; }
     </style>
 
-    <!-- SDKs do Firebase via CDN (Compatível com navegador estático / GitHub Pages) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
     <div class="container">
-        <!-- Banner de Total -->
-        <div class="total-banner">
-            <span>Total da Compra</span>
-            <h1 id="total-display">R$ 0,00</h1>
-            <div id="market-display" class="market-info" onclick="openMarketModal()" style="cursor: pointer;">
+        <!-- Banner de Total com Eventos de Pressionar -->
+        <div class="total-banner" id="total-banner-box"
+             onmousedown="startPress(event)"
+             onmouseup="cancelPress()"
+             onmouseleave="cancelPress()"
+             ontouchstart="startPress(event)"
+             ontouchend="cancelPress()"
+             ontouchcancel="cancelPress()">
+             
+            <!-- Botão de Lápis para abrir a edição de limite -->
+            <button class="btn-edit-banner" onclick="toggleBudgetEditor()" title="Editar Orçamento">✏️</button>
             
+            <span id="banner-title">Total da Compra</span>
+            <h1 id="total-display">R$ 0,00</h1>
+            
+            <div id="budget-edit-container" class="budget-editor" style="display: none;">
+                <input type="number" id="budget-input" step="0.01" placeholder="Limite R$" />
+                <button class="btn-sm-save" onclick="saveBudgetLimit()">Salvar</button>
             </div>
         </div>
 
         <!-- Ações Principais -->
         <div class="main-actions">
-            <button class="btn btn-primary" onclick="openCatalogModal()">📑Fazer Lista</button>
+            <button class="btn btn-primary" onclick="openCatalogModal()">📑 Fazer Lista</button>
             <button class="btn btn-danger" onclick="showSummaryBeforeReset()">💵 Finalizar</button>
         </div>
 
-        <!-- Lista do Carrinho -->
+        <!-- Lista Pendente de Compras -->
         <div class="card">
             <div class="cart-header">
-                <h3>Itens Selecionados (<span id="cart-count">0</span>)</h3>
+                <h3>Itens Faltantes (<span id="pending-count">0</span>)</h3>
             </div>
             
-            <!-- Campo de busca na lista atual -->
             <div class="search-bar-container" style="margin-bottom: 12px;">
-                <input type="text" id="home-cart-search" placeholder="🔍 Buscar na lista atual..." oninput="renderUI()">
+                <input type="text" id="home-cart-search" placeholder="🔍 Buscar na lista..." oninput="renderUI()">
             </div>
 
-            <div id="cart-list">
-                <div class="empty-cart">
-                    Carregando dados em tempo real...
-                </div>
+            <div id="pending-list">
+                <div class="empty-cart">Carregando dados...</div>
             </div>
+        </div>
+    </div>
+
+    <!-- Botão Flutuante do Carrinho -->
+    <div class="floating-cart-btn" onclick="openCartModal()" title="Ver Carrinho">
+        🛒
+        <span class="cart-badge" id="cart-badge-count">0</span>
+    </div>
+
+    <!-- Modal Personalizado para Mensagens / Avisos -->
+    <div id="modal-dialog" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-title" style="justify-content: center;">
+                <span id="dialog-title">Aviso</span>
+            </div>
+            <div class="modal-body" id="dialog-message" style="margin: 15px 0; white-space: pre-line;"></div>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-direction: column;" id="dialog-buttons"></div>
         </div>
     </div>
 
@@ -481,19 +491,57 @@
             </div>
 
             <div class="search-bar-container">
-                <input type="text" id="catalog-search" placeholder="Buscar ou adicionar item..." oninput="renderCatalog()" onkeypress="handleSearchKeyPress(event)">
-                <button class="btn-add-custom" onclick="addCustomItem()" title="Adicionar item não listado">+</button>
+                <input type="text" id="catalog-search" placeholder="Buscar no catálogo..." oninput="renderCatalog()">
+                <button class="btn-add-custom" onclick="openCustomItemModal()">+ Criar Item</button>
             </div>
 
-            <div class="modal-body" id="catalog-container">
-                <!-- Categorias e checkboxes inseridos via JS -->
-            </div>
-
+            <div class="modal-body" id="catalog-container"></div>
             <button class="btn btn-primary" onclick="closeCatalogModal()">Concluir Seleção</button>
         </div>
     </div>
 
-    <!-- Modal: Detalhes do Item (Preço / Quantidade) -->
+    <!-- Modal: Criar/Gerenciar Itens Personalizados -->
+    <div id="modal-custom-item" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span>➕ Item Personalizado</span>
+                <button class="close-btn" onclick="closeCustomItemModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="custom-name" placeholder="Ex: Queijo Fresco">
+                </div>
+                
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="custom-category">
+                        <option value="Alimentos">Alimentos</option>
+                        <option value="Leites e Laticínios">Leites e Laticínios</option>
+                        <option value="Hortifruti">Hortifruti</option>
+                        <option value="Limpeza">Limpeza</option>
+                        <option value="Higiene">Higiene</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Congelados e Carnes">Congelados e Carnes</option>
+                        <option value="Outros / Personalizados">Outros / Personalizados</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Emoji / Ícone</label>
+                    <input type="text" id="custom-emoji" placeholder="Ex: 🧀" maxlength="2">
+                </div>
+
+                <button class="btn btn-primary" onclick="saveCustomItem()">Salvar Novo Item</button>
+
+                <div class="category-header" style="margin-top: 20px;">Seus Itens Criados</div>
+                <div id="custom-items-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalhes do Item -->
     <div id="modal-item" class="modal hidden">
         <div class="modal-content">
             <div class="modal-title">
@@ -505,8 +553,24 @@
             </div>
             
             <div class="form-group">
-                <label for="item-price">Valor Unitário (R$)</label>
-                <input type="number" id="item-price" step="0.01" inputmode="decimal" placeholder="0.00">
+                <label>Valor Unitário (R$)</label>
+                <input type="text" id="item-price" readonly placeholder="0,00" style="font-size: 1.4rem; text-align: center; font-weight: bold; color: var(--primary-accent);">
+                
+                <!-- Teclado Virtual HTML -->
+                <div class="virtual-keypad">
+                    <div class="keypad-btn" onclick="pressKey('1')">1</div>
+                    <div class="keypad-btn" onclick="pressKey('2')">2</div>
+                    <div class="keypad-btn" onclick="pressKey('3')">3</div>
+                    <div class="keypad-btn" onclick="pressKey('4')">4</div>
+                    <div class="keypad-btn" onclick="pressKey('5')">5</div>
+                    <div class="keypad-btn" onclick="pressKey('6')">6</div>
+                    <div class="keypad-btn" onclick="pressKey('7')">7</div>
+                    <div class="keypad-btn" onclick="pressKey('8')">8</div>
+                    <div class="keypad-btn" onclick="pressKey('9')">9</div>
+                    <div class="keypad-btn" onclick="pressKey(',')">,</div>
+                    <div class="keypad-btn" onclick="pressKey('0')">0</div>
+                    <div class="keypad-btn keypad-btn-danger" onclick="pressKey('DEL')">⌫</div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -520,51 +584,43 @@
 
             <div class="form-group">
                 <label for="item-obs">Observação (Opcional)</label>
-                <input type="text" id="item-obs" placeholder="Ex: Marca X, 200g, promoção...">
+                <input type="text" id="item-obs" placeholder="Ex: Marca X, promoção...">
             </div>
 
-            <button class="btn btn-primary" onclick="saveItemDetails()">Salvar no Carrinho</button>
-            <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeItemModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveItemDetails()">Mover para o Carrinho 🛒</button>
         </div>
     </div>
 
-    <!-- Modal: Nome do Mercado -->
-    <div id="modal-market" class="modal hidden">
+    <!-- Modal: Visualizar Carrinho -->
+    <div id="modal-cart" class="modal hidden">
         <div class="modal-content">
             <div class="modal-title">
-                <span>🏪 Nome do Mercado</span>
-                <button class="close-btn" onclick="closeMarketModal()">&times;</button>
+                <span>🛒 Carrinho de Compras</span>
+                <button class="close-btn" onclick="closeCartModal()">&times;</button>
             </div>
-            <div class="form-group">
-                <label for="market-name-input">Onde você está comprando?</label>
-                <input type="text" id="market-name-input" placeholder="Ex: Supermercado Silva">
-            </div>
-            <button class="btn btn-primary" onclick="confirmMarketName()">Salvar</button>
+            <div class="modal-body" id="cart-modal-list"></div>
+            <button class="btn btn-secondary" onclick="closeCartModal()">Voltar à Lista</button>
         </div>
     </div>
 
-    <!-- Modal: Resumo antes de Zerar -->
+    <!-- Modal: Resumo / Finalizar -->
     <div id="modal-summary" class="modal hidden">
         <div class="modal-content">
             <div class="modal-title">
-                <span>📊 Resumo da Lista</span>
+                <span>📊 Resumo dos Comprados</span>
                 <button class="close-btn" onclick="closeSummaryModal()">&times;</button>
             </div>
 
             <div class="modal-body">
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
-                    Confira os itens selecionados antes de reiniciar:
-                </p>
                 <div id="summary-content"></div>
             </div>
 
-            <button class="btn btn-danger" onclick="confirmReset()">Confirmar e Zerar Lista</button>
+            <button class="btn btn-danger" onclick="promptResetOptions()">Finalizar Compras</button>
             <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeSummaryModal()">Voltar</button>
         </div>
     </div>
 
     <script>
-        // Configurações do Firebase extraídas do seu projeto
         const firebaseConfig = {
             apiKey: "AIzaSyD1tAdrPOS9-4LUBIsfFc2km20YHQADzas",
             authDomain: "mercadoweb-aa1ed.firebaseapp.com",
@@ -574,12 +630,10 @@
             appId: "1:143176986751:web:a3baa59d4eccfac8070f4a"
         };
 
-        // Inicializa o Firebase e Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const docRef = db.collection('listas').doc('minha_lista_compartilhada');
 
-        // Catálogo Base de Produtos
         const baseCatalog = [
             { id: 1, name: "Arroz", category: "Alimentos", emoji: "🌾" },
             { id: 2, name: "Feijão", category: "Alimentos", emoji: "🫘" },
@@ -934,45 +988,136 @@
             { id: 353, name: "Eliminador de Odores Pet", category: "Pet Shop", emoji: "🧹" },
             { id: 354, name: "Remédio para Pulga / Carrapato", category: "Pet Shop", emoji: "💊" },
             { id: 355, name: "Brinquedo para Pet", category: "Pet Shop", emoji: "🎾" },
-            { id: 356, name: "Grama para Gato / Katnip", category: "Pet Shop", emoji: "🌱" }
+            { id: 356, name: "Grama para Gato / Katnip", category: "Pet Shop", emoji: "🌱" },
+            { id: 357, name: "Mostarda e Mel", category: "Temperos e Condimentos", emoji: "🟡" },
+            { id: 358, name: "Cheddar", category: "Leites e Laticínios", emoji: "🧀" },
+            { id: 359, name: "Alho Triturado", category: "Temperos e Condimentos", emoji: "🧄" },
+            { id: 360, name: "Sumo de Limão", category: "Temperos e Condimentos", emoji: "🍋" },
+            { id: 361, name: "Batata Palha", category: "Alimentos", emoji: "🥔" },
+            { id: 362, name: "Toalha de Microfibra", category: "Limpeza", emoji: "🧹" },
+            { id: 363, name: "Bucha de Lavar Louça", category: "Limpeza", emoji: "🧽" },
+            { id: 364, name: "Vanish / Tira-Manchas", category: "Limpeza", emoji: "✨" },
+            { id: 365, name: "Desodorante Rexona Clinical", category: "Higiene", emoji: "🫧" }
         ];
 
-        // Estado local da Aplicação
         let state = {
-            marketName: "",
+            budgetLimit: 0,
             cart: [],
             customItems: [],
             editingItemIndex: null,
-            currentQty: 1
+            currentQty: 1,
+            rawPriceInput: ""
         };
 
-        // Escuta alterações no Firestore em Tempo Real
+        // Lógica de Pressionar o Banner por 2 segundos e Exibir Limite por 5 segundos
+        let pressTimer = null;
+        let showingLimitTimeout = null;
+
+        function startPress(e) {
+            // Não ativa ao clicar no ícone de lápis ou no formulário de edição
+            if (e.target.closest('.btn-edit-banner') || e.target.closest('#budget-edit-container')) {
+                return;
+            }
+            cancelPress();
+            pressTimer = setTimeout(() => {
+                showLimitTemporarily();
+            }, 2000); // 2 segundos segurando
+        }
+
+        function cancelPress() {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        }
+
+        function showLimitTemporarily() {
+            if (showingLimitTimeout) {
+                clearTimeout(showingLimitTimeout);
+            }
+
+            document.getElementById('banner-title').innerText = "Valor Limite";
+            document.getElementById('total-display').innerText = `R$ ${(state.budgetLimit || 0).toFixed(2).replace('.', ',')}`;
+
+            // Volta ao normal após 5 segundos
+            showingLimitTimeout = setTimeout(() => {
+                showingLimitTimeout = null;
+                renderUI();
+            }, 5000);
+        }
+
+        // Alternar visualização do input de limite
+        function toggleBudgetEditor() {
+            const editBox = document.getElementById('budget-edit-container');
+            const isEditing = editBox.style.display === 'flex';
+            editBox.style.display = isEditing ? 'none' : 'flex';
+            if (!isEditing) {
+                document.getElementById('budget-input').value = state.budgetLimit || "";
+                document.getElementById('budget-input').focus();
+            }
+        }
+
+        function saveBudgetLimit() {
+            const val = parseFloat(document.getElementById('budget-input').value) || 0;
+            state.budgetLimit = val;
+            document.getElementById('budget-edit-container').style.display = 'none';
+            saveState();
+        }
+
+        // Modais Customizados
+        function showCustomAlert(title, message) {
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            const btnContainer = document.getElementById('dialog-buttons');
+            btnContainer.innerHTML = `<button class="btn btn-primary" onclick="closeCustomDialog()">Entendi</button>`;
+            document.getElementById('modal-dialog').classList.remove('hidden');
+        }
+
+        function showCustomConfirm(title, message, onKeep, onClear) {
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            const btnContainer = document.getElementById('dialog-buttons');
+            btnContainer.innerHTML = `
+                <button class="btn btn-primary" id="btn-dialog-keep">Manter Lista (Zerar Valores)</button>
+                <button class="btn btn-danger" id="btn-dialog-clear">Zerar Tudo (Apagar Itens e Gastos)</button>
+                <button class="btn btn-secondary" onclick="closeCustomDialog()">Cancelar</button>
+            `;
+            document.getElementById('modal-dialog').classList.remove('hidden');
+
+            document.getElementById('btn-dialog-keep').onclick = () => {
+                closeCustomDialog();
+                onKeep();
+            };
+            document.getElementById('btn-dialog-clear').onclick = () => {
+                closeCustomDialog();
+                onClear();
+            };
+        }
+
+        function closeCustomDialog() {
+            document.getElementById('modal-dialog').classList.add('hidden');
+        }
+
+        // Firestore Listener
         window.onload = () => {
             docRef.onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    state.marketName = data.marketName || "";
+                    state.budgetLimit = data.budgetLimit || 0;
                     state.cart = data.cart || [];
                     state.customItems = data.customItems || [];
-                } else {
-                    state.marketName = "";
-                    state.cart = [];
-                    state.customItems = [];
                 }
                 renderUI();
                 renderCatalog();
-            }, (error) => {
-                console.error("Erro ao ouvir o Firestore:", error);
             });
         };
 
-        // Salva as alterações na Nuvem
         function saveState() {
             docRef.set({
-                marketName: state.marketName,
+                budgetLimit: state.budgetLimit,
                 cart: state.cart,
                 customItems: state.customItems
-            }, { merge: true }).catch(err => console.error("Erro ao salvar:", err));
+            }, { merge: true });
         }
 
         function getFullCatalog() {
@@ -981,197 +1126,77 @@
 
         function renderUI() {
             const totalDisplay = document.getElementById('total-display');
-            const marketDisplay = document.getElementById('market-display');
-            const cartList = document.getElementById('cart-list');
-            const cartCount = document.getElementById('cart-count');
-            const homeSearchInput = document.getElementById('home-cart-search');
-            const homeQuery = homeSearchInput ? homeSearchInput.value.toLowerCase().trim() : '';
+            const bannerTitle = document.getElementById('banner-title');
+            const pendingList = document.getElementById('pending-list');
+            const pendingCount = document.getElementById('pending-count');
+            const cartBadge = document.getElementById('cart-badge-count');
+            const searchInput = document.getElementById('home-cart-search');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            const total = state.cart.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
-            totalDisplay.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+            const boughtItems = state.cart.filter(item => (item.price || 0) > 0);
+            const pendingItems = state.cart.filter(item => (item.price || 0) === 0);
 
-            marketDisplay.innerText = state.marketName ? `: ${state.marketName}` : "";
-            cartCount.innerText = state.cart.length;
+            const totalSpent = boughtItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-            if (state.cart.length === 0) {
-                cartList.innerHTML = `
-                    <div class="empty-cart">
-                        Sua lista está vazia.<br>
-                        Clique em <strong>"Fazer Lista"</strong> para selecionar os produtos.
-                    </div>`;
+            // Atualiza o banner apenas se NÃO estiver exibindo temporariamente o limite
+            if (!showingLimitTimeout) {
+                bannerTitle.innerText = "Total da Compra";
+                totalDisplay.innerText = `R$ ${totalSpent.toFixed(2).replace('.', ',')}`;
+            }
+
+            pendingCount.innerText = pendingItems.length;
+            cartBadge.innerText = boughtItems.length;
+
+            const filteredPending = pendingItems
+                .map(item => ({ ...item, originalIndex: state.cart.findIndex(c => c.name === item.name) }))
+                .filter(item => item.name.toLowerCase().includes(query));
+
+            if (filteredPending.length === 0) {
+                pendingList.innerHTML = `<div class="empty-cart">Nenhum item pendente.<br>Clique em <strong>"Fazer Lista"</strong> ou veja o <strong>Carrinho 🛒</strong>.</div>`;
             } else {
-                const filteredCart = state.cart
-                    .map((item, originalIndex) => ({ ...item, originalIndex }))
-                    .filter(item => item.name.toLowerCase().includes(homeQuery));
-
-                if (filteredCart.length === 0) {
-                    cartList.innerHTML = `<div class="empty-cart">Nenhum item encontrado na busca.</div>`;
-                } else {
-                    cartList.innerHTML = filteredCart.map((item) => {
-                        const priceNum = item.price || 0;
-                        const qtyNum = item.quantity || 1;
-                        const subtotal = priceNum * qtyNum;
-
-                        return `
-                            <div class="cart-item" onclick="openItemModal(${item.originalIndex})">
-                                <div class="item-info">
-                                    <span style="font-size: 1.5rem;">${item.emoji || '📦'}</span>
-                                    <div>
-                                        <div class="item-title">${item.name}</div>
-                                        <div class="item-sub">
-                                            ${qtyNum}x R$ ${priceNum.toFixed(2).replace('.', ',')} = <strong>R$ ${subtotal.toFixed(2).replace('.', ',')}</strong>
-                                        </div>
-                                        ${item.obs ? `<div class="item-obs">Obs: ${item.obs}</div>` : ''}
-                                    </div>
-                                </div>
-                                <button class="btn-remove" onclick="event.stopPropagation(); removeFromCart(${item.originalIndex})">🗑️</button>
+                pendingList.innerHTML = filteredPending.map(item => `
+                    <div class="cart-item" onclick="openItemModal(${item.originalIndex})">
+                        <div class="item-info">
+                            <span style="font-size: 1.5rem;">${item.emoji || '📦'}</span>
+                            <div>
+                                <div class="item-title">${item.name}</div>
+                                <div class="item-sub">Qtd: ${item.quantity || 1} | <span style="color:var(--primary-accent)">Clique p/ informar valor</span></div>
+                                ${item.obs ? `<div class="item-obs">Obs: ${item.obs}</div>` : ''}
                             </div>
-                        `;
-                    }).join('');
-                }
-            }
-        }
-
-        function openCatalogModal() {
-            renderCatalog();
-            document.getElementById('modal-catalog').classList.remove('hidden');
-            document.getElementById('catalog-search').focus();
-        }
-
-        function closeCatalogModal() {
-            document.getElementById('modal-catalog').classList.add('hidden');
-        }
-
-        function renderCatalog() {
-            const container = document.getElementById('catalog-container');
-            if (!container) return;
-            const query = document.getElementById('catalog-search').value.toLowerCase().trim();
-            container.innerHTML = '';
-
-            const catalog = getFullCatalog();
-            const grouped = {};
-
-            catalog.forEach(item => {
-                if (item.name.toLowerCase().includes(query)) {
-                    if (!grouped[item.category]) {
-                        grouped[item.category] = [];
-                    }
-                    grouped[item.category].push(item);
-                }
-            });
-
-            const categories = Object.keys(grouped);
-
-            if (categories.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">Nenhum item encontrado.<br>Clique no botão <strong>+</strong> para adicionar.</div>`;
-                return;
-            }
-
-            categories.forEach(category => {
-                const catHeader = document.createElement('div');
-                catHeader.className = 'category-header';
-                catHeader.innerText = category;
-                container.appendChild(catHeader);
-
-                grouped[category].forEach(item => {
-                    const isSelected = state.cart.some(cartItem => cartItem.name === item.name);
-                    
-                    const row = document.createElement('label');
-                    row.className = 'catalog-row';
-                    row.innerHTML = `
-                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleCartItem('${item.name}')">
-                        <div class="catalog-row-info">
-                            <span>${item.emoji || '📦'}</span>
-                            <span>${item.name}</span>
                         </div>
-                    `;
-                    container.appendChild(row);
-                });
-            });
+                        <button class="btn-remove" onclick="event.stopPropagation(); removeFromCart(${item.originalIndex})">🗑️</button>
+                    </div>
+                `).join('');
+            }
         }
 
-        function toggleCartItem(itemName) {
-            const index = state.cart.findIndex(i => i.name === itemName);
-
-            if (index > -1) {
-                state.cart.splice(index, 1);
+        // Teclado Virtual
+        function pressKey(key) {
+            if (key === 'DEL') {
+                state.rawPriceInput = state.rawPriceInput.slice(0, -1);
+            } else if (key === ',') {
+                if (!state.rawPriceInput.includes(',')) {
+                    state.rawPriceInput += state.rawPriceInput === "" ? "0," : ",";
+                }
             } else {
-                const fullCatalog = getFullCatalog();
-                const itemObj = fullCatalog.find(i => i.name === itemName);
-                if (itemObj) {
-                    state.cart.push({
-                        ...itemObj,
-                        price: 0,
-                        quantity: 1,
-                        obs: ""
-                    });
-                }
+                state.rawPriceInput += key;
             }
-
-            saveState();
+            document.getElementById('item-price').value = state.rawPriceInput;
         }
 
-        function addCustomItem() {
-            const searchInput = document.getElementById('catalog-search');
-            const name = searchInput.value.trim();
-
-            if (!name) {
-                alert("Digite o nome do produto para adicionar.");
-                return;
-            }
-
-            const catalog = getFullCatalog();
-            const exists = catalog.some(i => i.name.toLowerCase() === name.toLowerCase());
-
-            if (!exists) {
-                const newItem = {
-                    id: Date.now(),
-                    name: name,
-                    category: "Outros / Personalizados",
-                    emoji: "📦"
-                };
-                state.customItems.push(newItem);
-            }
-
-            if (!state.cart.some(i => i.name.toLowerCase() === name.toLowerCase())) {
-                state.cart.push({
-                    id: Date.now(),
-                    name: name,
-                    category: "Outros / Personalizados",
-                    emoji: "📦",
-                    price: 0,
-                    quantity: 1,
-                    obs: ""
-                });
-            }
-
-            searchInput.value = '';
-            saveState();
-        }
-
-        function handleSearchKeyPress(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const searchVal = e.target.value.trim();
-                if (searchVal) {
-                    addCustomItem();
-                }
-            }
-        }
-
-        function openItemModal(cartIndex) {
-            state.editingItemIndex = cartIndex;
-            const item = state.cart[cartIndex];
+        function openItemModal(index) {
+            state.editingItemIndex = index;
+            const item = state.cart[index];
 
             document.getElementById('modal-item-emoji').innerText = item.emoji || '📦';
             document.getElementById('modal-item-name').innerText = item.name;
-            document.getElementById('item-price').value = item.price ? item.price : "";
+            state.rawPriceInput = item.price ? item.price.toString().replace('.', ',') : "";
+            document.getElementById('item-price').value = state.rawPriceInput;
             document.getElementById('item-obs').value = item.obs || "";
             state.currentQty = item.quantity || 1;
             document.getElementById('item-qty').innerText = state.currentQty;
 
             document.getElementById('modal-item').classList.remove('hidden');
-            setTimeout(() => document.getElementById('item-price').focus(), 100);
         }
 
         function closeItemModal() {
@@ -1189,13 +1214,10 @@
         function saveItemDetails() {
             if (state.editingItemIndex === null) return;
 
-            const priceInput = document.getElementById('item-price').value;
-            const price = parseFloat(priceInput) || 0;
-            const obs = document.getElementById('item-obs').value.trim();
-
-            state.cart[state.editingItemIndex].price = price;
+            const priceNum = parseFloat(state.rawPriceInput.replace(',', '.')) || 0;
+            state.cart[state.editingItemIndex].price = priceNum;
             state.cart[state.editingItemIndex].quantity = state.currentQty;
-            state.cart[state.editingItemIndex].obs = obs;
+            state.cart[state.editingItemIndex].obs = document.getElementById('item-obs').value.trim();
 
             saveState();
             closeItemModal();
@@ -1206,101 +1228,179 @@
             saveState();
         }
 
-        function openMarketModal() {
-            document.getElementById('market-name-input').value = state.marketName;
-            document.getElementById('modal-market').classList.remove('hidden');
+        // Modais de Catálogo
+        function openCatalogModal() {
+            renderCatalog();
+            document.getElementById('modal-catalog').classList.remove('hidden');
+        }
+        function closeCatalogModal() { document.getElementById('modal-catalog').classList.add('hidden'); }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog-container');
+            const query = document.getElementById('catalog-search').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            const catalog = getFullCatalog();
+            const grouped = {};
+
+            catalog.forEach(item => {
+                if (item.name.toLowerCase().includes(query)) {
+                    if (!grouped[item.category]) grouped[item.category] = [];
+                    grouped[item.category].push(item);
+                }
+            });
+
+            Object.keys(grouped).forEach(cat => {
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.innerText = cat;
+                container.appendChild(header);
+
+                grouped[cat].forEach(item => {
+                    const isSelected = state.cart.some(c => c.name === item.name);
+                    const row = document.createElement('label');
+                    row.className = 'catalog-row';
+                    row.innerHTML = `
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleCartItem('${item.name}')">
+                        <span>${item.emoji || '📦'}</span>
+                        <span>${item.name}</span>
+                    `;
+                    container.appendChild(row);
+                });
+            });
         }
 
-        function closeMarketModal() {
-            document.getElementById('modal-market').classList.add('hidden');
-        }
-
-        function confirmMarketName() {
-            const input = document.getElementById('market-name-input').value.trim();
-            state.marketName = input;
+        function toggleCartItem(itemName) {
+            const idx = state.cart.findIndex(i => i.name === itemName);
+            if (idx > -1) {
+                state.cart.splice(idx, 1);
+            } else {
+                const itemObj = getFullCatalog().find(i => i.name === itemName);
+                if (itemObj) {
+                    state.cart.push({ ...itemObj, price: 0, quantity: 1, obs: "" });
+                }
+            }
             saveState();
-            closeMarketModal();
         }
 
-        function showSummaryBeforeReset() {
-            if (state.cart.length === 0) {
-                alert("A lista já está vazia!");
+        // Itens Personalizados
+        function openCustomItemModal() {
+            renderCustomItemsList();
+            document.getElementById('modal-custom-item').classList.remove('hidden');
+        }
+        function closeCustomItemModal() { document.getElementById('modal-custom-item').classList.add('hidden'); }
+
+        function saveCustomItem() {
+            const name = document.getElementById('custom-name').value.trim();
+            const category = document.getElementById('custom-category').value;
+            const emoji = document.getElementById('custom-emoji').value.trim() || '📦';
+
+            if (!name) return showCustomAlert("Campo Obrigatório", "Por favor, digite o nome do produto.");
+
+            const newItem = { id: Date.now(), name, category, emoji };
+            state.customItems.push(newItem);
+            
+            state.cart.push({ ...newItem, price: 0, quantity: 1, obs: "" });
+
+            document.getElementById('custom-name').value = "";
+            document.getElementById('custom-emoji').value = "";
+            
+            saveState();
+            renderCustomItemsList();
+            renderCatalog();
+        }
+
+        function removeCustomItem(id) {
+            state.customItems = state.customItems.filter(i => i.id !== id);
+            saveState();
+            renderCustomItemsList();
+            renderCatalog();
+        }
+
+        function renderCustomItemsList() {
+            const box = document.getElementById('custom-items-list');
+            if (state.customItems.length === 0) {
+                box.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">Nenhum item personalizado criado.</p>`;
                 return;
             }
+            box.innerHTML = state.customItems.map(item => `
+                <div class="cart-item">
+                    <span>${item.emoji} ${item.name} (${item.category})</span>
+                    <button class="btn-remove" onclick="removeCustomItem(${item.id})">❌</button>
+                </div>
+            `).join('');
+        }
+
+        // Carrinho Flutuante Modal
+        function openCartModal() {
+            const list = document.getElementById('cart-modal-list');
+            const boughtItems = state.cart
+                .map((item, originalIndex) => ({ ...item, originalIndex }))
+                .filter(item => (item.price || 0) > 0);
+
+            if (boughtItems.length === 0) {
+                list.innerHTML = `<div class="empty-cart">Carrinho vazio.<br>Adicione o preço aos itens pendentes.</div>`;
+            } else {
+                list.innerHTML = boughtItems.map(item => `
+                    <div class="cart-item" onclick="closeCartModal(); openItemModal(${item.originalIndex});">
+                        <div class="item-info">
+                            <span>${item.emoji || '📦'}</span>
+                            <div>
+                                <div class="item-title">${item.name}</div>
+                                <div class="item-sub">${item.quantity}x R$ ${item.price.toFixed(2).replace('.', ',')} = <strong>R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('modal-cart').classList.remove('hidden');
+        }
+        function closeCartModal() { document.getElementById('modal-cart').classList.add('hidden'); }
+
+        // Resumo e Finalizar
+        function showSummaryBeforeReset() {
+            const boughtItems = state.cart.filter(item => (item.price || 0) > 0);
+            if (boughtItems.length === 0) return showCustomAlert("Carrinho Vazio", "Nenhum item foi comprado (com valor definido) ainda!");
 
             const container = document.getElementById('summary-content');
             let total = 0;
-
             let html = `<ul class="summary-list">`;
-            state.cart.forEach(item => {
-                const subtotal = (item.price || 0) * (item.quantity || 1);
-                total += subtotal;
+
+            boughtItems.forEach(item => {
+                const sub = item.price * item.quantity;
+                total += sub;
                 html += `
                     <li class="summary-item">
-                        <span>${item.emoji || '📦'} ${item.name} (${item.quantity || 1}x)</span>
-                        <strong>R$ ${subtotal.toFixed(2).replace('.', ',')}</strong>
-                    </li>
-                `;
+                        <span>${item.emoji || '📦'} ${item.name} (${item.quantity}x)</span>
+                        <strong>R$ ${sub.toFixed(2).replace('.', ',')}</strong>
+                    </li>`;
             });
             html += `</ul>`;
-            html += `
-                <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--border); text-align: right;">
-                    <span style="color: var(--text-muted); font-size: 0.9rem;">Total Geral:</span>
-                    <h3 style="color: var(--primary-accent); font-size: 1.5rem;">R$ ${total.toFixed(2).replace('.', ',')}</h3>
-                </div>
-            `;
+            html += `<div style="text-align:right; margin-top:10px;"><strong>Total: R$ ${total.toFixed(2).replace('.', ',')}</strong></div>`;
 
             container.innerHTML = html;
             document.getElementById('modal-summary').classList.remove('hidden');
         }
 
-        function closeSummaryModal() {
-            document.getElementById('modal-summary').classList.add('hidden');
-        }
+        function closeSummaryModal() { document.getElementById('modal-summary').classList.add('hidden'); }
 
-        function confirmReset() {
-            state.cart = [];
-            state.marketName = "";
-            saveState();
+        // Fluxo de confirmação e limpeza de lista sem acúmulo de modais
+        function promptResetOptions() {
             closeSummaryModal();
-        }
 
-        // Função de Atualização e Limpeza Completa (PWA / Web)
-        async function forceRefresh() {
-            if (confirm("Deseja recarregar para buscar novas atualizações?")) {
-                try {
-                    // 1. Limpa Cookies
-                    document.cookie.split(";").forEach((c) => {
-                        document.cookie = c
-                            .replace(/^ +/, "")
-                            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-                    });
-
-                    // 2. Limpa LocalStorage e SessionStorage
-                    localStorage.clear();
-                    sessionStorage.clear();
-
-                    // 3. Remove os Service Workers do PWA para desbaixar arquivos velhos
-                    if ('serviceWorker' in navigator) {
-                        const registrations = await navigator.serviceWorker.getRegistrations();
-                        for (let registration of registrations) {
-                            await registration.unregister();
-                        }
-                    }
-
-                    // 4. Limpa o Cache Storage do PWA/Navegador
-                    if ('caches' in window) {
-                        const cacheKeys = await caches.keys();
-                        await Promise.all(cacheKeys.map(key => caches.delete(key)));
-                    }
-
-                    // 5. Recarrega a página ignorando o cache
-                    window.location.reload(true);
-                } catch (error) {
-                    console.error("Erro ao limpar dados:", error);
-                    window.location.reload();
+            showCustomConfirm(
+                "Como seseja finalizar?",
+                "Como deseja proceder com a finalização?\n\n• Manter Lista: Zera os preços para a próxima compra.\n• Zerar Tudo: Limpa todos os itens, total gasto e orçamento.",
+                () => {
+                    state.cart = state.cart.map(item => ({ ...item, price: 0, obs: "" }));
+                    saveState();
+                },
+                () => {
+                    state.cart = [];
+                    state.budgetLimit = 0;
+                    saveState();
                 }
-            }
+            );
         }
     </script>
 </body>
