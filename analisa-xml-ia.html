@@ -643,15 +643,25 @@
         // Função de "Motor de Tradução Humana" local - mapeia rejeições em orientações contábeis
         function deveValidarReformaTributaria(dados) {
             try {
-                const dhEmiStr = (dados?.ide?.dhEmi || '').trim();
-                if (!dhEmiStr) return false;
-                const dataPart = dhEmiStr.split('T')[0] || dhEmiStr.substring(0, 10);
-                if (!dataPart || !/^\d{4}-\d{2}-\d{2}$/.test(dataPart)) return false;
-                const dataEmissao = new Date(dataPart + 'T00:00:00');
-                const vigenciaRT = new Date('2026-08-01T00:00:00');
-                return !isNaN(dataEmissao.getTime()) && dataEmissao.getTime() >= vigenciaRT.getTime();
+                // Em 2026, a ausência de campos IBS/CBS não deve ser transformada
+                // automaticamente em "rejeição SEFAZ" pelo validador.
+                // As validações abaixo são executadas quando o próprio XML contém
+                // o grupo IBSCBS/gIBSCBS ou valores relacionados.
+                const itens = Array.isArray(dados?.itens) ? dados.itens : [];
+                return itens.some(item =>
+                    item?.temGIBSCBS ||
+                    String(item?.cstRT || '').trim() !== '' ||
+                    String(item?.cClassTrib || '').trim() !== '' ||
+                    String(item?.vBCIBSCBS || '').trim() !== '' ||
+                    String(item?.pCBSRT || '').trim() !== '' ||
+                    String(item?.vCBSRT || '').trim() !== '' ||
+                    String(item?.pIBSUFRT || '').trim() !== '' ||
+                    String(item?.vIBSUFRT || '').trim() !== '' ||
+                    String(item?.pIBSMunRT || '').trim() !== '' ||
+                    String(item?.vIBSMunRT || '').trim() !== ''
+                );
             } catch (e) {
-                log(`Erro ao verificar vigência RT: ${e.message}`);
+                log(`Erro ao verificar presença de dados da RT: ${e.message}`);
                 return false;
             }
         }
@@ -659,7 +669,7 @@
         function obterSugestaoContabil(nomeRejeicao, cProd, xProd) {
             // Dicionário de sugestões mapeado por nome da rejeição
             const dicionarioSugestoes = {
-                "REJEICAO_928": () => `Rejeição 928 no item '${xProd}' (Código: ${cProd}). A 'Situação Tributária do cadastro de alíquotas' está definida como 'I' (ISENTO), o que obriga o preenchimento do benefício. Acesse o cadastro do produto e informe o código cBenef correto e ativo para este item antes de emitir novamente.`,
+                "REJEICAO_928": () => `Rejeição 928 no item '${xProd}' (Código: ${cProd}): foi informado cBenef para um CST que não possui benefício fiscal segundo a tabela aplicável. Verifique o CST e, se ele realmente não possuir benefício, remova o cBenef.`,
                 
                 "ALERTA CBENEF": () => `Aviso no item '${xProd}' (Código: ${cProd}): Informar ao cliente para validar junto a contabilidade de acordo com o CST. `,
                 
@@ -1149,9 +1159,9 @@
             '02': { desc: 'Tributação Integral (2)', aceitaCBenef: false, aliq: '01' },
             '10': { desc: 'Tributada com ST', aceitaCBenef: false, aliq: '01' },
             '15': { desc: 'ST (2)', aceitaCBenef: false, aliq: '01' },
-            '20': { desc: 'Redução de Base', aceitaCBenef: true, aliq: '01', precisaPREDBC: true, cBenefValidos: ['099090','099009','020390'] },
+            '20': { desc: 'Redução de Base', aceitaCBenef: true, aliq: '01', precisaPREDBC: true, cBenefValidos: ['099090','099009','020030','020390'] },
             '30': { desc: 'Isenção/ST', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009'] },
-            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009','099999','019090','SP010360'] },
+            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009','099999','019090','010360'] },
             '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['099090','099009','019090'] },
             '50': { desc: 'Suspensão', aceitaCBenef: true, aliq: 'S', cBenefValidos: ['099090','099009'] },
             '51': { desc: 'Diferimento', aceitaCBenef: true, aliq: 'D', cBenefValidos: ['099090','099009'] },
@@ -1183,6 +1193,11 @@
                 desc: 'Operações sem benefício fiscal, mas com emissão NF sem destaque de ICMS',
                 cstsValidos: ['40','90'],
                 exigencia: 'Obrigatório indicar fundamentação legal nas informações complementares'
+            },
+            '020030': {
+                desc: 'Redução de Base de Cálculo - CESTA BÁSICA (Artigo 003 do Anexo II do RICMS/SP)',
+                cstsValidos: ['20','70'],
+                exigencia: ''
             },
             '020390': {
                 desc: 'Redução de Base de Cálculo - PRODUTOS ALIMENTÍCIOS / Cesta Básica',
@@ -1227,20 +1242,20 @@
         // REGRAS PARA NFC-e (MODELO 65)
         const REGRAS_NFCE = {
             csosn: {
-                '102': ['5102'],
+                '102': ['5101', '5102', '5103', '5104', '5115', '5910'],
                 '103': ['5101', '5102', '5103', '5104', '5115', '5910'],
                 '300': ['5101', '5102', '5103', '5104', '5115', '5910'],
                 '400': ['5101', '5102', '5103', '5104', '5115', '5910'],
                 '900': ['5101', '5102', '5103', '5104', '5115', '5910'],
-                '500': ['5405']
+                '500': ['5405', '5656', '5667', '5910']
             },
             cst: {
-                '00': ['5101', '5102', '5103', '5104', '5115'],
-                '20': ['5101', '5102', '5103', '5104', '5115'],
-                '40': ['5101', '5102', '5103', '5104', '5115'],
-                '41': ['5101', '5102', '5103', '5104', '5115'],
-                '90': ['5101', '5102', '5103', '5104', '5115'],
-                '60': ['5405', '5656', '5667']
+                '00': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '20': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '40': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '41': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '90': ['5101', '5102', '5103', '5104', '5115', '5910'],
+                '60': ['5405', '5656', '5667', '5910']
             }
         };
 
@@ -2201,7 +2216,7 @@ function validarCFOP(item, modelo, mensagens) {
             const NCM = getTextoElemento(prod, 'NCM');
             const CFOP = getTextoElemento(prod, 'CFOP');
             const cBenef = getTextoElemento(prod, 'cBenef');
-            const cClassTrib = getTextoElemento(prod, 'cClassTrib');
+            let cClassTrib = ''; // preenchido a partir de <imposto><IBSCBS>
             const vUnCom = getTextoElemento(prod, 'vUnCom');
             const vProd = getTextoElemento(prod, 'vProd');
             const vDesc = getTextoElemento(prod, 'vDesc') || '0';
@@ -2217,7 +2232,8 @@ function validarCFOP(item, modelo, mensagens) {
             const ibsContainer = imposto ? getElemento(imposto, 'IBS') : null;
             const cbsContainer = imposto ? getElemento(imposto, 'CBS') : null;
             const isContainer = imposto ? getElemento(imposto, 'IS') : null;
-            const gIBSCBS = imposto ? getElemento(imposto, 'gIBSCBS') : null;
+            const ibscbsContainer = imposto ? getElemento(imposto, 'IBSCBS') : null;
+            const gIBSCBS = ibscbsContainer ? getElemento(ibscbsContainer, 'gIBSCBS') : null;
             const gCBS = gIBSCBS ? getElemento(gIBSCBS, 'gCBS') : null;
             const gIBSUF = gIBSCBS ? getElemento(gIBSCBS, 'gIBSUF') : null;
             const gIBSMun = gIBSCBS ? getElemento(gIBSCBS, 'gIBSMun') : null;
@@ -2416,13 +2432,17 @@ function validarCFOP(item, modelo, mensagens) {
                 }
             }
 
-            // Ler gIBSCBS (Reforma Tributária)
+            // Ler IBSCBS/gIBSCBS (Reforma Tributária)
+            // Estrutura atual: <IBSCBS><CST/><cClassTrib/><gIBSCBS><vBC/>...</gIBSCBS></IBSCBS>
+            if (ibscbsContainer) {
+                cstRT = getTextoElemento(ibscbsContainer, 'CST') || '';
+                cClassTrib = getTextoElemento(ibscbsContainer, 'cClassTrib') || '';
+            }
             if (gIBSCBS) {
                 temGIBSCBS = true;
                 indIncIBSCBS = getTextoElemento(gIBSCBS, 'indIncIBSCBS') || '';
-                cstRT = getTextoElemento(gIBSCBS, 'CST') || '';
-                vBCIBSCBS = getTextoElemento(gIBSCBS, 'vBCIBSCBS') || '';
-                log(`Item ${nItem}: Encontrado <gIBSCBS> - CST: "${cstRT}"`);
+                vBCIBSCBS = getTextoElemento(gIBSCBS, 'vBC') || getTextoElemento(gIBSCBS, 'vBCIBSCBS') || '';
+                log(`Item ${nItem}: Encontrado <IBSCBS/gIBSCBS> - CST: "${cstRT}", cClassTrib: "${cClassTrib}", vBC: "${vBCIBSCBS}"`);
 
                 // Read gCBS
                 if (gCBS) {
@@ -2540,7 +2560,26 @@ function validarCFOP(item, modelo, mensagens) {
                 '42':'SC','43':'RS','50':'MS','51':'MT','52':'GO','53':'DF'
             };
             const siglaUF = siglasUF[cUF] || '';
-            const cBenef = item.cBenef ? item.cBenef.trim() : '';
+            const cBenef = item.cBenef ? item.cBenef.trim().toUpperCase() : '';
+            const cBenefEhSemCBenef = cBenef === 'SEM CBENEF';
+            const cBenefFormatoSchemaValido =
+                !cBenef || cBenefEhSemCBenef || cBenef.length === 8 || cBenef.length === 10;
+
+            // Validação estrutural do schema: cBenef aceita exatamente 8 ou 10 caracteres
+            // (além do literal legado "SEM CBENEF", tratado separadamente).
+            if (cBenef && !cBenefFormatoSchemaValido) {
+                status = 'error';
+                mensagens.push({
+                    tipo: 'error',
+                    erro: 'CBENEF_TAMANHO_INVALIDO',
+                    desc: `${idItem} cBenef "${cBenef}" possui ${cBenef.length} caracteres; o schema aceita 8 ou 10 caracteres.`,
+                    motivo: 'Tamanho do cBenef incompatível com o schema da NF-e/NFC-e.',
+                    correcao: 'Corrija o Código de Benefício Fiscal no cadastro do produto. Exemplo de formato com 8 caracteres: SP099009.',
+                    orientacao: `Acesse o cadastro do produto "${item.xProd}" (Código: ${item.cProd}) e corrija o campo CodBeneficioFISCAL. O valor atual "${cBenef}" possui ${cBenef.length} caracteres.`,
+                    rejeicao: '',
+                    campos: ['cBenef']
+                });
+            }
 
             // Valida NCM
             if (item.NCM) {
@@ -2642,13 +2681,14 @@ function validarCFOP(item, modelo, mensagens) {
                         if (cBenef !== 'SP040100') {
                             status = 'error';
                             mensagens.push({
-                                tipo: 'error',
-                                erro: 'cBenef obrigatório',
-                                desc: `${idItem} CST 90 com CFOP ${item.CFOP} (alimentação) em SP exige cBenef SP040100.`,
-                                motivo: 'Regime especial de tributação para fornecimento de alimentação em SP',
-                                correcao: 'Informe o cBenef SP040100 no cadastro do produto',
-                                orientacao: obterSugestaoContabil('cBenef obrigatório', item.cProd, item.xProd),
-                                rejeicao: '928',
+                                tipo: 'warning',
+                                erro: 'ALERTA_CBENEF_SP_CST90',
+                                desc: `${idItem} CST 90 com CFOP ${item.CFOP} em operação de alimentação: validar o cBenef aplicável na tabela oficial de SP.`,
+                                motivo: 'A regra depende do enquadramento fiscal e da tabela estadual vigente.',
+                                correcao: 'Confirmar o cBenef aplicável com a tabela oficial da SEFAZ-SP/contabilidade antes de alterar.',
+                                orientacao: 'Este ponto não será rotulado como Rejeição 928 automaticamente.',
+                                rejeicao: '',
+                                classificacao: 'alerta_fiscal',
                                 campos: ['cBenef']
                             });
                         }
@@ -2709,22 +2749,48 @@ function validarCFOP(item, modelo, mensagens) {
                     const exigeCBenef = regra.aceitaCBenef === true && !cstsDesobrigados.includes(cstNormalizado);
 
                     if (exigeCBenef) {
-                        const cBenefValido = cBenef && cBenef !== 'SEM CBENEF' && cBenefValidosTodos.includes(cBenef);
-                        if (!cBenefValido) {
+                        const cBenefSufixo = extrairSufixoCBenef(cBenef);
+                        const regraCBenefConhecida = cBenefSufixo ? CBENEF_REGRAS[cBenefSufixo] : null;
+
+                        // IMPORTANTE:
+                        // "aceita cBenef" NÃO significa "cBenef obrigatório".
+                        // Também não é seguro transformar "código não cadastrado na nossa lista local"
+                        // em rejeição SEFAZ, porque a tabela estadual é muito maior e muda com o tempo.
+                        //
+                        // Só acusamos incompatibilidade quando:
+                        // 1) o cBenef está presente e tem formato válido;
+                        // 2) o código existe na nossa base conhecida;
+                        // 3) a própria regra conhecida declara que o CST atual NÃO é permitido.
+                        //
+                        // A ausência de cBenef só deve ser rejeitada por regras estaduais explícitas,
+                        // como as tratadas acima, e não genericamente pelo CST.
+                        const incompatibilidadeComprovada =
+                            cBenef &&
+                            cBenef !== 'SEM CBENEF' &&
+                            cBenefFormatoSchemaValido &&
+                            regraCBenefConhecida &&
+                            Array.isArray(regraCBenefConhecida.cstsValidos) &&
+                            regraCBenefConhecida.cstsValidos.length > 0 &&
+                            !regraCBenefConhecida.cstsValidos.includes(cstNormalizado);
+
+                        if (incompatibilidadeComprovada) {
                             status = 'error';
                             mensagens.push({
                                 tipo: 'error',
-                                erro: 'REJEICAO_928',
-                                desc: `${idItem} CST ${cstNormalizado} (${regra.desc}) exige cBenef válido.`,
-                                motivo: 'Faltou informar código de benefício fiscal ou código inválido',
-                                correcao: 'Informe o cBenef válido para este CST',
-                                orientacao: obterSugestaoContabil('REJEICAO_928', item.cProd, item.xProd),
-                                rejeicao: '928',
-                                campos: ['cBenef']
+                                erro: 'CBENEF_INCOMPATIVEL_CST',
+                                desc: `${idItem} cBenef "${cBenef}" possui regra conhecida incompatível com CST ${cstNormalizado}.`,
+                                motivo: 'A tabela conhecida para este cBenef não permite o CST informado.',
+                                correcao: 'Valide o cBenef e o CST conforme a tabela oficial da UF.',
+                                orientacao: `Confira o cBenef "${cBenef}" com a tabela oficial da UF ${siglaUF}.`,
+                                rejeicao: '',
+                                campos: ['cBenef', 'CST']
                             });
                         } else {
+                            if (cBenef && cBenefFormatoSchemaValido && !regraCBenefConhecida) {
+                                log(`Item ${item.nItem}: cBenef "${cBenef}" não consta na base local; não será tratado como rejeição sem prova oficial de incompatibilidade.`);
+                            }
                             if (cBenef === 'SP099090') {
-                                if (!CBENEF_REGRAS['SP099090'].cstsValidos.includes(cstNormalizado)) {
+                                if (!CBENEF_REGRAS['099090'].cstsValidos.includes(cstNormalizado)) {
                                     status = 'error';
                                     mensagens.push({
                                         tipo: 'error',
@@ -2767,7 +2833,7 @@ function validarCFOP(item, modelo, mensagens) {
                                     });
                                 }
                             } else if (cBenef === 'SP099009') {
-                                if (!CBENEF_REGRAS['SP099009'].cstsValidos.includes(cstNormalizado)) {
+                                if (!CBENEF_REGRAS['099009'].cstsValidos.includes(cstNormalizado)) {
                                     status = 'error';
                                     mensagens.push({
                                         tipo: 'error',
@@ -2781,7 +2847,7 @@ function validarCFOP(item, modelo, mensagens) {
                                     });
                                 }
                             } else if (cBenef === 'SP099999') {
-                                if (!CBENEF_REGRAS['SP099999'].cstsValidos.includes(cstNormalizado)) {
+                                if (!CBENEF_REGRAS['099999'].cstsValidos.includes(cstNormalizado)) {
                                     status = 'error';
                                     mensagens.push({
                                         tipo: 'error',
@@ -2810,7 +2876,7 @@ function validarCFOP(item, modelo, mensagens) {
                                     }
                                 }
                             } else if (cBenef === 'SP020390') {
-                                if (!CBENEF_REGRAS['SP020390'].cstsValidos.includes(cstNormalizado)) {
+                                if (!CBENEF_REGRAS['020390'].cstsValidos.includes(cstNormalizado)) {
                                     status = 'error';
                                     mensagens.push({
                                         tipo: 'error',
@@ -2840,20 +2906,19 @@ function validarCFOP(item, modelo, mensagens) {
                             }
                         }
                     } else {
-                        if (cBenef && cBenef !== 'SEM CBENEF') {
-                            if (cBenefValidosTodos.includes(cBenef)) {
-                                log(`Item ${item.nItem}: cBenef "${cBenef}" informado em CST que não exige, mas é válido (tolerância SEFAZ)`);
-                            } else {
-                                alertas.push({
-                                    tipo: 'warning',
-                                    erro: 'ALERTA CBENEF',
-                                    desc: `${idItem} Código de benefício informado inválido para este CST.`,
-                                    motivo: 'Código cBenef não existe na tabela oficial da SEFAZ',
-                                    correcao: 'Remover o cBenef do cadastro do produto',
-                                    orientacao: obterSugestaoContabil('ALERTA CBENEF', item.cProd, item.xProd),
-                                    campos: ['cBenef']
-                                });
-                            }
+                        // Rejeição 928: há cBenef informado para CST sem benefício fiscal.
+                        if (cBenef && cBenef !== 'SEM CBENEF' && cBenefFormatoSchemaValido) {
+                            status = 'error';
+                            mensagens.push({
+                                tipo: 'error',
+                                erro: 'REJEICAO_928',
+                                desc: `${idItem} Foi informado cBenef "${cBenef}" para CST ${cstNormalizado}, configurado sem benefício fiscal.`,
+                                motivo: 'cBenef informado para CST sem benefício fiscal.',
+                                correcao: 'Remova o cBenef ou corrija o CST conforme a tabela oficial da UF.',
+                                orientacao: obterSugestaoContabil('cBenef informado indevidamente', item.cProd, item.xProd),
+                                rejeicao: '928',
+                                campos: ['cBenef', 'CST']
+                            });
                         }
                     }
                 }
@@ -3024,7 +3089,7 @@ function validarCFOP(item, modelo, mensagens) {
         function validarReformaTributaria(item, validarReforma) {
             const mensagens = [];
 
-            // GATILHO DE VIGÊNCIA: Se data < 01/08/2026, NÃO valida nada da RT
+            // Valida RT somente quando o XML possui os grupos/campos IBS/CBS
             if (!validarReforma) {
                 return mensagens;
             }
@@ -3060,8 +3125,8 @@ function validarCFOP(item, modelo, mensagens) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'RT_CST_OBRIGATORIO',
-                    desc: 'Nota em vigor da Reforma Tributária (a partir de 01/08/2026). Item está sem CST de IBS/CBS (CST Reforma Tributária).',
-                    motivo: 'A partir de 01/08/2026 é obrigatório informar o CST da Reforma Tributária em todos os itens.',
+                    desc: 'O XML contém grupo/dados de IBS/CBS, porém o CST do grupo IBSCBS não foi localizado.',
+                    motivo: 'Dentro de um grupo IBSCBS informado, o CST deve ser lido/validado na estrutura correta do XML.',
                     correcao: 'No cadastro do produto, preencha o campo CST da Reforma Tributária (CST RT) com um código válido de 3 dígitos.',
                     campos: ['cstRT', 'cstIBS', 'cstCBS']
                 });
@@ -3247,7 +3312,8 @@ function validarCFOP(item, modelo, mensagens) {
                         motivo: 'CFOP 5102 é para operação normal, CSOSN 500 é para ST.',
                         correcao: 'Altere o CFOP para 5405 ou o CSOSN para outro valor.',
                         orientacao: '',
-                        rejeicao: '381',
+                        rejeicao: '',
+                        classificacao: 'alerta_fiscal',
                         campos: ['CFOP', 'CSOSN']
                     });
                 }
@@ -3266,7 +3332,8 @@ function validarCFOP(item, modelo, mensagens) {
                         motivo: 'Regime Normal exige CST ao invés de CSOSN.',
                         correcao: 'Altere o cadastro do produto para usar CST.',
                         orientacao: '',
-                        rejeicao: '600',
+                        rejeicao: '',
+                        classificacao: 'alerta_fiscal',
                         campos: ['CST', 'CSOSN']
                     });
                 }
@@ -3305,13 +3372,14 @@ function validarCFOP(item, modelo, mensagens) {
                 const csosnQueExigemCBenef = ['900']; // exemplo
                 if ((cstsQueExigemCBenef.includes(item.CST) || csosnQueExigemCBenef.includes(item.CSOSN)) && !item.cBenef) {
                     mensagens.push({
-                        tipo: 'error',
-                        erro: 'CBENEF_OBRIGATORIO',
-                        desc: `cBenef é obrigatório para este CST/CSOSN na UF ${siglaUF}.`,
-                        motivo: 'UF exige cBenef para operações com isenção, redução ou diferimento.',
-                        correcao: 'Informe o cBenef no cadastro do produto.',
-                        orientacao: '',
-                        rejeicao: '930',
+                        tipo: 'warning',
+                        erro: 'ALERTA_CBENEF_POSSIVEL_OBRIGATORIEDADE',
+                        desc: `O CST/CSOSN informado pode exigir cBenef na UF ${siglaUF}, mas a obrigatoriedade depende da tabela oficial vigente da UF.`,
+                        motivo: 'A obrigatoriedade do cBenef é implementada por UF/modelo/CST e deve ser confirmada na tabela oficial aplicável.',
+                        correcao: 'Consultar a tabela oficial de cBenef da UF antes de alterar o cadastro.',
+                        orientacao: 'Não tratar este alerta como rejeição SEFAZ sem confirmação da regra estadual aplicável.',
+                        rejeicao: '',
+                        classificacao: 'alerta_fiscal',
                         campos: ['cBenef']
                     });
                 }
@@ -3719,7 +3787,7 @@ function validarCFOP(item, modelo, mensagens) {
                         xProd = itemRef.xProd;
                     }
                     mensagens.push({
-                        tipo: 'error',
+                        tipo: 'warning',
                         erro: `Divergência de Arredondamento de ${tipo}`,
                         desc: `${prefixo} Valor de ${tipo} calculado é R$ ${vImpostoCalculado.toFixed(2)}, mas foi informado R$ ${vImpostoNum.toFixed(2)}`,
                         motivo: `Cálculo: ${vBCNum.toFixed(2)} * ${pImpostoNum.toFixed(2)}% = ${vImpostoCalculado.toFixed(2)}`,
@@ -3809,13 +3877,14 @@ function validarCFOP(item, modelo, mensagens) {
                                     .join(' | ');
 
                                 inconsistencias.push({
-                                    tipo: 'error',
+                                    tipo: 'warning',
                                     erro: 'INCONSISTENCIA_PIS_COFINS_MESMO_NCM',
                                     desc: `${idItem} NCM ${ncm}: Este item tem CST ${tipo} ${cstSuspeito || 'Vazio'} (${tipo === 'PIS' ? 'Isento/NT' : 'Isento/NT'}) enquanto ${itensPadrao.length} outro(s) item(ns) do MESMO NCM ${ncm} utilizam CST ${tipo} ${cstPadrao}.`,
                                     motivo: `Divergência de tratamento tributário dentro da mesma classificação NCM. Outros itens: ${resumoOutros}`,
                                     correcao: `Altere o CST de ${tipo} do item para ${cstPadrao} (padrão do NCM ${ncm}), defina alíquota de ${aliquotaUsar.toFixed(2)}% e preencha ${tipo} no valor esperado de R$ ${valorEsperadoImposto.toFixed(2)}.`,
                                     orientacao: obterSugestaoContabil('INCONSISTENCIA_PIS_COFINS_MESMO_NCM', item.cProd, item.xProd),
-                                    rejeicao: '603',
+                                    rejeicao: '',
+                                    classificacao: 'alerta_fiscal',
                                     campos: ['CST_' + tipo, 'p' + tipo, 'vBC' + tipo, 'v' + tipo],
                                     itemSuspeito: { nItem: item.nItem, xProd: item.xProd, cProd: item.cProd }
                                 });
@@ -4515,7 +4584,7 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
             const mensagens = [];
             const TOLERANCIA = 0.02;
 
-            // GATILHO DE VIGÊNCIA: Se data < 01/08/2026, NÃO valida totais da RT
+            // Valida totais da RT somente quando existem dados IBS/CBS no XML
             if (!deveValidarReformaTributaria(dados)) {
                 return mensagens;
             }
@@ -4609,6 +4678,86 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
             return mensagens;
         }
         
+
+        // ============================================================
+        // MODO ESTRITO: EVITAR FALSAS REJEIÇÕES
+        // ============================================================
+        const REJEICOES_SEFAZ_CONFIRMADAS = {
+            '602': new Set(['Rejeição 602 - Total de PIS divergente']),
+            '603': new Set(['Rejeição 603 - Total de COFINS divergente']),
+            '382': new Set(['CFOP incompatível com CST (NFC-e)']),
+            '386': new Set(['CFOP incompatível com CSOSN (NFC-e)']),
+            '374': new Set(['CFOP incompatível com grupo de tributação']),
+            '928': new Set(['REJEICAO_928'])
+        };
+
+        const ERROS_ESTRUTURAIS_CONFIRMADOS = new Set([
+            'CBENEF_TAMANHO_INVALIDO',
+            'ERRO_NCM_TAMANHO',
+            'NCM Inválido'
+        ]);
+
+        function normalizarDiagnosticoFiscal(msg) {
+            if (!msg || typeof msg !== 'object') return msg;
+
+            const codigo = String(msg.rejeicao || '').trim();
+            const nome = String(msg.erro || '').trim();
+            const rejeicaoConfirmada =
+                codigo &&
+                REJEICOES_SEFAZ_CONFIRMADAS[codigo] &&
+                REJEICOES_SEFAZ_CONFIRMADAS[codigo].has(nome);
+
+            if (rejeicaoConfirmada) {
+                msg.tipo = 'error';
+                msg.classificacao = 'rejeicao_sefaz_confirmada';
+                return msg;
+            }
+
+            // Preserva erro estrutural de XML/schema, porém sem inventar código SEFAZ.
+            if (ERROS_ESTRUTURAIS_CONFIRMADOS.has(nome)) {
+                if (codigo) msg.rejeicaoOriginal = codigo;
+                msg.rejeicao = '';
+                msg.tipo = 'error';
+                msg.classificacao = 'erro_schema';
+                return msg;
+            }
+
+            // Se alguma regra interna carregou um número oficial sem ser um par
+            // confirmado, remove o número e converte para alerta preventivo.
+            if (codigo) {
+                msg.rejeicaoOriginal = codigo;
+                msg.rejeicao = '';
+            }
+
+            if (msg.tipo === 'error') {
+                msg.tipo = 'warning';
+                msg.classificacao = 'alerta_fiscal';
+                if (!msg.desc?.startsWith('[Alerta preventivo')) {
+                    msg.desc = `[Alerta preventivo — não confirmado como rejeição SEFAZ] ${msg.desc || ''}`;
+                }
+            } else if (!msg.classificacao) {
+                msg.classificacao = 'alerta_fiscal';
+            }
+
+            return msg;
+        }
+
+        function aplicarModoEstrito(itensProcessados, totaisValidacao, novasValidacoes, totaisEstritos) {
+            for (const item of itensProcessados || []) {
+                item.validacao.mensagens = (item.validacao.mensagens || []).map(normalizarDiagnosticoFiscal);
+                item.validacao.alertas = (item.validacao.alertas || []).map(normalizarDiagnosticoFiscal);
+
+                const todas = [...item.validacao.mensagens, ...item.validacao.alertas];
+                const temErro = todas.some(m => m.tipo === 'error');
+                const temAviso = todas.some(m => m.tipo === 'warning');
+                item.validacao.status = temErro ? 'error' : (temAviso ? 'warning' : 'success');
+            }
+
+            (totaisValidacao || []).forEach(normalizarDiagnosticoFiscal);
+            (novasValidacoes || []).forEach(normalizarDiagnosticoFiscal);
+            (totaisEstritos || []).forEach(normalizarDiagnosticoFiscal);
+        }
+
         async function processarDados(dados) {
             // 0b. Verifica se a nota está AUTORIZADA na SEFAZ (cStat == 100 ou 150)
             //     Essa flag será usada no FINAL da função para transformar ERROS em
@@ -4617,9 +4766,9 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
             const estaAutorizadaNaSefaz = (cStat === '100' || cStat === '150');
             log(`Status SEFAZ: cStat=${cStat} → notaAutorizada=${estaAutorizadaNaSefaz}. A validação FISCAL COMPLETA será executada.`);
 
-            // 0. GATILHO DE VIGÊNCIA DA REFORMA TRIBUTÁRIA: dhEmi >= 01/08/2026
+            // 0. GATILHO DA REFORMA TRIBUTÁRIA: somente quando o XML contém dados IBS/CBS
             const validarReforma = deveValidarReformaTributaria(dados);
-            log(`Gatilho Reforma Tributária: validarReforma=${validarReforma} (dhEmi=${dados?.ide?.dhEmi || 'N/A'})`);
+            log(`Gatilho Reforma Tributária por presença de dados: validarReforma=${validarReforma}`);
 
             // 1. Validação ESTRITA (Regra de Corte Principal) de totais de PIS/COFINS
             const totaisFiscaisEstritosErros = validarTotaisFiscaisEstritos(dados);
@@ -4654,6 +4803,16 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                 itensProcessados = await Promise.all(itensProcessadosPromessas);
                 totaisValidacao = [...totaisValidacao, ...validarTotaisPISCOFINS(dados)];
             }
+
+            // MODO ESTRITO: antes de exibir qualquer diagnóstico,
+            // reclassifica regras heurísticas para ALERTA e mantém como REJEIÇÃO
+            // apenas os pares código/regra confirmados.
+            aplicarModoEstrito(
+                itensProcessados,
+                totaisValidacao,
+                novasValidacoes,
+                totaisFiscaisEstritosErros
+            );
 
             // Para cada item com erro, obter sugestão localmente
             for (const item of itensProcessados) {
@@ -5157,7 +5316,9 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                                 const cor = tipo === 'error' ? 'var(--error)' : 'var(--warning)';
                                 const badgeTxt = msg.divergenciaNotaAutorizada
                                     ? (tipo === 'error' ? 'ERRO / Nota Autorizada' : 'Divergência / Nota Autorizada')
-                                    : (msg.rejeicao ? `REJEIÇÃO ${msg.rejeicao}` : (tipo === 'error' ? 'ERRO' : 'ALERTA'));
+                                    : (msg.classificacao === 'erro_schema'
+                                        ? 'ERRO DE SCHEMA'
+                                        : (msg.rejeicao ? `REJEIÇÃO ${msg.rejeicao}` : (tipo === 'error' ? 'ERRO' : 'ALERTA')));
                                 const badgeClasse = msg.divergenciaNotaAutorizada ? 'badge-warning' : (tipo === 'error' ? 'badge-error' : 'badge-warning');
                                 return `
                                 <div style="padding:12px;background:var(--bg);border-left:4px solid ${cor};border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px;">
