@@ -670,6 +670,8 @@
             // Dicionário de sugestões mapeado por nome da rejeição
             const dicionarioSugestoes = {
                 "REJEICAO_928": () => `Rejeição 928 no item '${xProd}' (Código: ${cProd}): foi informado cBenef para um CST que não possui benefício fiscal segundo a tabela aplicável. Verifique o CST e, se ele realmente não possuir benefício, remova o cBenef.`,
+
+                "REJEICAO_931": () => `Rejeição 931 no item '${xProd}' (Código: ${cProd}): o código de benefício fiscal informado não é compatível com o CST e a UF segundo a tabela oficial vigente. Confira o CST do ICMS e o campo CodBeneficioFISCAL antes de retransmitir.`,
                 
                 "ALERTA CBENEF": () => `Aviso no item '${xProd}' (Código: ${cProd}): Informar ao cliente para validar junto a contabilidade de acordo com o CST. `,
                 
@@ -1161,8 +1163,8 @@
             '15': { desc: 'ST (2)', aceitaCBenef: false, aliq: '01' },
             '20': { desc: 'Redução de Base', aceitaCBenef: true, aliq: '01', precisaPREDBC: true, cBenefValidos: ['099090','099009','020030','020390'] },
             '30': { desc: 'Isenção/ST', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009'] },
-            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009','099999','019090','010360'] },
-            '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['099090','099009','019090'] },
+            '40': { desc: 'Isenção', aceitaCBenef: true, aliq: 'I', cBenefValidos: ['099090','099009','019090','010360'] },
+            '41': { desc: 'Não Tributada', aceitaCBenef: true, aliq: 'N', cBenefValidos: ['099090','099009','099999','019090'] },
             '50': { desc: 'Suspensão', aceitaCBenef: true, aliq: 'S', cBenefValidos: ['099090','099009'] },
             '51': { desc: 'Diferimento', aceitaCBenef: true, aliq: 'D', cBenefValidos: ['099090','099009'] },
             '53': { desc: 'Monofásica Combustíveis', aceitaCBenef: true, aliq: 'M', cBenefValidos: ['099090','099009'] },
@@ -1190,9 +1192,10 @@
                 exigencia: 'Uso exclusivo para notas emitidas pelo Ajuste SINIEF 37/2019'
             },
             '099999': {
-                desc: 'Operações sem benefício fiscal, mas com emissão NF sem destaque de ICMS',
-                cstsValidos: ['40','90'],
-                exigencia: 'Obrigatório indicar fundamentação legal nas informações complementares'
+                desc: 'Operações sem benefício fiscal para as quais a legislação determine emissão sem destaque de ICMS',
+                // Tabela cBenef SP vigente em 2026: compatível com CST 41 e CST 90.
+                cstsValidos: ['41','90'],
+                exigencia: 'Indicar fundamentação legal nas informações complementares'
             },
             '020030': {
                 desc: 'Redução de Base de Cálculo - CESTA BÁSICA (Artigo 003 do Anexo II do RICMS/SP)',
@@ -2765,7 +2768,9 @@ function validarCFOP(item, modelo, mensagens) {
                         // A ausência de cBenef só deve ser rejeitada por regras estaduais explícitas,
                         // como as tratadas acima, e não genericamente pelo CST.
                         const incompatibilidadeComprovada =
+                            isSP &&
                             cBenef &&
+                            cBenef.startsWith('SP') &&
                             cBenef !== 'SEM CBENEF' &&
                             cBenefFormatoSchemaValido &&
                             regraCBenefConhecida &&
@@ -2777,13 +2782,14 @@ function validarCFOP(item, modelo, mensagens) {
                             status = 'error';
                             mensagens.push({
                                 tipo: 'error',
-                                erro: 'CBENEF_INCOMPATIVEL_CST',
-                                desc: `${idItem} cBenef "${cBenef}" possui regra conhecida incompatível com CST ${cstNormalizado}.`,
-                                motivo: 'A tabela conhecida para este cBenef não permite o CST informado.',
-                                correcao: 'Valide o cBenef e o CST conforme a tabela oficial da UF.',
-                                orientacao: `Confira o cBenef "${cBenef}" com a tabela oficial da UF ${siglaUF}.`,
-                                rejeicao: '',
-                                campos: ['cBenef', 'CST']
+                                erro: 'REJEICAO_931',
+                                desc: `${idItem} Informado código de benefício fiscal "${cBenef}" incompatível com CST ${cstNormalizado} e UF ${siglaUF}.`,
+                                motivo: `O cBenef ${cBenef} não corresponde ao CST ${cstNormalizado} na tabela oficial de código de benefício fiscal da UF ${siglaUF}.`,
+                                correcao: 'Corrija o CST ou o cBenef conforme a tabela oficial vigente da UF antes de retransmitir a NFC-e/NF-e.',
+                                orientacao: `No cadastro do item "${item.xProd}" (Código: ${item.cProd}), confira o campo CodBeneficioFISCAL e o CST de ICMS. Para SP099999 em SP, a tabela vigente admite CST 41 e 90, não CST 40.`,
+                                rejeicao: '931',
+                                classificacao: 'rejeicao_sefaz_confirmada',
+                                campos: ['cBenef', 'CST', 'UF']
                             });
                         } else {
                             if (cBenef && cBenefFormatoSchemaValido && !regraCBenefConhecida) {
@@ -2851,13 +2857,14 @@ function validarCFOP(item, modelo, mensagens) {
                                     status = 'error';
                                     mensagens.push({
                                         tipo: 'error',
-                                        erro: 'cBenef não permitido para este CST',
-                                        desc: `${idItem} O cBenef SP099999 só é permitido para CST 40 e 90.`,
-                                        motivo: 'Código de benefício não compatível com o CST',
-                                        correcao: 'Alterar o cBenef para um código válido para este CST',
-                                        orientacao: obterSugestaoContabil('cBenef não permitido para este CST', item.cProd, item.xProd),
-                                        rejeicao: '',
-                                        campos: ['CST', 'cBenef']
+                                        erro: 'REJEICAO_931',
+                                        desc: `${idItem} Informado código de benefício fiscal SP099999 incompatível com CST ${cstNormalizado} e UF SP.`,
+                                        motivo: 'Na tabela cBenef SP vigente, SP099999 é compatível com CST 41 e 90.',
+                                        correcao: 'Corrigir o CST ou o cBenef conforme a tabela oficial da SEFAZ-SP.',
+                                        orientacao: obterSugestaoContabil('REJEICAO_931', item.cProd, item.xProd),
+                                        rejeicao: '931',
+                                        classificacao: 'rejeicao_sefaz_confirmada',
+                                        campos: ['CST', 'cBenef', 'UF']
                                     });
                                 } else {
                                     const textoComplementar = infAdic.infCpl.trim();
@@ -4688,7 +4695,8 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
             '382': new Set(['CFOP incompatível com CST (NFC-e)']),
             '386': new Set(['CFOP incompatível com CSOSN (NFC-e)']),
             '374': new Set(['CFOP incompatível com grupo de tributação']),
-            '928': new Set(['REJEICAO_928'])
+            '928': new Set(['REJEICAO_928']),
+            '931': new Set(['REJEICAO_931'])
         };
 
         const ERROS_ESTRUTURAIS_CONFIRMADOS = new Set([
