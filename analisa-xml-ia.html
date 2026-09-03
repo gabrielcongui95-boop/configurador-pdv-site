@@ -1438,23 +1438,63 @@
         }
 
         // ==========================================
-// FUNÇÃO PRINCIPAL DE VALIDAÇÃO DE CFOP (COM EXCEÇÕES)
+// IDENTIFICAÇÃO DE GORJETA / SERVIÇO
 // ==========================================
-function validarCFOP(item, modelo, mensagens) {
-    const xProdUpper = (item.xProd || '').toUpperCase();
-    
-    // REGRA DE EXCEÇÃO: Gorjeta, Taxa de Serviço ou CFOP 5949 com Isenção (CST 40/41)
-    const ehGorjetaOuServico = xProdUpper.includes('GORJETA') ||
-                               xProdUpper.includes('TAXA DE SERVICO') ||
-                               xProdUpper.includes('TAXA DE SERVIÇO') ||
-                               (item.CFOP === '5949' && (item.CST === '40' || item.CST === '41' || item.CSOSN === '400'));
+function normalizarTextoFiscal(valor) {
+    return String(valor || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .trim();
+}
 
-    if (ehGorjetaOuServico) {
-        log(`[Exceção Aplicada] Item ${item.nItem} ("${item.xProd}") identificado como Gorjeta/Serviço. Validação estrita de CFOP ignorada.`);
-        return true; // Isenta da regra de incompatibilidade de CFOP
-    }
+function ehItemGorjetaOuServico(item) {
+    const nome = normalizarTextoFiscal(item?.xProd || '');
+    return /\bGORJETA\b/.test(nome) ||
+           /\bSERVICO\b/.test(nome) ||
+           nome.includes('TAXA DE SERVICO');
+}
 
+// ==========================================
+// FUNÇÃO PRINCIPAL DE VALIDAÇÃO DE CFOP
+// ==========================================
+function validarCFOP(item, modelo, mensagens, cUF = '') {
+    const cfop = String(item.CFOP || '').trim();
+    const cst = String(item.CST || '').padStart(2, '0');
+    const ehGorjetaServico = ehItemGorjetaOuServico(item);
+
+    // O nome GORJETA/SERVIÇO não dispensa a validação do CFOP.
     if (modelo === '65') {
+        // Exceções estaduais conhecidas da Regra 382.
+        if (cUF === '35' && cst === '40' && cfop === '5949') {
+            log(`[Exceção UF] Item ${item.nItem}: SP - CST 40 + CFOP 5949.`);
+            return true;
+        }
+        if (cUF === '43' && cst === '90' && cfop === '5949') {
+            log(`[Exceção UF] Item ${item.nItem}: RS - CST 90 + CFOP 5949.`);
+            return true;
+        }
+        if (cUF === '23' && cst === '90' && ['5403', '5405'].includes(cfop)) {
+            log(`[Exceção UF] Item ${item.nItem}: CE - CST 90 + CFOP ${cfop}.`);
+            return true;
+        }
+
+        if (ehGorjetaServico && cst && cfop === '5933') {
+            const idItem = `[Item ${item.nItem} - ${item.xProd} (Cód: ${item.cProd})]`;
+            mensagens.push({
+                tipo: 'error',
+                erro: 'CFOP incompatível com CST (NFC-e)',
+                desc: `${idItem} CFOP ${cfop} não é permitido para CST ${cst} na NFC-e.`,
+                motivo: 'Incompatibilidade CFOP × CST enquadrada na Regra 382.',
+                correcao: 'Corrija o CFOP da gorjeta/taxa de serviço conforme a regra fiscal aplicável à UF antes de retransmitir.',
+                orientacao: 'O NCM 00000000 deste item é tratado separadamente e não é o motivo desta rejeição.',
+                rejeicao: '382',
+                classificacao: 'rejeicao_sefaz_confirmada',
+                campos: ['CFOP', 'CST']
+            });
+            return false;
+        }
+
         return validarCFOP_NFCE(item, mensagens);
     } else if (modelo === '55') {
         return validarCFOP_NFE(item, mensagens);
@@ -2584,8 +2624,15 @@ function validarCFOP(item, modelo, mensagens) {
                 });
             }
 
-            // Valida NCM
-            if (item.NCM) {
+            // Valida NCM.
+            // NCM 00000000 não gera alerta quando o nome identifica GORJETA/SERVIÇO.
+            const ncmSomenteDigitos = String(item.NCM || '').replace(/\D/g, '');
+            const ncmZeroPermitidoGorjetaServico =
+                ncmSomenteDigitos === '00000000' && ehItemGorjetaOuServico(item);
+
+            if (ncmZeroPermitidoGorjetaServico) {
+                log(`[Exceção NCM] Item ${item.nItem} ("${item.xProd}") com NCM 00000000 identificado como gorjeta/serviço.`);
+            } else if (item.NCM) {
                 const resultadoNCM = await validarNCM(item.NCM);
                 if (!resultadoNCM.valido) {
                     status = 'warning';
@@ -2944,7 +2991,7 @@ function validarCFOP(item, modelo, mensagens) {
             }
 
             // Validação CFOP x CST/CSOSN
-            const cfopValido = validarCFOP(item, modelo, mensagens);
+            const cfopValido = validarCFOP(item, modelo, mensagens, cUF);
             if (!cfopValido) {
                 status = 'error';
             }
@@ -2969,8 +3016,10 @@ function validarCFOP(item, modelo, mensagens) {
             const mensagens = [];
             
             // REGRA 4: NCM com tamanho incorreto
-            const ncmLimpo = item.NCM.replace(/\D/g, '');
-            if (ncmLimpo !== '00' && ncmLimpo.length !== 8) {
+            const ncmLimpo = String(item.NCM || '').replace(/\D/g, '');
+            const ncmZeroPermitidoGorjetaServico =
+                ncmLimpo === '00000000' && ehItemGorjetaOuServico(item);
+            if (!ncmZeroPermitidoGorjetaServico && ncmLimpo !== '00' && ncmLimpo.length !== 8) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'ERRO_NCM_TAMANHO',
@@ -3039,53 +3088,10 @@ function validarCFOP(item, modelo, mensagens) {
                 });
             }
             
-            // VALIDAÇÃO DE PIS (Rejeição 602)
-            const cstPisTributavel = ['01', '02'];
-            if (item.CST_PIS && cstPisTributavel.includes(item.CST_PIS)) {
-                // 1. Calcular base de cálculo esperada: vProd - vDesc + vFrete + vSeg + vOutro
-                const vProdNum = parseFloat(item.vProd) || 0;
-                const vDescNum = parseFloat(item.vDesc) || 0;
-                const vFreteNum = parseFloat(item.vFrete) || 0;
-                const vSegNum = parseFloat(item.vSeg) || 0;
-                const vOutroNum = parseFloat(item.vOutro) || 0;
-                
-                const vBCEsperado = vProdNum - vDescNum + vFreteNum + vSegNum + vOutroNum;
-                const vBCInformado = parseFloat(item.vBCPIS) || 0;
-                
-                // 2. Validar base de cálculo
-                if (Math.abs(vBCEsperado - vBCInformado) > 0.01) {
-                    mensagens.push({
-                        tipo: 'error',
-                        erro: 'Base de cálculo PIS divergente',
-                        desc: `Base de cálculo PIS esperada: ${vBCEsperado.toFixed(2)}, informada: ${vBCInformado.toFixed(2)}`,
-                        motivo: 'Base de cálculo PIS não corresponde a vProd - vDesc + vFrete + vSeg + vOutro',
-                        correcao: 'Ajustar a base de cálculo do PIS no cadastro do produto',
-                        orientacao: 'Verificar o cálculo da base de cálculo do PIS',
-                        rejeicao: '',
-                        campos: ['vBCPIS', 'vProd', 'vDesc', 'vFrete', 'vSeg', 'vOutro']
-                    });
-                }
-                
-                // 3. Calcular valor do PIS esperado
-                const pPISNum = parseFloat(item.pPIS) || 0;
-                const vPISEsperado = Math.round((vBCInformado * (pPISNum / 100)) * 100) / 100;
-                const vPISInformado = parseFloat(item.vPIS) || 0;
-                
-                // 4. Validar valor do PIS
-                if (Math.abs(vPISInformado - vPISEsperado) > 0.01) {
-                    mensagens.push({
-                        tipo: 'error',
-                        erro: 'Valor do PIS divergente',
-                        desc: `Valor do PIS esperado: ${vPISEsperado.toFixed(2)}, informado: ${vPISInformado.toFixed(2)}`,
-                        motivo: 'Valor do PIS não corresponde a base de cálculo * alíquota',
-                        correcao: 'Ajustar o valor do PIS no cadastro do produto',
-                        orientacao: 'Verificar o cálculo do valor do PIS',
-                        rejeicao: '',
-                        campos: ['vPIS', 'vBCPIS', 'pPis']
-                    });
-                }
-            }
-            
+            // PIS/COFINS: não decidir 602/603 por fórmula isolada do item.
+            // A validação ocorre pelo somatório dos valores informados nos itens
+            // contra os totais declarados no ICMSTot.
+
             // Validações da Reforma Tributária (gatilho de data já aplicado dentro da função)
             const mensagensReforma = validarReformaTributaria(item, validarReforma);
             mensagens.push(...mensagensReforma);
@@ -3778,39 +3784,10 @@ function validarCFOP(item, modelo, mensagens) {
          * @returns {Array} Lista de mensagens de erro/aviso
          */
         function validarArredondamentoImposto(vBC, pImposto, vImposto, tipo, nItem, itemRef) {
-            const mensagens = [];
-            const vBCNum = parseFloat(vBC) || 0;
-            const pImpostoNum = parseFloat(pImposto) || 0;
-            const vImpostoNum = parseFloat(vImposto) || 0;
-
-            if (vBCNum > 0 && pImpostoNum > 0) {
-                const vImpostoCalculado = arredondarParaDuasCasas(vBCNum * (pImpostoNum / 100));
-                if (Math.abs(vImpostoCalculado - vImpostoNum) > 0.00001) {
-                    let prefixo = `Item ${nItem}`;
-                    let cProd = 'N/A', xProd = 'N/A';
-                    if (itemRef && itemRef.xProd) {
-                        prefixo = `[Item ${nItem} - ${itemRef.xProd} (Cód: ${itemRef.cProd})]`;
-                        cProd = itemRef.cProd;
-                        xProd = itemRef.xProd;
-                    }
-                    mensagens.push({
-                        tipo: 'warning',
-                        erro: `Divergência de Arredondamento de ${tipo}`,
-                        desc: `${prefixo} Valor de ${tipo} calculado é R$ ${vImpostoCalculado.toFixed(2)}, mas foi informado R$ ${vImpostoNum.toFixed(2)}`,
-                        motivo: `Cálculo: ${vBCNum.toFixed(2)} * ${pImpostoNum.toFixed(2)}% = ${vImpostoCalculado.toFixed(2)}`,
-                        correcao: `Ajustar o valor de ${tipo} para R$ ${vImpostoCalculado.toFixed(2)}`,
-                        orientacao: obterSugestaoContabil(
-                            tipo === 'PIS' ? 'Divergência de Arredondamento de PIS (Rejeição 602 Provável)' : 'Divergência de Arredondamento de COFINS ',
-                            cProd,
-                            xProd
-                        ),
-                        campos: [tipo === 'PIS' ? 'vPIS' : 'vCOFINS'],
-                        itemSuspeito: itemRef ? { nItem, xProd: itemRef.xProd, cProd: itemRef.cProd } : null
-                    });
-                }
-            }
-
-            return mensagens;
+            // MODO ESTRITO: não emitir alerta por recálculo isolado de PIS/COFINS.
+            // As Rejeições 602/603 são decididas pelo total declarado no XML:
+            // soma dos vPIS/vCOFINS dos itens versus ICMSTot.
+            return [];
         }
 
         /**
@@ -3928,52 +3905,14 @@ function validarCFOP(item, modelo, mensagens) {
                 dados.itens.forEach(item => {
                     const idItem = `[Item ${item.nItem} - ${item.xProd} (Cód: ${item.cProd})]`;
 
-                    // PIS individual
+                    // PIS: somar o valor efetivamente informado no XML.
                     if (cstTributavel.includes(item.CST_PIS)) {
-                        const vBCPIS = parseFloat(item.vBCPIS) || 0;
-                        const pPIS = parseFloat(item.pPIS) || 0;
-                        const vPISInformado = parseFloat(item.vPIS) || 0;
-                        const vPISCalculadoCentavos = calcularImpostoCentavos(vBCPIS, pPIS);
-                        const vPISCalculado = paraDecimal(vPISCalculadoCentavos);
-                        const vPISInformadoCentavos = paraCentavos(vPISInformado);
-
-                        if (vPISCalculadoCentavos !== vPISInformadoCentavos) {
-                            erros.push({
-                                tipo: 'error',
-                                erro: 'Divergência de Arredondamento de PIS (Rejeição 602 Provável)',
-                                desc: `${idItem} PIS calculado é R$ ${vPISCalculado.toFixed(2)}, mas foi informado R$ ${vPISInformado.toFixed(2)}`,
-                                motivo: `Cálculo exato: vBCPIS (R$ ${vBCPIS.toFixed(2)}) * (${pPIS.toFixed(2)}%) = R$ ${vPISCalculado.toFixed(2)}`,
-                                correcao: `Ajustar vPIS para R$ ${vPISCalculado.toFixed(2)}`,
-                                orientacao: obterSugestaoContabil('Divergência de Arredondamento de PIS (Rejeição 602 Provável)', item.cProd, item.xProd),
-                                campos: ['vPIS'],
-                                itemSuspeito: { nItem: item.nItem, xProd: item.xProd, cProd: item.cProd }
-                            });
-                        }
-                        totalPISCalculadoCentavos += vPISCalculadoCentavos;
+                        totalPISCalculadoCentavos += paraCentavos(parseFloat(item.vPIS) || 0);
                     }
 
-                    // COFINS individual
+                    // COFINS: somar o valor efetivamente informado no XML.
                     if (cstTributavel.includes(item.CST_COFINS)) {
-                        const vBCCOFINS = parseFloat(item.vBCCOFINS) || 0;
-                        const pCOFINS = parseFloat(item.pCOFINS) || 0;
-                        const vCOFINSInformado = parseFloat(item.vCOFINS) || 0;
-                        const vCOFINSCalculadoCentavos = calcularImpostoCentavos(vBCCOFINS, pCOFINS);
-                        const vCOFINSCalculado = paraDecimal(vCOFINSCalculadoCentavos);
-                        const vCOFINSInformadoCentavos = paraCentavos(vCOFINSInformado);
-
-                        if (vCOFINSCalculadoCentavos !== vCOFINSInformadoCentavos) {
-                            erros.push({
-                                tipo: 'error',
-                                erro: 'Divergência de Arredondamento de COFINS ',
-                                desc: `${idItem} COFINS calculado é R$ ${vCOFINSCalculado.toFixed(2)}, mas foi informado R$ ${vCOFINSInformado.toFixed(2)}`,
-                                motivo: `Cálculo exato: vBCCOFINS (R$ ${vBCCOFINS.toFixed(2)}) * (${pCOFINS.toFixed(2)}%) = R$ ${vCOFINSCalculado.toFixed(2)}`,
-                                correcao: `Ajustar vCOFINS para R$ ${vCOFINSCalculado.toFixed(2)}`,
-                                orientacao: obterSugestaoContabil('Divergência de Arredondamento de COFINS ', item.cProd, item.xProd),
-                                campos: ['vCOFINS'],
-                                itemSuspeito: { nItem: item.nItem, xProd: item.xProd, cProd: item.cProd }
-                            });
-                        }
-                        totalCOFINSCalculadoCentavos += vCOFINSCalculadoCentavos;
+                        totalCOFINSCalculadoCentavos += paraCentavos(parseFloat(item.vCOFINS) || 0);
                     }
                 });
 
@@ -4057,7 +3996,7 @@ function validarCFOP(item, modelo, mensagens) {
                     }) || dados.itens[0]);
                     const idItem = `[Item ${itemBase.nItem} - ${itemBase.xProd} (Cód: ${itemBase.cProd})]`;
 
-                    let descricao = `Total de PIS calculado (R$ ${totalPISCalculado.toFixed(2)}) difere do declarado em ICMSTot (R$ ${totalPISDeclarado.toFixed(2)}). Diferença: R$ ${(faltaCentavos / 100).toFixed(2)}.`;
+                    let descricao = `Soma dos vPIS informados nos itens (R$ ${totalPISCalculado.toFixed(2)}) difere do declarado em ICMSTot (R$ ${totalPISDeclarado.toFixed(2)}). Diferença: R$ ${(faltaCentavos / 100).toFixed(2)}.`;
                     let motivo = `O cadastro de um ou mais itens da nota estão com cadastro incorreto ou incompleto.`;
                     let correcao = `Ajustar o CST de PIS e a alíquota do item suspeito para refletir o cálculo correto.`;
 
@@ -4094,7 +4033,7 @@ function validarCFOP(item, modelo, mensagens) {
                     }) || dados.itens[0]);
                     const idItem = `[Item ${itemBase.nItem} - ${itemBase.xProd} (Cód: ${itemBase.cProd})]`;
 
-                    let descricao = `Total de COFINS calculado (R$ ${totalCOFINSCalculado.toFixed(2)}) difere do declarado em ICMSTot (R$ ${totalCOFINSDeclarado.toFixed(2)}). Diferença: R$ ${(faltaCentavos / 100).toFixed(2)}.`;
+                    let descricao = `Soma dos vCOFINS informados nos itens (R$ ${totalCOFINSCalculado.toFixed(2)}) difere do declarado em ICMSTot (R$ ${totalCOFINSDeclarado.toFixed(2)}). Diferença: R$ ${(faltaCentavos / 100).toFixed(2)}.`;
                     let motivo = `O cadastro de um ou mais itens da nota estão com cadastro incorreto ou incompleto.`;
                     let correcao = `Ajustar o CST de COFINS e a alíquota do item suspeito para refletir o cálculo correto.`;
 
@@ -4440,26 +4379,13 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                 const vCBSRT = parseFloat(item.vCBSRT) || 0;
 
                 if (item.temICMS) {
-                    // Somar apenas PIS tributável (CST 01/02) e validar arredondamento
+                    // Somar os valores efetivamente informados no XML.
                     if (item.CST_PIS && cstPisTributavel.includes(item.CST_PIS)) {
-                        const errosPIS = validarArredondamentoImposto(item.vBCPIS, item.pPIS, item.vPIS, 'PIS', item.nItem, item);
-                        mensagens.push(...errosPIS);
-
-                        const vBCPISNum = parseFloat(item.vBCPIS) || 0;
-                        const pPISNum = parseFloat(item.pPIS) || 0;
-                        const vPISCalculado = arredondarParaDuasCasas(vBCPISNum * (pPISNum / 100));
-                        total_pis_icms_calculado += vPISCalculado;
+                        total_pis_icms_calculado += vPIS;
                     }
 
-                    // Somar apenas COFINS tributável (CST 01/02) e validar arredondamento
                     if (item.CST_COFINS && cstCofinsTributavel.includes(item.CST_COFINS)) {
-                        const errosCOFINS = validarArredondamentoImposto(item.vBCCOFINS, item.pCOFINS, item.vCOFINS, 'COFINS', item.nItem, item);
-                        mensagens.push(...errosCOFINS);
-
-                        const vBCCOFINSNum = parseFloat(item.vBCCOFINS) || 0;
-                        const pCOFINSNum = parseFloat(item.pCOFINS) || 0;
-                        const vCOFINSCalculado = arredondarParaDuasCasas(vBCCOFINSNum * (pCOFINSNum / 100));
-                        total_cofins_icms_calculado += vCOFINSCalculado;
+                        total_cofins_icms_calculado += vCOFINS;
                     }
                 }
 
@@ -4482,7 +4408,7 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
             total_vCBSRT = arredondarParaDuasCasas(total_vCBSRT);
             const total_vIBSRT = arredondarParaDuasCasas(total_vIBSUFRT + total_vIBSMunRT);
 
-            // Comparar com ICMSTot (usando os valores calculados para cada item, não os informados!)
+            // Comparar com ICMSTot usando a soma dos valores efetivamente informados nos itens
             const vPIS_icms_tot = parseFloat(dados.totals.icmstot.vPIS) || 0;
             const vCOFINS_icms_tot = parseFloat(dados.totals.icmstot.vCOFINS) || 0;
 
@@ -4521,8 +4447,8 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total PIS divergente',
-                    desc: `${idItemPIS ? idItemPIS + ' — ' : ''}Total do PIS calculado nos itens (ICMS): R$ ${total_pis_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}. Diferença de R$ ${faltaPIS.toFixed(2)}.`,
-                    motivo: 'Soma dos valores calculados de PIS dos itens com ICMS não confere com o total em ICMSTot',
+                    desc: `${idItemPIS ? idItemPIS + ' — ' : ''}Soma do PIS informado nos itens (ICMS): R$ ${total_pis_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vPIS_icms_tot.toFixed(2)}. Diferença de R$ ${faltaPIS.toFixed(2)}.`,
+                    motivo: 'Soma dos vPIS informados nos itens com ICMS não confere com o total em ICMSTot',
                     correcao: 'Ajustar o valor vPIS em ICMSTot para corresponder à soma dos valores calculados',
                     orientacao: obterSugestaoContabil('Total PIS divergente', suspeitoPIS?.cProd, suspeitoPIS?.xProd),
                     rejeicao: '602',
@@ -4540,8 +4466,8 @@ async function validarCEP(cep, tipo, ufXML, xMunXML, xLgrXML, xBairroXML, nro) {
                 mensagens.push({
                     tipo: 'error',
                     erro: 'Total COFINS divergente',
-                    desc: `${idItemCOFINS ? idItemCOFINS + ' — ' : ''}Total do COFINS calculado nos itens (ICMS): R$ ${total_cofins_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}. Diferença de R$ ${faltaCOFINS.toFixed(2)}.`,
-                    motivo: 'Soma dos valores calculados de COFINS dos itens com ICMS não confere com o total em ICMSTot',
+                    desc: `${idItemCOFINS ? idItemCOFINS + ' — ' : ''}Soma do COFINS informado nos itens (ICMS): R$ ${total_cofins_icms_calculado.toFixed(2)} vs Total declarado em ICMSTot: R$ ${vCOFINS_icms_tot.toFixed(2)}. Diferença de R$ ${faltaCOFINS.toFixed(2)}.`,
+                    motivo: 'Soma dos vCOFINS informados nos itens com ICMS não confere com o total em ICMSTot',
                     correcao: 'Ajustar o valor vCOFINS em ICMSTot para corresponder à soma dos valores calculados',
                     orientacao: obterSugestaoContabil('Total COFINS divergente', suspeitoCOFINS?.cProd, suspeitoCOFINS?.xProd),
                     rejeicao: '603',
